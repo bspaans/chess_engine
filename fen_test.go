@@ -49,6 +49,24 @@ func Test_ParseFEN(t *testing.T) {
 	}
 }
 
+func Test_FENString(t *testing.T) {
+	cases := []string{
+		"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+		"8/P7/8/8/8/8/8/K7 w KQkq - 0 1",
+		"8/1P6/8/8/8/8/8/K7 w KQkq - 0 1",
+	}
+	for _, expected := range cases {
+		unit, err := ParseFEN(expected)
+		if err != nil {
+			t.Fatal(err)
+		}
+		str := unit.FENString()
+		if str != expected {
+			t.Errorf("Expecting '%s' got '%s'", expected, str)
+		}
+	}
+}
+
 func Test_ValidMoves(t *testing.T) {
 	unit, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 	if err != nil {

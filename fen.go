@@ -193,7 +193,6 @@ func (f *FEN) NextFENs() []*FEN {
 	result := []*FEN{}
 	for _, m := range moves {
 		result = append(result, f.ApplyMove(m))
-
 	}
 	return result
 }
@@ -369,6 +368,54 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 		}
 	}
 	return result
+}
+
+func (f *FEN) FENString() string {
+	forStr := ""
+	for y := 7; y >= 0; y-- {
+		empty := 0
+		for x := 0; x < 8; x++ {
+			pos := y*8 + x
+			if f.Board[pos] != NoPiece {
+				if empty != 0 {
+					forStr += strconv.Itoa(empty)
+				}
+				forStr += string([]byte{byte(f.Board[pos])})
+				empty = 0
+			} else {
+				empty += 1
+			}
+		}
+		if empty != 0 {
+			forStr += strconv.Itoa(empty)
+		}
+		if y != 0 {
+			forStr += "/"
+		}
+	}
+	castleStatus := f.WhiteCastleStatus.String(White) + f.BlackCastleStatus.String(Black)
+	if castleStatus == "--" {
+		castleStatus = "-"
+	}
+	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
+		castleStatus = strings.Trim(castleStatus, "-")
+	}
+	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, f.EnPassantVulnerable.String(), f.HalfmoveClock, f.Fullmove)
+}
+
+func (f *FEN) IsMate() bool {
+	incoming := f.GetIncomingAttacks()
+	checks := []*Move{}
+	for _, attack := range incoming {
+		if attack.To == f.Pieces[f.ToMove][King][0] {
+			checks = append(checks, attack)
+		}
+	}
+	if len(checks) > 0 {
+		return len(f.validMovesInCheck(checks)) == 0
+	} else {
+		return false
+	}
 }
 
 func (f *FEN) ValidMoves() []*Move {

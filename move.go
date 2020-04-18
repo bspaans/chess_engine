@@ -26,6 +26,29 @@ func NewMove(from, to Position) *Move {
 	}
 }
 
+func ParseMove(moveStr string) (*Move, error) {
+	if len(moveStr) != 4 && len(moveStr) != 5 {
+		return nil, fmt.Errorf("Expecting move str of length 4 or 5")
+	}
+	from, err := ParsePosition(moveStr[0:2])
+	if err != nil {
+		return nil, err
+	}
+	to, err := ParsePosition(moveStr[0:2])
+	if err != nil {
+		return nil, err
+	}
+	promote := NoPiece
+	if len(moveStr) == 5 {
+		promote = Piece(moveStr[4])
+	}
+	return &Move{
+		From:    from,
+		To:      to,
+		Promote: promote,
+	}, nil
+}
+
 type Line []*Move
 
 func (l Line) String() string {
