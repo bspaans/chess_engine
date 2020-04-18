@@ -61,7 +61,12 @@ func (e *Engine) Send(msg string) {
 
 func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
 	str := fen.FENString()
-	fmt.Println(str)
+	color := "White"
+	if fen.ToMove == chess_engine.Black {
+		color = "Black"
+	}
+
+	fmt.Println(color + " to play position: " + str)
 	e.Send("position fen " + str)
 	e.Send("go depth 2")
 	return e.ReadUntilBestMove(fen)
@@ -140,12 +145,14 @@ func (g *Game) ResultAnnouncement() string {
 	return header + "\n=  " + title + "  =\n" + header
 }
 
-func GenerateGames(engines []*Engine) []*Game {
+func GenerateGames(engines []*Engine, rounds int) []*Game {
 	result := []*Game{}
-	for _, e1 := range engines {
-		for _, e2 := range engines {
-			if e1 != e2 {
-				result = append(result, NewGame(e1, e2))
+	for i := 0; i < rounds; i++ {
+		for _, e1 := range engines {
+			for _, e2 := range engines {
+				if e1 != e2 {
+					result = append(result, NewGame(e1, e2))
+				}
 			}
 		}
 	}
@@ -154,7 +161,7 @@ func GenerateGames(engines []*Engine) []*Game {
 
 func main() {
 
-	games := GenerateGames(Engines)
+	games := GenerateGames(Engines, 10)
 	standing := map[*Engine]int{}
 	fmt.Println("Starting tournament", len(games), "games")
 	for _, game := range games {
@@ -173,27 +180,24 @@ func main() {
 		}
 
 		for game.Result == Unfinished {
-			fmt.Println("White to play")
 			move := game.White.Play(fen)
-			fmt.Printf("%s (white) plays %s\n", game.White.Name, move.String())
+			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			fen = fen.ApplyMove(move)
 			if fen.IsMate() {
 				standing[game.White] += 1
 				game.Result = WhiteWins
 				fmt.Println(game.ResultAnnouncement())
 			} else {
-				fmt.Println("Not mate: " + fen.FENString())
-				fmt.Println("Valid moves: ", fen.ValidMoves())
-				fmt.Println("Black to play")
+				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
-				fmt.Printf("%s (black) plays %s\n", game.Black.Name, move.String())
+				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
 				fen = fen.ApplyMove(move)
 				if fen.IsMate() {
 					standing[game.Black] += 1
 					game.Result = BlackWins
 					fmt.Println(game.ResultAnnouncement())
 				} else {
-					fmt.Println("Not mate: " + fen.FENString())
+					//fmt.Println("Valid moves: ", fen.ValidMoves())
 				}
 			}
 		}

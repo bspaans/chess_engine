@@ -155,53 +155,31 @@ func (p Position) GetFile() File {
 	return File(file + 'a')
 }
 
+func (p Position) GetWhitePawnMoves() []Position {
+	result := []Position{}
+	rank := p.GetRank()
+	if rank >= '2' && rank < '8' {
+		result = append(result, p+8)
+	}
+	if rank == '2' {
+		result = append(result, p+16)
+	}
+	return result
+}
+func (p Position) GetBlackPawnMoves() []Position {
+	result := []Position{}
+	rank := p.GetRank()
+	if rank >= '2' && rank < '8' {
+		result = append(result, p-8)
+	}
+	if rank == '7' {
+		result = append(result, p-16)
+	}
+	return result
+}
+
 func (p Position) GetKnightMoves() []Position {
 	return PieceMoves[WhiteKnight][p]
-	/*
-		result := []Position{}
-		file, rank := p.GetFile(), p.GetRank()
-		if file > 'a' {
-			// e.g. b3 -> a1
-			if rank > '2' {
-				result = append(result, p-17)
-			}
-			// e.g. b6 > a8
-			if rank < '7' {
-				result = append(result, p+15)
-			}
-			if file > 'b' {
-				// e.g. c2 > a1
-				if rank > '1' {
-					result = append(result, p-10)
-				}
-				// e.g. c7 > a8
-				if rank < '8' {
-					result = append(result, p+6)
-				}
-			}
-		}
-		if file < 'h' {
-			// e.g. g3 -> h1
-			if rank > '2' {
-				result = append(result, p-15)
-			}
-			// e.g. g6 -> h8
-			if rank < '7' {
-				result = append(result, p+17)
-			}
-			if file < 'g' {
-				// e.g. f2 -> h1
-				if rank > '1' {
-					result = append(result, p-6)
-				}
-				// e.g. f7 -> h8
-				if rank < '8' {
-					result = append(result, p+10)
-				}
-			}
-		}
-		return result
-	*/
 }
 
 func (p Position) GetLines() [][]Position {
@@ -293,6 +271,8 @@ func init() {
 		// TODO pawns
 		result := "package chess_engine\n\nvar PieceMoves = map[Piece][][]Position{\n"
 		singleMovers := [][]interface{}{
+			[]interface{}{"WhitePawn", func(p Position) []Position { return p.GetWhitePawnMoves() }},
+			[]interface{}{"BlackPawn", func(p Position) []Position { return p.GetBlackPawnMoves() }},
 			[]interface{}{"WhiteKing", func(p Position) []Position { return p.GetKingMoves() }},
 			[]interface{}{"BlackKing", func(p Position) []Position { return p.GetKingMoves() }},
 			[]interface{}{"WhiteKnight", func(p Position) []Position { return p.GetKnightMoves() }},
