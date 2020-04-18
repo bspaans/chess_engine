@@ -60,6 +60,40 @@ func Test_ValidMoves(t *testing.T) {
 	}
 }
 
+func Test_ValidMoves_promote(t *testing.T) {
+	unit, err := ParseFEN("8/P7/8/8/8/8/8/K7 w KQkq - 0 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moves := unit.ValidMoves()
+	pawnMoves := []*Move{}
+	for _, m := range moves {
+		if m.From == A7 && m.To == A8 {
+			pawnMoves = append(pawnMoves, m)
+		}
+	}
+	if len(pawnMoves) != 4 {
+		t.Errorf("Expecting four valid pawn moves, got %d: %v", len(pawnMoves), pawnMoves)
+	}
+}
+
+func Test_ValidMoves_promote_black(t *testing.T) {
+	unit, err := ParseFEN("8/K7/8/8/8/8/p7/8 b KQkq - 0 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moves := unit.ValidMoves()
+	pawnMoves := []*Move{}
+	for _, m := range moves {
+		if m.From == A2 && m.To == A1 {
+			pawnMoves = append(pawnMoves, m)
+		}
+	}
+	if len(pawnMoves) != 4 {
+		t.Errorf("Expecting four valid pawn moves, got %d: %v", len(pawnMoves), pawnMoves)
+	}
+}
+
 func Test_ApplyMove(t *testing.T) {
 	unit, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 	if err != nil {
@@ -91,5 +125,55 @@ func Test_ApplyMove(t *testing.T) {
 	}
 	if newFEN2.Line[1].From != E7 || newFEN2.Line[1].To != E6 {
 		t.Errorf("Expecting a move e7e6")
+	}
+}
+
+func Test_ApplyMove_promote(t *testing.T) {
+	unit, err := ParseFEN("8/P7/8/8/8/8/8/K7 w KQkq - 0 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	move := NewMove(A7, A8)
+	move.Promote = WhiteQueen
+	fen := unit.ApplyMove(move)
+	if fen.Board[A8] != WhiteQueen {
+		t.Errorf("Expecting a white queen on a8")
+	}
+	if fen.Board[A7] != NoPiece {
+		t.Errorf("Expecting no piece on a7")
+	}
+	if len(fen.Pieces[White][Queen]) != 1 {
+		t.Errorf("Expecting a white queen on a8")
+	}
+	if fen.Pieces[White][Queen][0] != A8 {
+		t.Errorf("Expecting a white queen on a8")
+	}
+	if len(fen.Pieces[White][Pawn]) != 0 {
+		t.Errorf("Expecting no pawns")
+	}
+}
+
+func Test_ApplyMove_promote_black(t *testing.T) {
+	unit, err := ParseFEN("8/K7/8/8/8/8/p7/8 b KQkq - 0 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	move := NewMove(A2, A1)
+	move.Promote = BlackQueen
+	fen := unit.ApplyMove(move)
+	if fen.Board[A1] != BlackQueen {
+		t.Errorf("Expecting a black queen on a1")
+	}
+	if fen.Board[A2] != NoPiece {
+		t.Errorf("Expecting no piece on a2")
+	}
+	if len(fen.Pieces[Black][Queen]) != 1 {
+		t.Errorf("Expecting a black queen on a1")
+	}
+	if fen.Pieces[Black][Queen][0] != A1 {
+		t.Errorf("Expecting a black queen on a1")
+	}
+	if len(fen.Pieces[Black][Pawn]) != 0 {
+		t.Errorf("Expecting no pawns")
 	}
 }

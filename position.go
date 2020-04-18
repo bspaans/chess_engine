@@ -218,6 +218,21 @@ func (p Position) GetDiagonals() [][]Position {
 	}
 }
 
+func (p Position) GetKingMoves() []Position {
+	result := []Position{}
+	for _, diag := range p.GetDiagonals() {
+		if len(diag) > 0 {
+			result = append(result, diag[0])
+		}
+	}
+	for _, line := range p.GetLines() {
+		if len(line) > 0 {
+			result = append(result, line[0])
+		}
+	}
+	return result
+}
+
 func (p Position) moveUntilBoundary(fileBoundary File, rankBoundary Rank, move int) []Position {
 	result := []Position{}
 	next := p

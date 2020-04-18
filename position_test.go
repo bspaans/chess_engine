@@ -23,3 +23,18 @@ func Test_Knightmoves(t *testing.T) {
 		}
 	}
 }
+
+func Test_Rank(t *testing.T) {
+	cases := map[Position]Rank{
+		E1: '1',
+		E4: '4',
+		H4: '4',
+	}
+
+	for pos, expected := range cases {
+		if pos.GetRank() != expected {
+			t.Errorf("Expecting rank %b got %b for %s", expected, pos.GetRank(), pos)
+		}
+	}
+
+}

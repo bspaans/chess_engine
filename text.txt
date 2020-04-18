@@ -4,3 +4,6 @@ isready
 position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 go infinite
 
+position fen 5k1r/3Q1N2/3N4/p3p3/2B1P3/3P3p/PPP2PPP/R4RK1 b - - 0 22
+go nodes 10000
+

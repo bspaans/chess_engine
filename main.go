@@ -192,7 +192,7 @@ func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes int) 
 					}
 				}
 
-				if totalNodes+nodes >= maxNodes {
+				if maxNodes > 0 && totalNodes+nodes >= maxNodes {
 					output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
 					return
 				}
