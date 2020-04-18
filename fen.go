@@ -280,7 +280,14 @@ func (f *FEN) AttacksSquare(color Color, square Position) bool {
 	cond := func(p Position) bool {
 		return p == square
 	}
-	return len(f.GetAttacksOnCondition(cond, color)) > 0
+	attacks := f.GetAttacksOnCondition(cond, color)
+	/*
+		fmt.Println(square, attacks)
+		fmt.Println(f.Board[H2] == WhitePawn, f.Board[G2] == WhitePawn, f.Board[F2] == WhitePawn)
+		fmt.Println(f.Pieces[White][Pawn])
+		fmt.Println(f.Pieces)
+	*/
+	return len(attacks) > 0
 }
 
 func (f *FEN) GetIncomingAttacks() []*Move {
@@ -423,7 +430,7 @@ func (f *FEN) ValidMoves() []*Move {
 			}
 		} else {
 			skips = append(skips, -1)
-			if pawnPos.GetRank() == '6' {
+			if pawnPos.GetRank() == '7' {
 				skips = append(skips, -2)
 			}
 		}

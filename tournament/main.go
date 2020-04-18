@@ -81,7 +81,7 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 			return e.Play(fen)
 		}
 		line := strings.TrimSpace(text)
-		fmt.Println(line)
+		//fmt.Println(line)
 		cmdParts := strings.Split(line, " ")
 		cmd := cmdParts[0]
 		if cmd == "bestmove" {
@@ -109,6 +109,15 @@ const (
 	Draw
 )
 
+func (g GameResult) String() string {
+	if g == WhiteWins {
+		return "1-0"
+	} else if g == BlackWins {
+		return "0-1"
+	}
+	return "1/2-1/2"
+}
+
 type Game struct {
 	White  *Engine
 	Black  *Engine
@@ -120,6 +129,15 @@ func NewGame(white, black *Engine) *Game {
 		White: white,
 		Black: black,
 	}
+}
+
+func (g *Game) ResultAnnouncement() string {
+	title := g.White.Name + "   v.   " + g.Black.Name + " " + g.Result.String()
+	header := ""
+	for i := 0; i < len(title)+6; i++ {
+		header += "="
+	}
+	return header + "\n=  " + title + "  =\n" + header
 }
 
 func GenerateGames(engines []*Engine) []*Game {
@@ -160,19 +178,20 @@ func main() {
 			fmt.Printf("%s (white) plays %s\n", game.White.Name, move.String())
 			fen = fen.ApplyMove(move)
 			if fen.IsMate() {
-				fmt.Println("White won.")
 				standing[game.White] += 1
 				game.Result = WhiteWins
+				fmt.Println(game.ResultAnnouncement())
 			} else {
 				fmt.Println("Not mate: " + fen.FENString())
+				fmt.Println("Valid moves: ", fen.ValidMoves())
 				fmt.Println("Black to play")
 				move = game.Black.Play(fen)
 				fmt.Printf("%s (black) plays %s\n", game.Black.Name, move.String())
 				fen = fen.ApplyMove(move)
 				if fen.IsMate() {
-					fmt.Println("Black won.")
 					standing[game.Black] += 1
 					game.Result = BlackWins
+					fmt.Println(game.ResultAnnouncement())
 				} else {
 					fmt.Println("Not mate: " + fen.FENString())
 				}

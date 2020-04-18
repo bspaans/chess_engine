@@ -56,6 +56,9 @@ func Test_IsMate(t *testing.T) {
 	cases := []string{
 		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
 		"1nb1k1nr/1p3ppp/2p5/3pp3/KpP1P1PP/q4P2/P1P5/5B1R w k - 36 1",
+		"r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1",
+		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
+		"r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1",
 	}
 	for _, expected := range cases {
 		unit, err := ParseFEN(expected)
@@ -75,6 +78,7 @@ func Test_FENString(t *testing.T) {
 		"8/P7/8/8/8/8/8/K7 w KQkq - 0 1",
 		"8/1P6/8/8/8/8/8/K7 w KQkq - 0 1",
 		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
+		"r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1",
 	}
 	for _, expected := range cases {
 		unit, err := ParseFEN(expected)
@@ -94,8 +98,17 @@ func Test_ValidMoves(t *testing.T) {
 		t.Fatal(err)
 	}
 	moves := unit.ValidMoves()
-	if len(moves) == 0 {
-		t.Errorf("Expecting at least one valid move")
+	if len(moves) != 20 {
+		t.Errorf("Expecting twenty valid moves in the opening position")
+	}
+
+	unit, err = ParseFEN("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 1 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	moves = unit.ValidMoves()
+	if len(moves) != 20 {
+		t.Errorf("Expecting twenty valid moves in the opening position, got %d: %v", len(moves), moves)
 	}
 }
 func Test_ValidMoves_table(t *testing.T) {
@@ -207,6 +220,7 @@ func Test_ApplyMove(t *testing.T) {
 func Test_ApplyMove_table(t *testing.T) {
 	cases := [][]string{
 		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K3 b kq - 35 1", "b6g1", "rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1", "true"},
+		[]string{"r4b2/p3pB2/3N4/1Q4p1/6kp/P1N1B3/1PP2PPP/R3K2R w KQ - 44 1", "b5g5", "r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1", "true"},
 	}
 	for _, testCase := range cases {
 		startPos, moveStr, endPos, isMate := testCase[0], testCase[1], testCase[2], testCase[3] == "true"
