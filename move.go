@@ -14,3 +14,10 @@ func (m Move) String() string {
 	}
 	return fmt.Sprintf("%v%v%v", m.From, m.To, m.Promote)
 }
+
+func NewMove(from, to Position) *Move {
+	return &Move{
+		From: from,
+		To:   to,
+	}
+}

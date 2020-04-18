@@ -62,10 +62,13 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 
 	input := make(chan string)
 	engineOutput := make(chan string, 50)
+	go uci.lineReader(reader, input)
 
 	for {
 		select {
 		case cmd := <-input:
+			log.Write([]byte(cmd))
+			log.Write([]byte{'\n'})
 			switch cmd {
 			case "uci":
 				fmt.Println("id name " + uci.Name)

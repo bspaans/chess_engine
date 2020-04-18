@@ -66,7 +66,7 @@ type FEN struct {
 	// The location of every piece on the board.
 	// The Pieces are normalized, because the color
 	// is already part of the map.
-	Pieces map[Color]map[Piece][]Position
+	Pieces map[Color]map[NormalizedPiece][]Position
 
 	ToMove              Color
 	WhiteCastleStatus   CastleStatus
@@ -138,9 +138,9 @@ func ParseFEN(fenstr string) (*FEN, error) {
 		}
 	}
 	fen.Board = make([]Piece, 64)
-	fen.Pieces = map[Color]map[Piece][]Position{
-		White: map[Piece][]Position{},
-		Black: map[Piece][]Position{},
+	fen.Pieces = map[Color]map[NormalizedPiece][]Position{
+		White: map[NormalizedPiece][]Position{},
+		Black: map[NormalizedPiece][]Position{},
 	}
 	x := 0
 	y := 7
@@ -162,13 +162,13 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			piece := Piece(forStr[i])
 			fen.Board[pos] = piece
 			pieces := fen.Pieces[piece.Color()]
-			piece = piece.Normalize()
-			positions, ok := pieces[piece]
+			normPiece := NormalizedPiece(piece.Normalize())
+			positions, ok := pieces[normPiece]
 			if !ok {
 				positions = []Position{}
 			}
 			positions = append(positions, Position(pos))
-			pieces[piece] = positions
+			pieces[normPiece] = positions
 
 			x++
 		}
@@ -178,11 +178,43 @@ func ParseFEN(fenstr string) (*FEN, error) {
 
 // Returns new FENs for every valid move from the current FEN
 func (f *FEN) NextFENs() []*FEN {
-	return []*FEN{}
+	moves := f.ValidMoves()
+	result := []*FEN{}
+	for _, m := range moves {
+		result = append(result, f.ApplyMove(m))
+
+	}
+	return result
 }
 
 func (f *FEN) ValidMoves() []*Move {
-	return []*Move{}
+	result := []*Move{}
+	// TODO: check if check / mate / draw
+
+	// Pawns can move upwards/downwards
+	for _, pawnPos := range f.Pieces[f.ToMove][Pawn] {
+		skips := []int{}
+		if f.ToMove == White {
+			skips = append(skips, 1)
+			// TODO add 2 if rank = 2
+		} else {
+			skips = append(skips, -1)
+			// TODO add -2 if rank = 6
+		}
+		for _, rankDiff := range skips {
+			targetPos := Position(int(pawnPos) + rankDiff*8)
+			// TODO check position valid
+			if f.Board[targetPos] == NoPiece {
+				// TODO handle promotion
+				move := NewMove(pawnPos, targetPos)
+				result = append(result, move)
+			}
+		}
+		// TODO captures
+		// TODO en passant
+	}
+
+	return result
 }
 
 func (f *FEN) ApplyMove(move *Move) *FEN {

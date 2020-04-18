@@ -20,6 +20,18 @@ const (
 	WhiteKing   Piece = 'K'
 )
 
+type NormalizedPiece byte
+
+const (
+	NoNPiece NormalizedPiece = ' '
+	Pawn     NormalizedPiece = 'p'
+	Knight   NormalizedPiece = 'n'
+	Bishop   NormalizedPiece = 'b'
+	Rook     NormalizedPiece = 'r'
+	Queen    NormalizedPiece = 'q'
+	King     NormalizedPiece = 'k'
+)
+
 func (p Piece) Color() Color {
 	if 'a' <= p && p <= 'z' {
 		return Black
