@@ -198,30 +198,174 @@ func (f *FEN) NextFENs() []*FEN {
 	return result
 }
 
+func (f *FEN) GetAttacks(color Color) []*Move {
+	result := []*Move{}
+
+	for _, pawnPos := range f.Pieces[color][Pawn] {
+		positions := []Position{}
+		if color == White {
+			positions = append(positions, pawnPos+7)
+			positions = append(positions, pawnPos+9)
+		} else {
+			positions = append(positions, pawnPos-7)
+			positions = append(positions, pawnPos-9)
+		}
+		for _, p := range positions {
+			if f.Board[p] != NoPiece && f.Board[p].Color() == color.Opposite() {
+				result = append(result, NewMove(pawnPos, p))
+			}
+		}
+		// TODO en passant
+	}
+	for _, knightPos := range f.Pieces[color][Knight] {
+		for _, p := range knightPos.GetKnightMoves() {
+			if f.Board[p] != NoPiece && f.Board[p].Color() == color.Opposite() {
+				result = append(result, NewMove(knightPos, p))
+			}
+		}
+	}
+	for _, bishopPos := range f.Pieces[color][Bishop] {
+		for _, diagonal := range bishopPos.GetDiagonals() {
+			for _, p := range diagonal {
+				if f.Board[p] == NoPiece {
+					continue
+				} else if f.Board[p].Color() == color.Opposite() {
+					result = append(result, NewMove(bishopPos, p))
+				}
+				break
+			}
+		}
+	}
+	for _, rookPos := range f.Pieces[color][Rook] {
+		for _, line := range rookPos.GetLines() {
+			for _, p := range line {
+				if f.Board[p] == NoPiece {
+					continue
+				} else if f.Board[p].Color() == color.Opposite() {
+					result = append(result, NewMove(rookPos, p))
+				}
+				break
+			}
+		}
+	}
+	for _, queenPos := range f.Pieces[color][Queen] {
+		for _, diagonal := range queenPos.GetDiagonals() {
+			for _, p := range diagonal {
+				if f.Board[p] == NoPiece {
+					continue
+				} else if f.Board[p].Color() == color.Opposite() {
+					result = append(result, NewMove(queenPos, p))
+				}
+				break
+			}
+		}
+		for _, line := range queenPos.GetLines() {
+			for _, p := range line {
+				if f.Board[p] == NoPiece {
+					continue
+				} else if f.Board[p].Color() == color.Opposite() {
+					result = append(result, NewMove(queenPos, p))
+				}
+				break
+			}
+		}
+	}
+	// TODO king attacks only if piece is undefended
+	return result
+}
+
+func (f *FEN) GetIncomingAttacks() []*Move {
+	return f.GetAttacks(f.ToMove.Opposite())
+}
+
 func (f *FEN) ValidMoves() []*Move {
 	result := []*Move{}
 	// TODO: check if check / mate / draw
+	// TODO: make sure pieces aren't pinned
+
+	for _, attack := range f.GetAttacks(f.ToMove) {
+		result = append(result, attack)
+	}
 
 	for _, pawnPos := range f.Pieces[f.ToMove][Pawn] {
-		// Pawns can move upwards/downwards
 		skips := []int{}
 		if f.ToMove == White {
 			skips = append(skips, 1)
-			// TODO add 2 if rank = 2
+			if pawnPos.GetRank() == '2' {
+				skips = append(skips, 2)
+			}
 		} else {
 			skips = append(skips, -1)
-			// TODO add -2 if rank = 6
+			if pawnPos.GetRank() == '6' {
+				skips = append(skips, -2)
+			}
 		}
 		for _, rankDiff := range skips {
 			targetPos := Position(int(pawnPos) + rankDiff*8)
 			if f.Board[targetPos] == NoPiece {
-				// TODO handle promotion
-				move := NewMove(pawnPos, targetPos)
-				result = append(result, move)
+				if f.ToMove == White && pawnPos.GetRank() == '8' {
+					for _, p := range []Piece{WhiteKnight, WhiteQueen, WhiteRook, WhiteBishop} {
+						move := NewMove(pawnPos, targetPos)
+						move.Promote = p
+						result = append(result, move)
+					}
+				} else if f.ToMove == Black && pawnPos.GetRank() == '1' {
+					for _, p := range []Piece{BlackKnight, BlackQueen, BlackRook, BlackBishop} {
+						move := NewMove(pawnPos, targetPos)
+						move.Promote = p
+						result = append(result, move)
+					}
+				} else {
+					move := NewMove(pawnPos, targetPos)
+					result = append(result, move)
+				}
 			}
 		}
-		// TODO captures
-		// TODO en passant
+	}
+	for _, knightPos := range f.Pieces[f.ToMove][Knight] {
+		for _, p := range knightPos.GetKnightMoves() {
+			if f.Board[p] == NoPiece {
+				result = append(result, NewMove(knightPos, p))
+			}
+		}
+	}
+	for _, bishopPos := range f.Pieces[f.ToMove][Bishop] {
+		for _, diagonal := range bishopPos.GetDiagonals() {
+			for _, p := range diagonal {
+				if f.Board[p] == NoPiece {
+					result = append(result, NewMove(bishopPos, p))
+				}
+				break
+			}
+		}
+	}
+	for _, rookPos := range f.Pieces[f.ToMove][Rook] {
+		for _, line := range rookPos.GetLines() {
+			for _, p := range line {
+				if f.Board[p] == NoPiece {
+					result = append(result, NewMove(rookPos, p))
+				}
+				break
+			}
+		}
+	}
+	for _, queenPos := range f.Pieces[f.ToMove][Queen] {
+		for _, diagonal := range queenPos.GetDiagonals() {
+			for _, p := range diagonal {
+				if f.Board[p] == NoPiece {
+					result = append(result, NewMove(queenPos, p))
+				}
+				break
+			}
+		}
+		for _, line := range queenPos.GetLines() {
+			for _, p := range line {
+				if f.Board[p] == NoPiece {
+					result = append(result, NewMove(queenPos, p))
+				}
+				break
+			}
+		}
 	}
 
 	return result

@@ -154,6 +154,80 @@ func (p Position) GetFile() File {
 	return File(file + 'a')
 }
 
+func (p Position) GetKnightMoves() []Position {
+	result := []Position{}
+	file, rank := p.GetFile(), p.GetRank()
+	if file > 'a' {
+		// e.g. b3 -> a1
+		if rank > '2' {
+			result = append(result, p-17)
+		}
+		// e.g. b6 > a8
+		if rank < '7' {
+			result = append(result, p+15)
+		}
+		if file > 'b' {
+			// e.g. c2 > a1
+			if rank > '1' {
+				result = append(result, p-10)
+			}
+			// e.g. c7 > a8
+			if rank < '8' {
+				result = append(result, p+6)
+			}
+		}
+	}
+	if file < 'h' {
+		// e.g. g3 -> h1
+		if rank > '2' {
+			result = append(result, p-15)
+		}
+		// e.g. g6 -> h8
+		if rank < '7' {
+			result = append(result, p+17)
+		}
+		if file < 'g' {
+			// e.g. f2 -> h1
+			if rank > '1' {
+				result = append(result, p-6)
+			}
+			// e.g. f7 -> h8
+			if rank < '8' {
+				result = append(result, p+10)
+			}
+		}
+	}
+	return result
+}
+
+func (p Position) GetLines() [][]Position {
+	return [][]Position{
+		p.moveUntilBoundary('h', ' ', 1),
+		p.moveUntilBoundary('a', ' ', -1),
+		p.moveUntilBoundary(' ', '8', 8),
+		p.moveUntilBoundary(' ', '1', -8),
+	}
+}
+
+func (p Position) GetDiagonals() [][]Position {
+	return [][]Position{
+		p.moveUntilBoundary('a', '1', -9),
+		p.moveUntilBoundary('a', '8', 7),
+		p.moveUntilBoundary('h', '8', 9),
+		p.moveUntilBoundary('h', '1', -7),
+	}
+}
+
+func (p Position) moveUntilBoundary(fileBoundary File, rankBoundary Rank, move int) []Position {
+	result := []Position{}
+	next := p
+	for next.GetFile() != fileBoundary && next.GetRank() != rankBoundary {
+		next = Position(int(next) + move)
+		result = append(result, next)
+	}
+	return result
+}
+
 func PositionFromFileRank(f File, r Rank) Position {
 	// shift ['a'..'h'] and ['1'..'8'] to [0..7]
 	f -= FileA
