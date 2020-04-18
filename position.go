@@ -156,49 +156,52 @@ func (p Position) GetFile() File {
 }
 
 func (p Position) GetKnightMoves() []Position {
-	result := []Position{}
-	file, rank := p.GetFile(), p.GetRank()
-	if file > 'a' {
-		// e.g. b3 -> a1
-		if rank > '2' {
-			result = append(result, p-17)
-		}
-		// e.g. b6 > a8
-		if rank < '7' {
-			result = append(result, p+15)
-		}
-		if file > 'b' {
-			// e.g. c2 > a1
-			if rank > '1' {
-				result = append(result, p-10)
+	return PieceMoves[WhiteKnight][p]
+	/*
+		result := []Position{}
+		file, rank := p.GetFile(), p.GetRank()
+		if file > 'a' {
+			// e.g. b3 -> a1
+			if rank > '2' {
+				result = append(result, p-17)
 			}
-			// e.g. c7 > a8
-			if rank < '8' {
-				result = append(result, p+6)
+			// e.g. b6 > a8
+			if rank < '7' {
+				result = append(result, p+15)
 			}
-		}
-	}
-	if file < 'h' {
-		// e.g. g3 -> h1
-		if rank > '2' {
-			result = append(result, p-15)
-		}
-		// e.g. g6 -> h8
-		if rank < '7' {
-			result = append(result, p+17)
-		}
-		if file < 'g' {
-			// e.g. f2 -> h1
-			if rank > '1' {
-				result = append(result, p-6)
-			}
-			// e.g. f7 -> h8
-			if rank < '8' {
-				result = append(result, p+10)
+			if file > 'b' {
+				// e.g. c2 > a1
+				if rank > '1' {
+					result = append(result, p-10)
+				}
+				// e.g. c7 > a8
+				if rank < '8' {
+					result = append(result, p+6)
+				}
 			}
 		}
-	}
-	return result
+		if file < 'h' {
+			// e.g. g3 -> h1
+			if rank > '2' {
+				result = append(result, p-15)
+			}
+			// e.g. g6 -> h8
+			if rank < '7' {
+				result = append(result, p+17)
+			}
+			if file < 'g' {
+				// e.g. f2 -> h1
+				if rank > '1' {
+					result = append(result, p-6)
+				}
+				// e.g. f7 -> h8
+				if rank < '8' {
+					result = append(result, p+10)
+				}
+			}
+		}
+		return result
+	*/
 }
 
 func (p Position) GetLines() [][]Position {
@@ -324,7 +327,7 @@ func init() {
 		result += "}\n\n"
 
 		// TODO: pawn attacks
-		result += "var AttackVectors = map[Piece][][][]Position{\n"
+		result += "var MoveVectors = map[Piece][][][]Position{\n"
 		for _, mover := range singleMovers {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
 			result += fmt.Sprintf("\t%s: [][][]Position{\n", index)

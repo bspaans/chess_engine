@@ -663,7 +663,7 @@ var PieceMoves = map[Piece][][]Position{
 	},
 }
 
-var AttackVectors = map[Piece][][][]Position{
+var MoveVectors = map[Piece][][][]Position{
 	WhiteKing: [][][]Position{
 		[][]Position{
 			[]Position{B2},
