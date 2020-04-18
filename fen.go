@@ -473,11 +473,13 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 	for _, kingPos := range f.Pieces[f.ToMove][King] {
 		for _, p := range kingPos.GetKingMoves() {
+			// TODO only if p is not under attack
 			if f.Board[p] == NoPiece {
 				result = append(result, NewMove(kingPos, p))
 			}
 		}
 	}
+	// TODO castling
 	return result
 }
 
@@ -499,9 +501,7 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	}
 	movingPiece := board[move.From]
 	board[move.From] = NoPiece
-	if board[move.To] != NoPiece {
-		// TODO handle captures
-	}
+	capturedPiece := NormalizedPiece(board[move.To].Normalize())
 	board[move.To] = movingPiece
 	normalizedMovingPiece := NormalizedPiece(movingPiece.Normalize())
 
@@ -518,6 +518,10 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 					if move.Promote == NoPiece {
 						positions = append(positions, move.To)
 					}
+				} else if color != f.ToMove && piece == capturedPiece {
+					// skip captured pieces
+					continue
+
 				} else {
 					positions = append(positions, pos)
 				}

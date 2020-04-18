@@ -14,7 +14,7 @@ import (
 
 type Engine interface {
 	SetPosition(*FEN)
-	Start(engineOutput chan string, maxNodes int)
+	Start(engineOutput chan string, maxNodes int, maxDepth int)
 	Stop()
 }
 
@@ -90,13 +90,19 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 				return
 			case "go":
 				if cmdParts[1] == "infinite" {
-					uci.Engine.Start(engineOutput, -1)
+					uci.Engine.Start(engineOutput, -1, -1)
 				} else if cmdParts[1] == "nodes" {
 					nodes, err := strconv.Atoi(cmdParts[2])
 					if err != nil {
 						panic(err)
 					}
-					uci.Engine.Start(engineOutput, nodes)
+					uci.Engine.Start(engineOutput, nodes, -1)
+				} else if cmdParts[1] == "depth" {
+					depth, err := strconv.Atoi(cmdParts[2])
+					if err != nil {
+						panic(err)
+					}
+					uci.Engine.Start(engineOutput, -1, depth)
 				}
 				break
 			case "stop":
@@ -111,7 +117,14 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 						return
 					}
 					uci.Engine.SetPosition(fen)
-
+				} else if cmdParts[1] == "startpos" {
+					fenStr := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+					fen, err := ParseFEN(fenStr)
+					if err != nil {
+						log.Write([]byte("Error parsing fen: " + err.Error()))
+						return
+					}
+					uci.Engine.SetPosition(fen)
 				}
 			}
 		case out := <-engineOutput:
@@ -136,13 +149,14 @@ func (b *BSEngine) SetPosition(fen *FEN) {
 	b.StartingPosition = fen
 }
 
-func (b *BSEngine) Start(output chan string, maxNodes int) {
+func (b *BSEngine) Start(output chan string, maxNodes, maxDepth int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cancel = cancel
-	go b.start(ctx, output, maxNodes)
+	go b.start(ctx, output, maxNodes, maxDepth)
 }
 
-func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes int) {
+func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
+	// TODO keep a FEN map to take care off transpositions
 	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
 	depth := 0
@@ -181,6 +195,10 @@ func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes int) 
 
 					if len(item.Line) > depth && bestLine != nil {
 						tree.Prune()
+						if maxDepth > 0 && len(item.Line) >= maxDepth {
+							output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
+							return
+						}
 					}
 
 					tree.Insert(item.Line, score)
