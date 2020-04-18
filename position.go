@@ -33,7 +33,7 @@ const (
 type Position uint64
 
 const (
-	A1 Position = 1 << iota
+	A1 Position = iota
 	B1
 	C1
 	D1
@@ -145,49 +145,13 @@ func (p Position) String() string {
 }
 
 func (p Position) GetRank() Rank {
-	switch {
-	case p == NoPosition:
-		return NoRank
-	case p <= H1:
-		return Rank1
-	case p <= H2:
-		return Rank2
-	case p <= H3:
-		return Rank3
-	case p <= H4:
-		return Rank4
-	case p <= H5:
-		return Rank5
-	case p <= H6:
-		return Rank6
-	case p <= H7:
-		return Rank7
-	case p <= H8:
-		return Rank8
-	}
-	panic("unreachable")
+	rank := p/8 + 1
+	return Rank(rank + '0')
 }
 
 func (p Position) GetFile() File {
-	switch p % 255 {
-	case 1 << 7:
-		return FileH
-	case 1 << 6:
-		return FileG
-	case 1 << 5:
-		return FileF
-	case 1 << 4:
-		return FileE
-	case 1 << 3:
-		return FileD
-	case 1 << 2:
-		return FileC
-	case 1 << 1:
-		return FileB
-	case 1 << 0:
-		return FileA
-	}
-	return NoFile
+	file := p % 8
+	return File(file + 'a')
 }
 
 func PositionFromFileRank(f File, r Rank) Position {

@@ -136,7 +136,7 @@ func (b *BSEngine) start(ctx context.Context, output chan string) {
 		case result := <-evaluations:
 			// todo check for mate
 			output <- fmt.Sprintf("info score cp %f\n", result.Score)
-			output <- fmt.Sprintf("info depth %d pv %s\n", len(result.Line), result.Line)
+			output <- fmt.Sprintf("info depth %d pv %s\n", len(result.Line), Line(result.Line))
 		}
 	}
 }

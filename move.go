@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Move struct {
 	From    Position
@@ -17,7 +20,18 @@ func (m Move) String() string {
 
 func NewMove(from, to Position) *Move {
 	return &Move{
-		From: from,
-		To:   to,
+		From:    from,
+		To:      to,
+		Promote: NoPiece,
 	}
+}
+
+type Line []*Move
+
+func (l Line) String() string {
+	result := []string{}
+	for _, m := range l {
+		result = append(result, m.String())
+	}
+	return strings.Join(result, " ")
 }

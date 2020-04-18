@@ -25,6 +25,14 @@ func (c Color) String() string {
 	return " "
 }
 
+func (c Color) Opposite() Color {
+	if c == Black {
+		return White
+	} else {
+		return Black
+	}
+}
+
 type CastleStatus int8
 
 const (
@@ -138,6 +146,9 @@ func ParseFEN(fenstr string) (*FEN, error) {
 		}
 	}
 	fen.Board = make([]Piece, 64)
+	for i := 0; i < 64; i++ {
+		fen.Board[i] = NoPiece
+	}
 	fen.Pieces = map[Color]map[NormalizedPiece][]Position{
 		White: map[NormalizedPiece][]Position{},
 		Black: map[NormalizedPiece][]Position{},
@@ -153,7 +164,7 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			// if we have blank squares
 			j, err := strconv.Atoi(string(forStr[i]))
 			if err != nil {
-				fmt.Println(err)
+				return nil, err
 			}
 			x += j
 		} else {
@@ -191,8 +202,8 @@ func (f *FEN) ValidMoves() []*Move {
 	result := []*Move{}
 	// TODO: check if check / mate / draw
 
-	// Pawns can move upwards/downwards
 	for _, pawnPos := range f.Pieces[f.ToMove][Pawn] {
+		// Pawns can move upwards/downwards
 		skips := []int{}
 		if f.ToMove == White {
 			skips = append(skips, 1)
@@ -203,7 +214,6 @@ func (f *FEN) ValidMoves() []*Move {
 		}
 		for _, rankDiff := range skips {
 			targetPos := Position(int(pawnPos) + rankDiff*8)
-			// TODO check position valid
 			if f.Board[targetPos] == NoPiece {
 				// TODO handle promotion
 				move := NewMove(pawnPos, targetPos)
@@ -218,5 +228,50 @@ func (f *FEN) ValidMoves() []*Move {
 }
 
 func (f *FEN) ApplyMove(move *Move) *FEN {
-	return f
+	result := &FEN{}
+
+	board := make([]Piece, 64)
+	pieces := map[Color]map[NormalizedPiece][]Position{
+		White: map[NormalizedPiece][]Position{},
+		Black: map[NormalizedPiece][]Position{},
+	}
+	for i := 0; i < 64; i++ {
+		board[i] = f.Board[i]
+	}
+	movingPiece := board[move.From]
+	board[move.From] = NoPiece
+	board[move.To] = movingPiece
+	normalizedMovingPiece := NormalizedPiece(movingPiece.Normalize())
+	// TODO handle captures
+	// TODO handle promotions
+
+	for _, color := range []Color{White, Black} {
+		piecePositions := map[NormalizedPiece][]Position{}
+		for piece, oldPositions := range f.Pieces[color] {
+			positions := []Position{}
+			for _, pos := range oldPositions {
+				if color == f.ToMove && piece == normalizedMovingPiece && pos == move.From {
+					positions = append(positions, move.To)
+				} else {
+					positions = append(positions, pos)
+				}
+			}
+			if len(positions) > 0 {
+				piecePositions[piece] = positions
+			}
+		}
+		pieces[color] = piecePositions
+	}
+
+	result.Board = board
+	result.Pieces = pieces
+
+	result.ToMove = result.ToMove.Opposite()
+	result.WhiteCastleStatus = f.WhiteCastleStatus // TODO
+	result.BlackCastleStatus = f.BlackCastleStatus // TODO
+	result.EnPassantVulnerable = NoPosition        // TODO
+	result.HalfmoveClock = f.HalfmoveClock + 1
+	result.Fullmove = f.Fullmove
+	result.Line = append(f.Line, move)
+	return result
 }
