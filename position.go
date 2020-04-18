@@ -167,61 +167,19 @@ func (p Position) GetKnightMoves() []Position {
 }
 
 func (p Position) GetLines() [][]Position {
-	return [][]Position{
-		p.moveUntilBoundary('h', ' ', 1),
-		p.moveUntilBoundary('a', ' ', -1),
-		p.moveUntilBoundary(' ', '8', 8),
-		p.moveUntilBoundary(' ', '1', -8),
-	}
+	return MoveVectors[WhiteRook][p]
 }
 
 func (p Position) GetDiagonals() [][]Position {
-	return [][]Position{
-		p.moveUntilBoundary('a', '1', -9),
-		p.moveUntilBoundary('a', '8', 7),
-		p.moveUntilBoundary('h', '8', 9),
-		p.moveUntilBoundary('h', '1', -7),
-	}
+	return MoveVectors[WhiteBishop][p]
 }
 
 func (p Position) GetKingMoves() []Position {
-	result := []Position{}
-	for _, diag := range p.GetDiagonals() {
-		if len(diag) > 0 {
-			result = append(result, diag[0])
-		}
-	}
-	for _, line := range p.GetLines() {
-		if len(line) > 0 {
-			result = append(result, line[0])
-		}
-	}
-	return result
+	return PieceMoves[WhiteKing][p]
 }
 
 func (p Position) GetQueenMoves() [][]Position {
-	result := [][]Position{}
-	for _, diag := range p.GetDiagonals() {
-		if len(diag) > 0 {
-			result = append(result, diag)
-		}
-	}
-	for _, line := range p.GetLines() {
-		if len(line) > 0 {
-			result = append(result, line)
-		}
-	}
-	return result
-}
-
-func (p Position) moveUntilBoundary(fileBoundary File, rankBoundary Rank, move int) []Position {
-	result := []Position{}
-	next := p
-	for next.GetFile() != fileBoundary && next.GetRank() != rankBoundary {
-		next = Position(int(next) + move)
-		result = append(result, next)
-	}
-	return result
+	return MoveVectors[WhiteQueen][p]
 }
 
 func PositionFromFileRank(f File, r Rank) Position {
