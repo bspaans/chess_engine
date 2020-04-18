@@ -7,13 +7,14 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Engine interface {
 	SetPosition(*FEN)
-	Start(chan string)
+	Start(engineOutput chan string, maxNodes int)
 	Stop()
 }
 
@@ -68,9 +69,14 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 
 	for {
 		select {
-		case cmd := <-input:
-			log.Write([]byte(cmd))
+		case cmdLine := <-input:
+			log.Write([]byte(cmdLine))
 			log.Write([]byte{'\n'})
+			if cmdLine == "" {
+				continue
+			}
+			cmdParts := strings.Split(cmdLine, " ")
+			cmd := cmdParts[0]
 			switch cmd {
 			case "uci":
 				fmt.Println("id name " + uci.Name)
@@ -82,21 +88,30 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 				break
 			case "quit":
 				return
-			case "go infinite":
-				uci.Engine.Start(engineOutput)
+			case "go":
+				if cmdParts[1] == "infinite" {
+					uci.Engine.Start(engineOutput, -1)
+				} else if cmdParts[1] == "nodes" {
+					nodes, err := strconv.Atoi(cmdParts[2])
+					if err != nil {
+						panic(err)
+					}
+					uci.Engine.Start(engineOutput, nodes)
+				}
 				break
 			case "stop":
 				uci.Engine.Stop()
 				break
-			default:
-				if strings.HasPrefix(cmd, "position fen ") {
-					fenStr := cmd[len("position fen "):]
+			case "position":
+				if cmdParts[1] == "fen" {
+					fenStr := strings.Join(cmdParts[2:], " ")
 					fen, err := ParseFEN(fenStr)
 					if err != nil {
 						log.Write([]byte("Error parsing fen: " + err.Error()))
 						return
 					}
 					uci.Engine.SetPosition(fen)
+
 				}
 			}
 		case out := <-engineOutput:
@@ -121,13 +136,13 @@ func (b *BSEngine) SetPosition(fen *FEN) {
 	b.StartingPosition = fen
 }
 
-func (b *BSEngine) Start(output chan string) {
+func (b *BSEngine) Start(output chan string, maxNodes int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cancel = cancel
-	go b.start(ctx, output)
+	go b.start(ctx, output, maxNodes)
 }
 
-func (b *BSEngine) start(ctx context.Context, output chan string) {
+func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes int) {
 	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
 	depth := 0
@@ -138,6 +153,7 @@ func (b *BSEngine) start(ctx context.Context, output chan string) {
 	for {
 		select {
 		case <-ctx.Done():
+			output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
 			return
 		case <-timer.C:
 			totalNodes += nodes
@@ -164,8 +180,6 @@ func (b *BSEngine) start(ctx context.Context, output chan string) {
 					}
 
 					if len(item.Line) > depth && bestLine != nil {
-						bestResult := bestLine.GetBestLine()
-						fmt.Println("Pruning with best line", Line(bestResult.Line))
 						tree.Prune()
 					}
 
@@ -173,10 +187,14 @@ func (b *BSEngine) start(ctx context.Context, output chan string) {
 					if bestLine != tree.BestLine || len(item.Line) > depth {
 						bestLine = tree.BestLine
 						bestResult := bestLine.GetBestLine()
-						output <- fmt.Sprintf("info score cp %d", int(math.Round(bestResult.Score*100)))
-						output <- fmt.Sprintf("info depth %d pv %s", len(bestResult.Line), Line(bestResult.Line))
+						output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), Line(bestResult.Line))
 						depth = len(item.Line)
 					}
+				}
+
+				if totalNodes+nodes >= maxNodes {
+					output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
+					return
 				}
 
 			} else {
