@@ -244,11 +244,7 @@ func (p Position) moveUntilBoundary(fileBoundary File, rankBoundary Rank, move i
 }
 
 func PositionFromFileRank(f File, r Rank) Position {
-	// shift ['a'..'h'] and ['1'..'8'] to [0..7]
-	f -= FileA
-	r -= Rank1
-	if f > 7 || r > 7 {
-		return NoPosition
-	}
-	return Position(1) << (uint(r*8) + uint(f))
+	rank := int(r - '1')
+	file := int(f - 'a')
+	return Position(rank*8 + file)
 }

@@ -34,7 +34,7 @@ func ParseMove(moveStr string) (*Move, error) {
 	if err != nil {
 		return nil, err
 	}
-	to, err := ParsePosition(moveStr[0:2])
+	to, err := ParsePosition(moveStr[2:4])
 	if err != nil {
 		return nil, err
 	}

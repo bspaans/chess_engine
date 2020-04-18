@@ -36,5 +36,26 @@ func Test_Rank(t *testing.T) {
 			t.Errorf("Expecting rank %b got %b for %s", expected, pos.GetRank(), pos)
 		}
 	}
+}
 
+func Test_ParsePosition(t *testing.T) {
+	cases := map[string]Position{
+		"g1": G1,
+		"g2": G2,
+		"g3": G3,
+		"G1": G1,
+		"h3": H3,
+		"h4": H4,
+		"a8": A8,
+	}
+
+	for str, expected := range cases {
+		pos, err := ParsePosition(str)
+		if err != nil {
+			t.Error(err)
+		}
+		if pos != expected {
+			t.Errorf("Expecting pos %s got %s for %s", expected, pos, str)
+		}
+	}
 }
