@@ -42,6 +42,15 @@ func (p Piece) Color() Color {
 	return NoColor
 }
 
+func (p Piece) SetColor(c Color) Piece {
+	pStr := []byte{byte(p)}
+	if c == Black {
+		return Piece(bytes.ToLower(pStr)[0])
+	} else {
+		return Piece(bytes.ToUpper(pStr)[0])
+	}
+}
+
 func (p Piece) Normalize() Piece {
 	return Piece(bytes.ToLower([]byte{byte(p)})[0])
 }

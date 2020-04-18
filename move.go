@@ -11,6 +11,14 @@ type Move struct {
 	Promote Piece
 }
 
+func NewMove(from, to Position) *Move {
+	return &Move{
+		From:    from,
+		To:      to,
+		Promote: NoPiece,
+	}
+}
+
 func (m Move) String() string {
 	if m.Promote == NoPiece {
 		return fmt.Sprintf("%v%v", m.From, m.To)
@@ -18,12 +26,20 @@ func (m Move) String() string {
 	return fmt.Sprintf("%v%v%v", m.From, m.To, m.Promote)
 }
 
-func NewMove(from, to Position) *Move {
-	return &Move{
-		From:    from,
-		To:      to,
-		Promote: NoPiece,
+func (m *Move) ToPromotions() []*Move {
+	rank := m.To.GetRank()
+	if rank == '1' || rank == '8' {
+		color := White
+		if rank == '1' {
+			color = Black
+		}
+		result := make([]*Move, 4)
+		for i, piece := range []Piece{WhiteKnight, WhiteQueen, WhiteRook, WhiteBishop} {
+			result[i] = NewMove(m.From, m.To)
+			result[i].Promote = piece.SetColor(color)
+		}
 	}
+	return nil
 }
 
 func ParseMove(moveStr string) (*Move, error) {

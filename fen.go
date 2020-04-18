@@ -202,40 +202,18 @@ func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*
 	result := []*Move{}
 
 	for _, pawnPos := range f.Pieces[color][Pawn] {
-		positions := []Position{}
-		file, rank := pawnPos.GetFile(), pawnPos.GetRank()
-		if color == White {
-			if file > 'a' {
-				positions = append(positions, pawnPos+7)
-			}
-			if file < 'h' {
-				positions = append(positions, pawnPos+9)
-			}
-		} else {
-			if file < 'h' {
-				positions = append(positions, pawnPos-7)
-			}
-			if file > 'a' {
-				positions = append(positions, pawnPos-9)
-			}
-		}
+		positions := PawnAttacks[color][pawnPos]
 		for _, p := range positions {
 			if cond(p) {
-				// handle promotions
-				if color == White && rank == '7' {
-					for _, piece := range []Piece{WhiteKnight, WhiteQueen, WhiteRook, WhiteBishop} {
-						move := NewMove(pawnPos, p)
-						move.Promote = piece
-						result = append(result, move)
-					}
-				} else if color == Black && rank == '2' {
-					for _, piece := range []Piece{BlackKnight, BlackQueen, BlackRook, BlackBishop} {
-						move := NewMove(pawnPos, p)
-						move.Promote = piece
-						result = append(result, move)
-					}
+				move := NewMove(pawnPos, p)
+				// Handle promotions
+				promotions := move.ToPromotions()
+				if promotions == nil {
+					result = append(result, move)
 				} else {
-					result = append(result, NewMove(pawnPos, p))
+					for _, m := range promotions {
+						result = append(result, m)
+					}
 				}
 			}
 		}

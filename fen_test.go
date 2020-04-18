@@ -113,7 +113,7 @@ func Test_ValidMoves(t *testing.T) {
 }
 func Test_ValidMoves_table(t *testing.T) {
 	cases := [][]string{
-		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1QK2 w kq - 34 1", "f1g2 h2e2"},
+		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1QK2 w kq - 34 1", "f1g2 h2e2 e1e2"},
 	}
 	for _, testCase := range cases {
 		fenStr, movesStr := testCase[0], testCase[1]
@@ -142,7 +142,7 @@ func Test_ValidMoves_table(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("Unexpected valid move %s in %v, expecting %v", v, validMoves, moves)
+				t.Errorf("Unexpected valid move %s in %v for %s, expecting %v", v, validMoves, fenStr, moves)
 			}
 		}
 

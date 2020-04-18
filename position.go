@@ -154,7 +154,33 @@ func (p Position) GetFile() File {
 	file := p % 8
 	return File(file + 'a')
 }
+func (p Position) GetWhitePawnAttacks() []Position {
+	positions := []Position{}
+	file, rank := p.GetFile(), p.GetRank()
+	if rank > '1' && rank < '8' {
+		if file > 'a' {
+			positions = append(positions, p+7)
+		}
+		if file < 'h' {
+			positions = append(positions, p+9)
+		}
+	}
+	return positions
+}
 
+func (p Position) GetBlackPawnAttacks() []Position {
+	positions := []Position{}
+	file, rank := p.GetFile(), p.GetRank()
+	if rank > '1' && rank < '8' {
+		if file > 'a' {
+			positions = append(positions, p-9)
+		}
+		if file < 'h' {
+			positions = append(positions, p-7)
+		}
+	}
+	return positions
+}
 func (p Position) GetWhitePawnMoves() []Position {
 	return PieceMoves[WhitePawn][p]
 }
@@ -228,6 +254,10 @@ func init() {
 			[]interface{}{"WhiteQueen", func(p Position) [][]Position { return p.GetQueenMoves() }},
 			[]interface{}{"BlackQueen", func(p Position) [][]Position { return p.GetQueenMoves() }},
 		}
+		pawnAttacks := [][]interface{}{
+			[]interface{}{"White", func(p Position) []Position { return p.GetWhitePawnAttacks() }},
+			[]interface{}{"Black", func(p Position) []Position { return p.GetBlackPawnAttacks() }},
+		}
 		for _, mover := range singleMovers {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
 			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
@@ -273,6 +303,18 @@ func init() {
 					result += fmt.Sprintf("\t\t\t%s,\n", formatMoves(moves))
 				}
 				result += "\t\t},\n"
+			}
+			result += "\t},\n"
+		}
+		result += "}\n\n"
+
+		result += "var PawnAttacks = map[Color][][]Position{\n"
+		for _, mover := range pawnAttacks {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatMoves(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
 			}
 			result += "\t},\n"
 		}
