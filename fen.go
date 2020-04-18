@@ -320,7 +320,7 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	// 1. move the king
 	for _, kingPos := range f.Pieces[f.ToMove][King] {
 		for _, p := range kingPos.GetKingMoves() {
-			if !f.AttacksSquare(f.ToMove.Opposite(), p) {
+			if (f.Board[p] == NoPiece || f.Board[p].Color() == f.ToMove.Opposite()) && !f.AttacksSquare(f.ToMove.Opposite(), p) {
 				result = append(result, NewMove(kingPos, p))
 			}
 		}
@@ -400,7 +400,11 @@ func (f *FEN) FENString() string {
 	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
 		castleStatus = strings.Trim(castleStatus, "-")
 	}
-	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, f.EnPassantVulnerable.String(), f.HalfmoveClock, f.Fullmove)
+	enPassant := "-"
+	if f.EnPassantVulnerable != 0 {
+		enPassant = f.EnPassantVulnerable.String()
+	}
+	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, enPassant, f.HalfmoveClock, f.Fullmove)
 }
 
 func (f *FEN) IsMate() bool {
@@ -412,7 +416,8 @@ func (f *FEN) IsMate() bool {
 		}
 	}
 	if len(checks) > 0 {
-		return len(f.validMovesInCheck(checks)) == 0
+		moves := f.validMovesInCheck(checks)
+		return len(moves) == 0
 	} else {
 		return false
 	}
@@ -556,6 +561,73 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 		board[move.To] = move.Promote
 	}
 
+	wCastle := f.WhiteCastleStatus
+	bCastle := f.BlackCastleStatus
+	switch movingPiece {
+	case BlackRook:
+		switch move.From {
+		case A8:
+			switch bCastle {
+			case Both:
+				bCastle = Kingside
+			case Queenside:
+				bCastle = None
+			}
+		case H8:
+			switch bCastle {
+			case Both:
+				bCastle = Queenside
+			case Kingside:
+				bCastle = None
+			}
+		}
+	case BlackKing:
+		// handle castles
+		if move.From == E8 && move.To == G8 {
+			if bCastle != Kingside && bCastle != Both {
+				panic("Invalid castle")
+			}
+			// TODO: implement castle
+		} else if move.From == E8 && move.To == C8 {
+			if bCastle != Queenside && bCastle != Both {
+				panic("Invalid castle")
+			}
+			// TODO: implement castle
+		}
+		bCastle = None
+	case WhiteRook:
+		switch move.From {
+		case A1:
+			switch wCastle {
+			case Both:
+				wCastle = Kingside
+			case Queenside:
+				wCastle = None
+			}
+		case H1:
+			switch wCastle {
+			case Both:
+				wCastle = Queenside
+			case Kingside:
+				wCastle = None
+			}
+		}
+	case WhiteKing:
+		// handle castles
+		if move.From == E1 && move.To == G1 {
+			if wCastle != Kingside && wCastle != Both {
+				panic("invalid castle")
+			}
+			// TODO handle castle
+		} else if move.From == E1 && move.To == C1 {
+			if wCastle != Queenside && wCastle != Both {
+				panic("invalid castle")
+			}
+			// TODO handle castle
+		}
+		wCastle = None
+	}
+
 	for _, color := range []Color{White, Black} {
 		piecePositions := map[NormalizedPiece][]Position{}
 		for piece, oldPositions := range f.Pieces[color] {
@@ -594,11 +666,11 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	result.Pieces = pieces
 
 	result.ToMove = f.ToMove.Opposite()
-	result.WhiteCastleStatus = f.WhiteCastleStatus // TODO
-	result.BlackCastleStatus = f.BlackCastleStatus // TODO
-	result.EnPassantVulnerable = NoPosition        // TODO
+	result.WhiteCastleStatus = wCastle
+	result.BlackCastleStatus = bCastle
+	result.EnPassantVulnerable = NoPosition // TODO
 	result.HalfmoveClock = f.HalfmoveClock + 1
-	result.Fullmove = f.Fullmove
+	result.Fullmove = f.Fullmove // TODO
 	result.Line = line
 	return result
 }

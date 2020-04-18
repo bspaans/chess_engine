@@ -1,6 +1,9 @@
 package chess_engine
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func Test_ParseFEN(t *testing.T) {
 	unit, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
@@ -49,11 +52,29 @@ func Test_ParseFEN(t *testing.T) {
 	}
 }
 
+func Test_IsMate(t *testing.T) {
+	cases := []string{
+		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
+		"1nb1k1nr/1p3ppp/2p5/3pp3/KpP1P1PP/q4P2/P1P5/5B1R w k - 36 1",
+	}
+	for _, expected := range cases {
+		unit, err := ParseFEN(expected)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !unit.IsMate() {
+			moves := unit.ValidMoves()
+			t.Errorf("Expecting mate in '%s', but the engine is suggesting moves: %v", expected, moves)
+		}
+	}
+}
+
 func Test_FENString(t *testing.T) {
 	cases := []string{
 		"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 		"8/P7/8/8/8/8/8/K7 w KQkq - 0 1",
 		"8/1P6/8/8/8/8/8/K7 w KQkq - 0 1",
+		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
 	}
 	for _, expected := range cases {
 		unit, err := ParseFEN(expected)
@@ -75,6 +96,43 @@ func Test_ValidMoves(t *testing.T) {
 	moves := unit.ValidMoves()
 	if len(moves) == 0 {
 		t.Errorf("Expecting at least one valid move")
+	}
+}
+func Test_ValidMoves_table(t *testing.T) {
+	cases := [][]string{
+		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1QK2 w kq - 34 1", "f1g2 h2e2"},
+	}
+	for _, testCase := range cases {
+		fenStr, movesStr := testCase[0], testCase[1]
+		unit, err := ParseFEN(fenStr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		moves := []*Move{}
+		for _, moveStr := range strings.Split(movesStr, " ") {
+			if moveStr == "" {
+				continue
+			}
+			move, err := ParseMove(moveStr)
+			if err != nil {
+				t.Fatal(err)
+			}
+			moves = append(moves, move)
+		}
+		validMoves := unit.ValidMoves()
+		for _, v := range validMoves {
+			found := false
+			for _, m := range moves {
+				if v.From == m.From && v.To == m.To && v.Promote == m.Promote {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Unexpected valid move %s in %v, expecting %v", v, validMoves, moves)
+			}
+		}
+
 	}
 }
 
@@ -143,6 +201,48 @@ func Test_ApplyMove(t *testing.T) {
 	}
 	if newFEN2.Line[1].From != E7 || newFEN2.Line[1].To != E6 {
 		t.Errorf("Expecting a move e7e6")
+	}
+}
+
+func Test_ApplyMove_table(t *testing.T) {
+	cases := [][]string{
+		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K3 b kq - 35 1", "b6g1", "rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1", "true"},
+	}
+	for _, testCase := range cases {
+		startPos, moveStr, endPos, isMate := testCase[0], testCase[1], testCase[2], testCase[3] == "true"
+		unit, err := ParseFEN(startPos)
+		if err != nil {
+			t.Fatal(err)
+		}
+		move, err := ParseMove(moveStr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		newFEN := unit.ApplyMove(move)
+		newFENstr := newFEN.FENString()
+		if newFENstr != endPos {
+			t.Errorf("Expecting '%s' got '%s'", endPos, newFENstr)
+		}
+		fromPiece := unit.Board[move.From]
+		if newFEN.Board[move.To] != fromPiece {
+			t.Errorf("Expecting %b at %s", byte(fromPiece), move.To.String())
+		}
+
+		normFromPiece := NormalizedPiece(fromPiece.Normalize())
+		found := false
+		piecePositions := newFEN.Pieces[fromPiece.Color()][normFromPiece]
+		for _, pos := range piecePositions {
+			if pos == move.To {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("Expecting %s in %v", move.To, piecePositions)
+		}
+
+		if newFEN.IsMate() != isMate {
+			t.Errorf("Expecting mate in %v", endPos)
+		}
 	}
 }
 

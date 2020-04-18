@@ -1,6 +1,10 @@
 package chess_engine
 
-import "fmt"
+import (
+	"fmt"
+	"io/ioutil"
+	"strings"
+)
 
 type Rank byte
 
@@ -136,9 +140,6 @@ func parsePosition(pstr string) (Position, bool) {
 }
 
 func (p Position) String() string {
-	if NoPosition == p {
-		return "-"
-	}
 	f := byte(p.GetFile())
 	r := byte(p.GetRank())
 	return string([]byte{f, r})
@@ -233,6 +234,21 @@ func (p Position) GetKingMoves() []Position {
 	return result
 }
 
+func (p Position) GetQueenMoves() [][]Position {
+	result := [][]Position{}
+	for _, diag := range p.GetDiagonals() {
+		if len(diag) > 0 {
+			result = append(result, diag)
+		}
+	}
+	for _, line := range p.GetLines() {
+		if len(line) > 0 {
+			result = append(result, line)
+		}
+	}
+	return result
+}
+
 func (p Position) moveUntilBoundary(fileBoundary File, rankBoundary Rank, move int) []Position {
 	result := []Position{}
 	next := p
@@ -247,4 +263,97 @@ func PositionFromFileRank(f File, r Rank) Position {
 	rank := int(r - '1')
 	file := int(f - 'a')
 	return Position(rank*8 + file)
+}
+
+func init() {
+	if false {
+		formatPos := func(p Position) string {
+			return strings.ToUpper(p.String())
+		}
+
+		formatMoves := func(moves []Position) string {
+			result := []string{}
+			for _, m := range moves {
+				result = append(result, formatPos(m))
+			}
+			return "[]Position{" + strings.Join(result, ", ") + "}"
+		}
+		formatLines := func(lines [][]Position) string {
+			result := []string{}
+			for _, moves := range lines {
+				for _, m := range moves {
+					result = append(result, formatPos(m))
+				}
+			}
+			return "[]Position{" + strings.Join(result, ", ") + "}"
+		}
+		// TODO pawns
+		result := "package chess_engine\n\nvar PieceMoves = map[Piece][][]Position{\n"
+		singleMovers := [][]interface{}{
+			[]interface{}{"WhiteKing", func(p Position) []Position { return p.GetKingMoves() }},
+			[]interface{}{"BlackKing", func(p Position) []Position { return p.GetKingMoves() }},
+			[]interface{}{"WhiteKnight", func(p Position) []Position { return p.GetKnightMoves() }},
+			[]interface{}{"BlackKnight", func(p Position) []Position { return p.GetKnightMoves() }},
+		}
+		multiMovers := [][]interface{}{
+			[]interface{}{"WhiteBishop", func(p Position) [][]Position { return p.GetDiagonals() }},
+			[]interface{}{"BlackBishop", func(p Position) [][]Position { return p.GetDiagonals() }},
+			[]interface{}{"WhiteRook", func(p Position) [][]Position { return p.GetLines() }},
+			[]interface{}{"BlackRook", func(p Position) [][]Position { return p.GetLines() }},
+			[]interface{}{"WhiteQueen", func(p Position) [][]Position { return p.GetQueenMoves() }},
+			[]interface{}{"BlackQueen", func(p Position) [][]Position { return p.GetQueenMoves() }},
+		}
+		for _, mover := range singleMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatMoves(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
+			}
+			result += "\t},\n"
+		}
+		for _, mover := range multiMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatLines(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
+			}
+			result += "\t},\n"
+		}
+		result += "}\n\n"
+
+		// TODO: pawn attacks
+		result += "var AttackVectors = map[Piece][][][]Position{\n"
+		for _, mover := range singleMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
+			result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := moverFunc(Position(i))
+				result += "\t\t[][]Position{\n"
+				for _, m := range moves {
+					result += fmt.Sprintf("\t\t\t%s,\n", formatMoves([]Position{m}))
+				}
+				result += "\t\t},\n"
+			}
+			result += "\t},\n"
+		}
+		for _, mover := range multiMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
+			result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				lines := moverFunc(Position(i))
+				result += "\t\t[][]Position{\n"
+				for _, moves := range lines {
+					result += fmt.Sprintf("\t\t\t%s,\n", formatMoves(moves))
+				}
+				result += "\t\t},\n"
+			}
+			result += "\t},\n"
+		}
+		result += "}\n\n"
+		fmt.Println(result)
+		ioutil.WriteFile("tables.go", []byte(result), 0644)
+		fmt.Println("Written tables.go")
+	}
 }

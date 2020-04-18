@@ -29,6 +29,9 @@ func (e *Engine) Start() error {
 	if e.started {
 		return nil
 	}
+	return e.Restart()
+}
+func (e *Engine) Restart() error {
 	fmt.Println("Starting", e.Name)
 	cmd := exec.Command(e.Path)
 	stdin, err := cmd.StdinPipe()
@@ -60,17 +63,25 @@ func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
 	str := fen.FENString()
 	fmt.Println(str)
 	e.Send("position fen " + str)
-	e.Send("go depth 5")
-	return e.ReadUntilBestMove()
+	e.Send("go depth 2")
+	return e.ReadUntilBestMove(fen)
 }
 
-func (e *Engine) ReadUntilBestMove() *chess_engine.Move {
+func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 	for {
 		text, err := e.stdout.ReadString('\n')
 		if err != nil {
-			panic(err)
+			if o := e.cmd.Wait(); o != nil {
+				fmt.Println("Command", e.Name, "exited with error: "+o.Error())
+			}
+			if err := e.Restart(); err != nil {
+				panic(err)
+			}
+			panic("to")
+			return e.Play(fen)
 		}
 		line := strings.TrimSpace(text)
+		fmt.Println(line)
 		cmdParts := strings.Split(line, " ")
 		cmd := cmdParts[0]
 		if cmd == "bestmove" {
@@ -144,19 +155,26 @@ func main() {
 		}
 
 		for game.Result == Unfinished {
+			fmt.Println("White to play")
 			move := game.White.Play(fen)
 			fmt.Printf("%s (white) plays %s\n", game.White.Name, move.String())
 			fen = fen.ApplyMove(move)
 			if fen.IsMate() {
+				fmt.Println("White won.")
 				standing[game.White] += 1
 				game.Result = WhiteWins
 			} else {
+				fmt.Println("Not mate: " + fen.FENString())
+				fmt.Println("Black to play")
 				move = game.Black.Play(fen)
 				fmt.Printf("%s (black) plays %s\n", game.Black.Name, move.String())
 				fen = fen.ApplyMove(move)
 				if fen.IsMate() {
+					fmt.Println("Black won.")
 					standing[game.Black] += 1
 					game.Result = BlackWins
+				} else {
+					fmt.Println("Not mate: " + fen.FENString())
 				}
 			}
 		}
