@@ -422,20 +422,7 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 
 	for _, pawnPos := range f.Pieces[f.ToMove][Pawn] {
-		skips := []int{}
-		if f.ToMove == White {
-			skips = append(skips, 1)
-			if pawnPos.GetRank() == '2' {
-				skips = append(skips, 2)
-			}
-		} else {
-			skips = append(skips, -1)
-			if pawnPos.GetRank() == '7' {
-				skips = append(skips, -2)
-			}
-		}
-		for _, rankDiff := range skips {
-			targetPos := Position(int(pawnPos) + rankDiff*8)
+		for _, targetPos := range PieceMoves[f.Board[pawnPos]][pawnPos] {
 			if f.Board[targetPos] == NoPiece {
 				// handle promotions
 				if f.ToMove == White && targetPos.GetRank() == '8' {

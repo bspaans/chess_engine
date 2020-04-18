@@ -156,26 +156,10 @@ func (p Position) GetFile() File {
 }
 
 func (p Position) GetWhitePawnMoves() []Position {
-	result := []Position{}
-	rank := p.GetRank()
-	if rank >= '2' && rank < '8' {
-		result = append(result, p+8)
-	}
-	if rank == '2' {
-		result = append(result, p+16)
-	}
-	return result
+	return PieceMoves[WhitePawn][p]
 }
 func (p Position) GetBlackPawnMoves() []Position {
-	result := []Position{}
-	rank := p.GetRank()
-	if rank >= '2' && rank < '8' {
-		result = append(result, p-8)
-	}
-	if rank == '7' {
-		result = append(result, p-16)
-	}
-	return result
+	return PieceMoves[BlackPawn][p]
 }
 
 func (p Position) GetKnightMoves() []Position {
