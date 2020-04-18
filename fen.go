@@ -229,6 +229,11 @@ func (f *FEN) ValidMoves() []*Move {
 
 func (f *FEN) ApplyMove(move *Move) *FEN {
 	result := &FEN{}
+	line := make([]*Move, len(f.Line)+1)
+	for i, m := range f.Line {
+		line[i] = m
+	}
+	line[len(f.Line)] = move
 
 	board := make([]Piece, 64)
 	pieces := map[Color]map[NormalizedPiece][]Position{
@@ -266,12 +271,12 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	result.Board = board
 	result.Pieces = pieces
 
-	result.ToMove = result.ToMove.Opposite()
+	result.ToMove = f.ToMove.Opposite()
 	result.WhiteCastleStatus = f.WhiteCastleStatus // TODO
 	result.BlackCastleStatus = f.BlackCastleStatus // TODO
 	result.EnPassantVulnerable = NoPosition        // TODO
 	result.HalfmoveClock = f.HalfmoveClock + 1
 	result.Fullmove = f.Fullmove
-	result.Line = append(f.Line, move)
+	result.Line = line
 	return result
 }

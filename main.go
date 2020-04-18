@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 type Engine interface {
@@ -98,7 +100,7 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 				}
 			}
 		case out := <-engineOutput:
-			log.Write([]byte(">>> " + out))
+			log.Write([]byte(">>> " + out + "\n"))
 			fmt.Println(out)
 		}
 	}
@@ -126,45 +128,57 @@ func (b *BSEngine) Start(output chan string) {
 }
 
 func (b *BSEngine) start(ctx context.Context, output chan string) {
-	evaluations := make(chan *EvalResult)
-	defer close(evaluations)
-	go b.eval(ctx, evaluations)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case result := <-evaluations:
-			// todo check for mate
-			output <- fmt.Sprintf("info score cp %f\n", result.Score)
-			output <- fmt.Sprintf("info depth %d pv %s\n", len(result.Line), Line(result.Line))
-		}
-	}
-}
-
-func (b *BSEngine) eval(ctx context.Context, output chan *EvalResult) {
+	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
+	timer := time.NewTimer(time.Second)
+	depth := 0
+	nodes := 0
+	totalNodes := 0
+	var bestLine *EvalTree
 	queue := []*FEN{b.StartingPosition}
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-timer.C:
+			totalNodes += nodes
+			output <- fmt.Sprintf("info ns %d nodes %d", nodes, totalNodes)
+			nodes = 0
+			timer = time.NewTimer(time.Second)
 		default:
 			if len(queue) > 0 {
+				nodes++
 				item := queue[0]
 				nextFENs := item.NextFENs()
-				score := 0.0
-				if len(nextFENs) == 0 {
-					score = math.Inf(1)
-				} else {
-					score = b.heuristicScorePosition(item)
-				}
-
-				output <- NewEvalResult(item.Line, score)
-
 				for _, f := range nextFENs {
 					queue = append(queue, f)
 				}
-
 				queue = queue[1:]
+
+				if len(item.Line) != 0 {
+
+					score := 0.0
+					if len(nextFENs) == 0 {
+						score = math.Inf(1)
+					} else {
+						score = b.heuristicScorePosition(item)
+					}
+
+					if len(item.Line) > depth && bestLine != nil {
+						bestResult := bestLine.GetBestLine()
+						fmt.Println("Pruning with best line", Line(bestResult.Line))
+						tree.Prune()
+					}
+
+					tree.Insert(item.Line, score)
+					if bestLine != tree.BestLine || len(item.Line) > depth {
+						bestLine = tree.BestLine
+						bestResult := bestLine.GetBestLine()
+						output <- fmt.Sprintf("info score cp %d", int(math.Round(bestResult.Score*100)))
+						output <- fmt.Sprintf("info depth %d pv %s", len(bestResult.Line), Line(bestResult.Line))
+						depth = len(item.Line)
+					}
+				}
+
 			} else {
 				return
 			}
@@ -173,21 +187,14 @@ func (b *BSEngine) eval(ctx context.Context, output chan *EvalResult) {
 }
 
 func (b *BSEngine) heuristicScorePosition(f *FEN) float64 {
-	return 0.0
+	// material
+	// space
+	// time
+	// king safety
+
+	return rand.NormFloat64()
 }
 
 func (b *BSEngine) Stop() {
 	b.Cancel()
-}
-
-type EvalResult struct {
-	Score float64
-	Line  []*Move
-}
-
-func NewEvalResult(line []*Move, score float64) *EvalResult {
-	return &EvalResult{
-		Score: score,
-		Line:  line,
-	}
 }
