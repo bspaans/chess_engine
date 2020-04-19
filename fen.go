@@ -370,14 +370,10 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	}
 	line[len(f.Line)] = move
 
-	board := make([]Piece, 64)
-	for i := 0; i < 64; i++ {
-		board[i] = f.Board[i]
-	}
-	movingPiece := board[move.From]
-	board[move.From] = NoPiece
-	capturedPiece := board[move.To].ToNormalizedPiece()
-	board[move.To] = movingPiece
+	board := f.Board.Copy()
+
+	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
+	movingPiece := board[move.To]
 	normalizedMovingPiece := movingPiece.ToNormalizedPiece()
 
 	if move.Promote != NoPiece {
@@ -388,19 +384,15 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	switch movingPiece {
 	case BlackKing:
 		if move.From == E8 && move.To == G8 {
-			board[F8] = board[H8]
-			board[H8] = NoPiece
+			board.ApplyMove(H8, F8)
 		} else if move.From == E8 && move.To == C8 {
-			board[D8] = board[A8]
-			board[A8] = NoPiece
+			board.ApplyMove(A8, D8)
 		}
 	case WhiteKing:
 		if move.From == E1 && move.To == G1 {
-			board[F1] = board[H1]
-			board[H1] = NoPiece
+			board.ApplyMove(H1, F1)
 		} else if move.From == E1 && move.To == C1 {
-			board[D1] = board[A1]
-			board[A1] = NoPiece
+			board.ApplyMove(A1, D1)
 		}
 	}
 

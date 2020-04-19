@@ -10,8 +10,8 @@ each other in tournament mode (see `tournament/`)
 ## Status
 
 * All moves are supported currently, except the engine won't suggest *en
-  passant* and *castling* yet. Otherwise the full rules of chess are
-  implemented, and you are able to find all valid moves in a position.
+  passant* yet. Otherwise the full rules of chess are implemented, and you are
+  able to find all valid moves in a position.
 * The search function is really naive/brute force and uses a lot of memory, but
   we are able to complete games against stockfish. I suggest limiting the depth 
   or number of nodes when letting the engine ponder.

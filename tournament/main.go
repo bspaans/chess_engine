@@ -190,6 +190,7 @@ func main() {
 				standing[game.White] += 1
 				game.Result = WhiteWins
 				fmt.Println(game.ResultAnnouncement())
+				fmt.Println(fen.Board)
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
@@ -200,6 +201,7 @@ func main() {
 					standing[game.Black] += 1
 					game.Result = BlackWins
 					fmt.Println(game.ResultAnnouncement())
+					fmt.Println(fen.Board)
 				} else {
 					//fmt.Println("Valid moves: ", fen.ValidMoves())
 				}
