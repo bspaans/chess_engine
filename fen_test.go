@@ -397,6 +397,8 @@ func Test_ApplyMove_game(t *testing.T) {
 			[]string{"rnbqkbnr/ppppppp1/7p/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 2 2", "e2e4"},
 			[]string{"rnbqkbnr/ppppppp1/7p/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 3 2", "f7f6"},
 			[]string{"rnbqkbnr/ppppp1p1/5p1p/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 4 3", "d1h5"},
+			[]string{"rnbqkbnr/ppppp1p1/5p1p/7Q/3PP3/8/PPP2PPP/RNB1KBNR b KQkq - 5 3", "g7g6"},
+			[]string{"rnbqkbnr/ppppp3/5ppp/7Q/3PP3/8/PPP2PPP/RNB1KBNR w KQkq - 6 4", "h5g6"},
 		},
 		[][]string{
 			[]string{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "d2d4"},
@@ -463,7 +465,7 @@ func Test_ApplyMove_game(t *testing.T) {
 			}
 		}
 		if !unit.IsMate() {
-			t.Errorf("It's supposed to be mate, but the engine is suggesting moves: %v", unit.ValidMoves())
+			t.Errorf("It's supposed to be mate, but the engine is suggesting moves: %v in %s", unit.ValidMoves(), unit.FENString())
 		}
 	}
 }

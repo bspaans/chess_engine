@@ -208,35 +208,49 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
+
+	// Can't do anything else if there are more than one checks
+	if len(checks) != 1 {
+		return result
+	}
+
 	// 2. block the attack
 	// 3. remove the attacking piece
-	if len(checks) == 1 {
-		for _, check := range checks {
-			// if the piece is a knight the check cannot be blocked
-			attackingPiece := f.Board[check.From]
-			if NormalizedPiece(attackingPiece.Normalize()) == Knight {
-				// TODO: but it can be captured
-				break
+	for _, check := range checks {
+		// if the piece is a knight the check cannot be blocked
+		attackingPiece := f.Board[check.From]
+		if NormalizedPiece(attackingPiece.Normalize()) == Knight {
+			// TODO: but it can be captured
+			break
+		}
+		vector := check.NormalizedVector()
+		blocks := map[Position]bool{}
+		pos := check.To
+		i := 0
+		for pos != check.From {
+			pos = vector.FromPosition(pos)
+			blocks[pos] = true
+			i++
+			if i > 7 {
+				fmt.Println(checks)
+				fmt.Println(string([]byte{byte(f.Board[pos])}))
+				panic("wtf")
 			}
-			vector := check.NormalizedVector()
-			blocks := map[Position]bool{}
-			pos := check.To
-			i := 0
-			for pos != check.From {
-				pos = vector.FromPosition(pos)
-				blocks[pos] = true
-				i++
-				if i > 7 {
-					fmt.Println(checks)
-					fmt.Println(string([]byte{byte(f.Board[pos])}))
-					panic("wtf")
+		}
+		cond := func(p Position) bool {
+			return blocks[p]
+		}
+		for _, m := range f.GetAttacksOnCondition(cond, f.ToMove) {
+			result = append(result, m)
+		}
+		// Pawns move differently when they don't attack so we
+		// need to have a separate check to see if a pawn move
+		// would block the check
+		for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
+			for _, targetPos := range PieceMoves[f.Board[pawnPos]][pawnPos] {
+				if blocks[targetPos] && f.Board.IsEmpty(targetPos) {
+					result = append(result, NewMove(pawnPos, targetPos))
 				}
-			}
-			cond := func(p Position) bool {
-				return blocks[p]
-			}
-			for _, m := range f.GetAttacksOnCondition(cond, f.ToMove) {
-				result = append(result, m)
 			}
 		}
 	}
@@ -265,6 +279,7 @@ func (f *FEN) ValidMoves() []*Move {
 	for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
 		for _, targetPos := range PieceMoves[f.Board[pawnPos]][pawnPos] {
 			if f.Board[targetPos] == NoPiece {
+				// TODO: pawns can jump over pieces: should use a line instead
 				move := NewMove(pawnPos, targetPos)
 				promotions := move.ToPromotions()
 				if promotions == nil {
