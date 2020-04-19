@@ -31,38 +31,29 @@ func (p PiecePositions) GetKingPos(color Color) Position {
 
 func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiece NormalizedPiece) PiecePositions {
 	pieces := NewPiecePositions()
-	for _, color := range []Color{White, Black} {
-		piecePositions := map[NormalizedPiece][]Position{}
+	for color, _ := range pieces {
 		for piece, oldPositions := range p[color] {
-			positions := []Position{}
 			for _, pos := range oldPositions {
 				if color == c && piece == movingPiece && pos == move.From {
+					// This is the piece that is moving and we need to replace its
+					// position with the move's target.
+					// There's a special case for promotions, because in that case
+					// we need to remove th pawn instead, and add a new piece.
 					if move.Promote == NoPiece {
-						positions = append(positions, move.To)
+						pieces[color][piece] = append(pieces[color][piece], move.To)
+					} else {
+						normPromote := move.Promote.ToNormalizedPiece()
+						pieces[c][normPromote] = append(pieces[c][normPromote], move.To)
 					}
-				} else if color != c && piece == capturedPiece {
-					// skip captured pieces
+				} else if color != c && piece == capturedPiece && pos == move.To {
+					// Skip captured pieces
 					continue
-
 				} else {
-					positions = append(positions, pos)
+					// Copy unaffected pieces
+					pieces[color][piece] = append(pieces[color][piece], pos)
 				}
 			}
-			if len(positions) > 0 {
-				piecePositions[piece] = positions
-			}
 		}
-		pieces[color] = piecePositions
-	}
-
-	if move.Promote != NoPiece {
-		normPromote := move.Promote.ToNormalizedPiece()
-		beforePromote, ok := pieces[c][normPromote]
-		if !ok {
-			beforePromote = []Position{}
-		}
-		beforePromote = append(beforePromote, move.To)
-		pieces[c][normPromote] = beforePromote
 	}
 	return pieces
 }

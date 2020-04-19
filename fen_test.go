@@ -321,13 +321,13 @@ func Test_ApplyMove_capture(t *testing.T) {
 		t.Errorf("Expecting a white pawn on a7")
 	}
 	if fen.Board[B6] != NoPiece {
-		t.Errorf("Expecting no piece on b5")
+		t.Errorf("Expecting no piece on b6")
 	}
 	if len(fen.Pieces[White][Pawn]) != 1 {
-		t.Errorf("Expecting one white pawn ")
+		t.Fatalf("Expecting one white pawn ")
 	}
 	if fen.Pieces[White][Pawn][0] != A7 {
-		t.Errorf("Expecting a white queen on a7")
+		t.Errorf("Expecting a white pawn on a7")
 	}
 	if len(fen.Pieces[Black][Pawn]) != 0 {
 		t.Errorf("Expecting no black pawns")

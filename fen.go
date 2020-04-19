@@ -529,15 +529,6 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 		wCastle = None
 	}
 	pieces := f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
-	if move.Promote != NoPiece {
-		normPromote := NormalizedPiece(move.Promote.Normalize())
-		beforePromote, ok := pieces[f.ToMove][normPromote]
-		if !ok {
-			beforePromote = []Position{}
-		}
-		beforePromote = append(beforePromote, move.To)
-		pieces[f.ToMove][normPromote] = beforePromote
-	}
 
 	result.Board = board
 	result.Pieces = pieces
