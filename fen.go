@@ -254,7 +254,15 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 			}
 		}
 	}
-	return result
+	// Make sure pieces aren't pinned
+	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
+	filteredResult := []*Move{}
+	for _, move := range result {
+		if !pinned[move.From] {
+			filteredResult = append(filteredResult, move)
+		}
+	}
+	return filteredResult
 }
 
 func (f *FEN) ValidMoves() []*Move {
@@ -270,7 +278,6 @@ func (f *FEN) ValidMoves() []*Move {
 	if len(checks) > 0 {
 		return f.validMovesInCheck(checks)
 	}
-	// TODO: make sure pieces aren't pinned
 
 	for _, attack := range f.GetAttacks(f.ToMove) {
 		result = append(result, attack)
@@ -318,13 +325,23 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
 	for _, p := range kingPos.GetKingMoves() {
-		// TODO only if p is not under attack
-		if f.Board[p] == NoPiece {
+		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
+			result = append(result, NewMove(kingPos, p))
+		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.DefendsSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
 	// TODO castling
-	return result
+
+	// Make sure pieces aren't pinned
+	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
+	filteredResult := []*Move{}
+	for _, move := range result {
+		if !pinned[move.From] {
+			filteredResult = append(filteredResult, move)
+		}
+	}
+	return filteredResult
 }
 
 func (f *FEN) ApplyMove(move *Move) *FEN {

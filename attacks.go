@@ -67,6 +67,26 @@ func (a Attacks) AttacksSquare(color Color, square Position) bool {
 	return false
 }
 
+func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map[Position]bool {
+	result := map[Position]bool{}
+	// Look at all the diagonals and lines emanating from the king's position
+	for _, line := range kingPos.GetQueenMoves() {
+		for _, pos := range line {
+			if board.IsEmpty(pos) {
+				continue
+			} else if board.IsOpposingPiece(pos, color) {
+				break
+			} else {
+				if a.AttacksSquare(color.Opposite(), pos) {
+					result[pos] = true
+				}
+				break
+			}
+		}
+	}
+	return result
+}
+
 func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) Attacks {
 	return NewAttacks()
 }
