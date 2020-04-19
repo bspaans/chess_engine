@@ -32,7 +32,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 		for _, toPos := range PawnAttacks[piece.Color()][pos] {
 			if board.IsEmpty(toPos) {
 				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-			} else if !board.IsPieceColor(toPos, piece.Color()) {
+			} else if board.IsOpposingPiece(toPos, piece.Color()) {
 				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
 				return
 			} else {
@@ -44,7 +44,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 			for _, toPos := range line {
 				if board.IsEmpty(toPos) {
 					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-				} else if !board.IsPieceColor(toPos, piece.Color()) {
+				} else if board.IsOpposingPiece(toPos, piece.Color()) {
 					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
 					if board[toPos].ToNormalizedPiece() != King {
 						break
@@ -55,6 +55,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 			}
 		}
 	}
+	// TODO king attacks if opposing piece is undefended
 }
 
 func (a Attacks) AttacksSquare(color Color, square Position) bool {

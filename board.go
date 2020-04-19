@@ -14,6 +14,6 @@ func (b Board) IsEmpty(pos Position) bool {
 	return b[pos] == NoPiece
 }
 
-func (b Board) IsPieceColor(pos Position, c Color) bool {
-	return b[pos] != NoPiece && b[pos].Color() == c
+func (b Board) IsOpposingPiece(pos Position, c Color) bool {
+	return b[pos] != NoPiece && b[pos].Color() != c
 }

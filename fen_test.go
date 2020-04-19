@@ -114,7 +114,7 @@ func Test_ValidMoves(t *testing.T) {
 func Test_ValidMoves_table(t *testing.T) {
 	cases := [][]string{
 		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1QK2 w kq - 34 1", "f1g2 h2e2 e1e2"},
-		[]string{"rnbq1bnr/pppp1kp1/7p/4pP1Q/8/2N4N/PPPP1PPP/R1B1KB1R b KQ - 8 5", "g7g6"},
+		[]string{"rnbq1bnr/pppp1kp1/7p/4pP1Q/8/2N4N/PPPP1PPP/R1B1KB1R b KQ - 8 5", "f7f6 f7e7 g7g6"},
 	}
 	for _, testCase := range cases {
 		fenStr, movesStr := testCase[0], testCase[1]
@@ -144,6 +144,18 @@ func Test_ValidMoves_table(t *testing.T) {
 			}
 			if !found {
 				t.Errorf("Unexpected valid move %s in %v for %s, expecting %v", v, validMoves, fenStr, moves)
+			}
+		}
+		for _, m := range moves {
+			found := false
+			for _, v := range validMoves {
+				if v.From == m.From && v.To == m.To && v.Promote == m.Promote {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Didn't get expected valid move %s in %v for %s, expecting %v", m, validMoves, fenStr, moves)
 			}
 		}
 

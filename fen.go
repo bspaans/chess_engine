@@ -119,7 +119,7 @@ func (f *FEN) GetAttacks(color Color) []*Move {
 	}
 	return f.GetAttacksOnCondition(cond, color)
 }
-func (f *FEN) AttacksSquare(color Color, square Position) bool {
+func (f *FEN) DefendsSquare(color Color, square Position) bool {
 	cond := func(p Position) bool {
 		return p == square
 	}
@@ -202,14 +202,10 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	// 1. move the king
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
 	for _, p := range kingPos.GetKingMoves() {
-		if f.Board.IsEmpty(p) || f.Board.IsPieceColor(p, f.ToMove.Opposite()) {
-			if !f.AttacksSquare(f.ToMove.Opposite(), p) {
-				fmt.Println(p, "not attacked by", f.ToMove.Opposite())
-				fmt.Println(f.Attacks[p])
-				result = append(result, NewMove(kingPos, p))
-			} else {
-				fmt.Println(p, "attacked")
-			}
+		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
+			result = append(result, NewMove(kingPos, p))
+		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.DefendsSquare(f.ToMove.Opposite(), p) {
+			result = append(result, NewMove(kingPos, p))
 		}
 	}
 	// 2. block the attack
