@@ -181,11 +181,17 @@ func (p Position) GetBlackPawnAttacks() []Position {
 	}
 	return positions
 }
-func (p Position) GetWhitePawnMoves() []Position {
-	return PieceMoves[WhitePawn][p]
+func (p Position) GetWhitePawnMoves() [][]Position {
+	pieceMoves := PieceMoves[WhitePawn][p]
+	result := [][]Position{}
+	result = append(result, pieceMoves)
+	return result
 }
-func (p Position) GetBlackPawnMoves() []Position {
-	return PieceMoves[BlackPawn][p]
+func (p Position) GetBlackPawnMoves() [][]Position {
+	pieceMoves := PieceMoves[BlackPawn][p]
+	result := [][]Position{}
+	result = append(result, pieceMoves)
+	return result
 }
 
 func (p Position) GetKnightMoves() []Position {
@@ -239,14 +245,14 @@ func init() {
 		// TODO pawns
 		result := "package chess_engine\n\nvar PieceMoves = map[Piece][][]Position{\n"
 		singleMovers := [][]interface{}{
-			[]interface{}{"WhitePawn", func(p Position) []Position { return p.GetWhitePawnMoves() }},
-			[]interface{}{"BlackPawn", func(p Position) []Position { return p.GetBlackPawnMoves() }},
 			[]interface{}{"WhiteKing", func(p Position) []Position { return p.GetKingMoves() }},
 			[]interface{}{"BlackKing", func(p Position) []Position { return p.GetKingMoves() }},
 			[]interface{}{"WhiteKnight", func(p Position) []Position { return p.GetKnightMoves() }},
 			[]interface{}{"BlackKnight", func(p Position) []Position { return p.GetKnightMoves() }},
 		}
 		multiMovers := [][]interface{}{
+			[]interface{}{"WhitePawn", func(p Position) [][]Position { return p.GetWhitePawnMoves() }},
+			[]interface{}{"BlackPawn", func(p Position) [][]Position { return p.GetBlackPawnMoves() }},
 			[]interface{}{"WhiteBishop", func(p Position) [][]Position { return p.GetDiagonals() }},
 			[]interface{}{"BlackBishop", func(p Position) [][]Position { return p.GetDiagonals() }},
 			[]interface{}{"WhiteRook", func(p Position) [][]Position { return p.GetLines() }},

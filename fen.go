@@ -288,17 +288,20 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 
 	for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
-		for _, targetPos := range PieceMoves[f.Board[pawnPos]][pawnPos] {
-			if f.Board[targetPos] == NoPiece {
-				// TODO: pawns can jump over pieces: should use a line instead
-				move := NewMove(pawnPos, targetPos)
-				promotions := move.ToPromotions()
-				if promotions == nil {
-					result = append(result, move)
-				} else {
-					for _, m := range promotions {
-						result = append(result, m)
+		for _, line := range MoveVectors[f.Board[pawnPos]][pawnPos] {
+			for _, targetPos := range line {
+				if f.Board[targetPos] == NoPiece {
+					move := NewMove(pawnPos, targetPos)
+					promotions := move.ToPromotions()
+					if promotions == nil {
+						result = append(result, move)
+					} else {
+						for _, m := range promotions {
+							result = append(result, m)
+						}
 					}
+				} else {
+					break
 				}
 			}
 		}
@@ -372,6 +375,7 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 
 	board := f.Board.Copy()
 
+	// TODO handle capture of en-passanted piece
 	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
 	movingPiece := board[move.To]
 	normalizedMovingPiece := movingPiece.ToNormalizedPiece()
@@ -380,7 +384,8 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 		board[move.To] = move.Promote
 	}
 
-	// Handle castles
+	// Handle castles and en-passant
+	enpassant := NoPosition
 	switch movingPiece {
 	case BlackKing:
 		if move.From == E8 && move.To == G8 {
@@ -393,6 +398,16 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 			board.ApplyMove(H1, F1)
 		} else if move.From == E1 && move.To == C1 {
 			board.ApplyMove(A1, D1)
+		}
+	case WhitePawn:
+		if move.From.GetRank() == '2' && move.From.GetRank() == '3' {
+			// Mark the skipped over square as vulnerable
+			enpassant = move.To - 8
+		}
+	case BlackPawn:
+		if move.From.GetRank() == '7' && move.From.GetRank() == '8' {
+			// Mark the skipped over square as vulnerable
+			enpassant = move.From - 8
 		}
 	}
 
@@ -413,7 +428,7 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 
 	result.ToMove = f.ToMove.Opposite()
 	result.CastleStatuses = f.CastleStatuses.ApplyMove(move, movingPiece)
-	result.EnPassantVulnerable = NoPosition // TODO
+	result.EnPassantVulnerable = enpassant
 	result.HalfmoveClock = f.HalfmoveClock + 1
 	result.Fullmove = fullMove
 	result.Line = line
