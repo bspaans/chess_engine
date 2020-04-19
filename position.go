@@ -34,7 +34,7 @@ const (
 	NoFile File = ' '
 )
 
-type Position uint64
+type Position int8
 
 const (
 	A1 Position = iota

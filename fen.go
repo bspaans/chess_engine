@@ -9,7 +9,7 @@ import (
 type FEN struct {
 	// An array of size 64 denoting the board.
 	// 0 index = a1
-	Board []Piece
+	Board Board
 
 	// The board again, but this time keeping track
 	// of which pieces are attacking what squares.
@@ -87,9 +87,13 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			pos := y*8 + x
 			piece := Piece(forStr[i])
 			fen.Board[pos] = piece
-			fen.Attacks.AddPiece(piece, Position(pos))
 			fen.Pieces.AddPosition(piece, Position(pos))
 			x++
+		}
+	}
+	for pos, piece := range fen.Board {
+		if piece != NoPiece {
+			fen.Attacks.AddPiece(piece, Position(pos), fen.Board)
 		}
 	}
 	return &fen, nil
@@ -161,6 +165,9 @@ func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*
 				for _, toPos := range line {
 					if cond(toPos) {
 						result = append(result, NewMove(fromPos, toPos))
+						if f.Board[toPos].ToNormalizedPiece() == King {
+							continue
+						}
 					} else if f.Board[toPos] == NoPiece {
 						continue
 					}
@@ -193,10 +200,15 @@ func (f *FEN) IsMate() bool {
 func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	result := []*Move{}
 	// 1. move the king
-	for _, kingPos := range f.Pieces.Positions(f.ToMove, King) {
-		for _, p := range kingPos.GetKingMoves() {
-			if (f.Board[p] == NoPiece || f.Board[p].Color() == f.ToMove.Opposite()) && !f.AttacksSquare(f.ToMove.Opposite(), p) {
+	kingPos := f.Pieces.GetKingPos(f.ToMove)
+	for _, p := range kingPos.GetKingMoves() {
+		if f.Board.IsEmpty(p) || f.Board.IsPieceColor(p, f.ToMove.Opposite()) {
+			if !f.AttacksSquare(f.ToMove.Opposite(), p) {
+				fmt.Println(p, "not attacked by", f.ToMove.Opposite())
+				fmt.Println(f.Attacks[p])
 				result = append(result, NewMove(kingPos, p))
+			} else {
+				fmt.Println(p, "attacked")
 			}
 		}
 	}
@@ -207,25 +219,15 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 			// if the piece is a knight the check cannot be blocked
 			attackingPiece := f.Board[check.From]
 			if NormalizedPiece(attackingPiece.Normalize()) == Knight {
+				// TODO: but it can be captured
 				break
 			}
-			diffFile := int(check.From.GetFile()) - int(check.To.GetFile())
-			diffRank := int(check.From.GetRank()) - int(check.To.GetRank())
-			maxDiff := diffFile
-			if maxDiff < 0 {
-				maxDiff = maxDiff * -1
-			}
-			if diffRank > maxDiff {
-				maxDiff = diffRank
-			} else if (diffRank * -1) > maxDiff {
-				maxDiff = diffRank * -1
-			}
-			normDiffFile, normDiffRank := diffFile/maxDiff, diffRank/maxDiff
+			vector := check.NormalizedVector()
 			blocks := map[Position]bool{}
 			pos := check.To
 			i := 0
 			for pos != check.From {
-				pos = Position(int(pos) + normDiffFile + (normDiffRank * 8))
+				pos = vector.FromPosition(pos)
 				blocks[pos] = true
 				i++
 				if i > 7 {
@@ -402,10 +404,16 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 		}
 		wCastle = None
 	}
-	pieces := f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
 
 	result.Board = board
-	result.Pieces = pieces
+	result.Pieces = f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
+	// TODO: implement ApplyMove in Attacks
+	result.Attacks = NewAttacks()
+	for pos, piece := range board {
+		if piece != NoPiece {
+			result.Attacks.AddPiece(piece, Position(pos), board)
+		}
+	}
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {

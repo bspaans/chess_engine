@@ -43,6 +43,16 @@ func (m *Move) ToPromotions() []*Move {
 	return nil
 }
 
+func (m *Move) Vector() Vector {
+	diffFile := int(m.From.GetFile()) - int(m.To.GetFile())
+	diffRank := int(m.From.GetRank()) - int(m.To.GetRank())
+	return NewVector(int8(diffFile), int8(diffRank))
+}
+
+func (m *Move) NormalizedVector() Vector {
+	return m.Vector().Normalize()
+}
+
 func ParseMove(moveStr string) (*Move, error) {
 	if len(moveStr) != 4 && len(moveStr) != 5 {
 		return nil, fmt.Errorf("Expecting move str of length 4 or 5")
@@ -74,4 +84,31 @@ func (l Line) String() string {
 		result = append(result, m.String())
 	}
 	return strings.Join(result, " ")
+}
+
+type Vector struct {
+	DiffFile int8
+	DiffRank int8
+}
+
+func NewVector(f, r int8) Vector {
+	return Vector{f, r}
+}
+
+func (v Vector) Normalize() Vector {
+	maxDiff := v.DiffFile
+	if maxDiff < 0 {
+		maxDiff = maxDiff * -1
+	}
+	if v.DiffRank > maxDiff {
+		maxDiff = v.DiffRank
+	} else if (v.DiffRank * -1) > maxDiff {
+		maxDiff = v.DiffRank * -1
+	}
+	normDiffFile, normDiffRank := v.DiffFile/maxDiff, v.DiffRank/maxDiff
+	return Vector{normDiffFile, normDiffRank}
+}
+
+func (v Vector) FromPosition(pos Position) Position {
+	return Position(int8(pos) + v.DiffFile + (v.DiffRank * 8))
 }
