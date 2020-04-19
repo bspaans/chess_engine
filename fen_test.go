@@ -167,7 +167,7 @@ func Test_ValidMoves_promote(t *testing.T) {
 }
 
 func Test_ValidMoves_promote_black(t *testing.T) {
-	unit, err := ParseFEN("8/K7/8/8/8/8/p7/8 b KQkq - 0 1")
+	unit, err := ParseFEN("8/K7/8/8/8/8/p7/7k b KQkq - 0 1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func Test_ApplyMove(t *testing.T) {
 
 func Test_ApplyMove_table(t *testing.T) {
 	cases := [][]string{
-		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K3 b kq - 35 1", "b6g1", "rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1", "true"},
+		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K3 b kq - 35 1", "b6g1", "rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 2", "true"},
 		[]string{"r4b2/p3pB2/3N4/1Q4p1/6kp/P1N1B3/1PP2PPP/R3K2R w KQ - 44 1", "b5g5", "r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1", "true"},
 	}
 	for _, testCase := range cases {
@@ -331,5 +331,126 @@ func Test_ApplyMove_capture(t *testing.T) {
 	}
 	if len(fen.Pieces[Black][Pawn]) != 0 {
 		t.Errorf("Expecting no black pawns")
+	}
+}
+
+func Test_ApplyMove_game(t *testing.T) {
+	cases := [][][]string{
+		[][]string{
+			[]string{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "b2b4"},
+			[]string{"rnbqkbnr/pppppppp/8/8/1P6/8/P1PPPPPP/RNBQKBNR b KQkq - 1 1", "d7d5"},
+			[]string{"rnbqkbnr/ppp1pppp/8/3p4/1P6/8/P1PPPPPP/RNBQKBNR w KQkq - 2 2", "b4b5"},
+			[]string{"rnbqkbnr/ppp1pppp/8/1P1p4/8/8/P1PPPPPP/RNBQKBNR b KQkq - 3 2", "e7e5"},
+			[]string{"rnbqkbnr/ppp2ppp/8/1P1pp3/8/8/P1PPPPPP/RNBQKBNR w KQkq - 4 3", "c1b2"},
+			[]string{"rnbqkbnr/ppp2ppp/8/1P1pp3/8/8/PBPPPPPP/RN1QKBNR b KQkq - 5 3", "b8d7"},
+			[]string{"r1bqkbnr/pppn1ppp/8/1P1pp3/8/8/PBPPPPPP/RN1QKBNR w KQkq - 6 4", "g2g4"},
+			[]string{"r1bqkbnr/pppn1ppp/8/1P1pp3/6P1/8/PBPPPP1P/RN1QKBNR b KQkq - 7 4", "g8f6"},
+			[]string{"r1bqkb1r/pppn1ppp/5n2/1P1pp3/6P1/8/PBPPPP1P/RN1QKBNR w KQkq - 8 5", "f1g2"},
+			[]string{"r1bqkb1r/pppn1ppp/5n2/1P1pp3/6P1/8/PBPPPPBP/RN1QK1NR b KQkq - 9 5", "e5e4"},
+			[]string{"r1bqkb1r/pppn1ppp/5n2/1P1p4/4p1P1/8/PBPPPPBP/RN1QK1NR w KQkq - 10 6", "g1h3"},
+			[]string{"r1bqkb1r/pppn1ppp/5n2/1P1p4/4p1P1/7N/PBPPPPBP/RN1QK2R b KQkq - 11 6", "f6g4"},
+			[]string{"r1bqkb1r/pppn1ppp/8/1P1p4/4p1n1/7N/PBPPPPBP/RN1QK2R w KQkq - 12 7", "h1f1"},
+			[]string{"r1bqkb1r/pppn1ppp/8/1P1p4/4p1n1/7N/PBPPPPBP/RN1QKR2 b Qkq - 13 7", "d7b6"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p4/4p1n1/7N/PBPPPPBP/RN1QKR2 w Qkq - 14 8", "g2f3"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p4/4p1n1/5B1N/PBPPPP1P/RN1QKR2 b Qkq - 15 8", "e4f3"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p4/6n1/5p1N/PBPPPP1P/RN1QKR2 w Qkq - 16 9", "c2c3"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p4/6n1/2P2p1N/PB1PPP1P/RN1QKR2 b Qkq - 17 9", "g4h2"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p4/8/2P2p1N/PB1PPP1n/RN1QKR2 w Qkq - 18 10", "h3g5"},
+			[]string{"r1bqkb1r/ppp2ppp/1n6/1P1p2N1/8/2P2p2/PB1PPP1n/RN1QKR2 b Qkq - 19 10", "d8g5"},
+			[]string{"r1b1kb1r/ppp2ppp/1n6/1P1p2q1/8/2P2p2/PB1PPP1n/RN1QKR2 w Qkq - 20 11", "d1a4"},
+			[]string{"r1b1kb1r/ppp2ppp/1n6/1P1p2q1/Q7/2P2p2/PB1PPP1n/RN2KR2 b Qkq - 21 11", "b6a4"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/n7/2P2p2/PB1PPP1n/RN2KR2 w Qkq - 22 12", "e2e3"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/n7/2P1Pp2/PB1P1P1n/RN2KR2 b Qkq - 23 12", "a4b2"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/8/2P1Pp2/Pn1P1P1n/RN2KR2 w Qkq - 24 13", "c3c4"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/2P5/4Pp2/Pn1P1P1n/RN2KR2 b Qkq - 25 13", "b2d3"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/2P5/3nPp2/P2P1P1n/RN2KR2 w Qkq - 26 14", "e1d1"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/2P5/3nPp2/P2P1P1n/RN1K1R2 b kq - 27 14", "h2f1"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/2P5/3nPp2/P2P1P2/RN1K1n2 w kq - 28 15", "a2a4"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P1p2q1/P1P5/3nPp2/3P1P2/RN1K1n2 b kq - 29 15", "d5c4"},
+			[]string{"r1b1kb1r/ppp2ppp/8/1P4q1/P1p5/3nPp2/3P1P2/RN1K1n2 w kq - 30 16", "a4a5"},
+			[]string{"r1b1kb1r/ppp2ppp/8/PP4q1/2p5/3nPp2/3P1P2/RN1K1n2 b kq - 31 16", "d3f2"},
+			[]string{"r1b1kb1r/ppp2ppp/8/PP4q1/2p5/4Pp2/3P1n2/RN1K1n2 w kq - 32 17", "d1c1"},
+			[]string{"r1b1kb1r/ppp2ppp/8/PP4q1/2p5/4Pp2/3P1n2/RNK2n2 b kq - 33 17", "f2d3"},
+			[]string{"r1b1kb1r/ppp2ppp/8/PP4q1/2p5/3nPp2/3P4/RNK2n2 w kq - 34 18", "c1c2"},
+			[]string{"r1b1kb1r/ppp2ppp/8/PP4q1/2p5/3nPp2/2KP4/RN3n2 b kq - 35 18", "g5b5"},
+			[]string{"r1b1kb1r/ppp2ppp/8/Pq6/2p5/3nPp2/2KP4/RN3n2 w kq - 36 19", "c2b3"},
+			[]string{"r1b1kb1r/ppp2ppp/8/Pq6/2p5/1K1nPp2/3P4/RN3n2 b kq - 37 19", "b5b4"},
+			[]string{"r1b1kb1r/ppp2ppp/8/P7/1qp5/1K1nPp2/3P4/RN3n2 w kq - 38 20", "b3a2"},
+			[]string{"r1b1kb1r/ppp2ppp/8/P7/1qp5/3nPp2/K2P4/RN3n2 b kq - 39 20", "d3c1"},
+		},
+		[][]string{
+			[]string{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "d2d4"},
+			[]string{"rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 1 1", "h7h6"},
+			[]string{"rnbqkbnr/ppppppp1/7p/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 2 2", "e2e4"},
+			[]string{"rnbqkbnr/ppppppp1/7p/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 3 2", "f7f6"},
+			[]string{"rnbqkbnr/ppppp1p1/5p1p/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 4 3", "d1h5"},
+		},
+		[][]string{
+			[]string{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "d2d4"},
+			[]string{"rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 1 1", "g7g6"},
+			[]string{"rnbqkbnr/pppppp1p/6p1/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 2 2", "e2e4"},
+			[]string{"rnbqkbnr/pppppp1p/6p1/8/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 3 2", "a7a6"},
+			[]string{"rnbqkbnr/1ppppp1p/p5p1/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 4 3", "c2c4"},
+			[]string{"rnbqkbnr/1ppppp1p/p5p1/8/2PPP3/8/PP3PPP/RNBQKBNR b KQkq - 5 3", "b7b6"},
+			[]string{"rnbqkbnr/2pppp1p/pp4p1/8/2PPP3/8/PP3PPP/RNBQKBNR w KQkq - 6 4", "b1c3"},
+			[]string{"rnbqkbnr/2pppp1p/pp4p1/8/2PPP3/2N5/PP3PPP/R1BQKBNR b KQkq - 7 4", "e7e5"},
+			[]string{"rnbqkbnr/2pp1p1p/pp4p1/4p3/2PPP3/2N5/PP3PPP/R1BQKBNR w KQkq - 8 5", "d4e5"},
+			[]string{"rnbqkbnr/2pp1p1p/pp4p1/4P3/2P1P3/2N5/PP3PPP/R1BQKBNR b KQkq - 9 5", "f7f5"},
+			[]string{"rnbqkbnr/2pp3p/pp4p1/4Pp2/2P1P3/2N5/PP3PPP/R1BQKBNR w KQkq - 10 6", "e4f5"},
+			[]string{"rnbqkbnr/2pp3p/pp4p1/4PP2/2P5/2N5/PP3PPP/R1BQKBNR b KQkq - 11 6", "d8f6"},
+			[]string{"rnb1kbnr/2pp3p/pp3qp1/4PP2/2P5/2N5/PP3PPP/R1BQKBNR w KQkq - 12 7", "e5f6"},
+			[]string{"rnb1kbnr/2pp3p/pp3Pp1/5P2/2P5/2N5/PP3PPP/R1BQKBNR b KQkq - 13 7", "d7d5"},
+			[]string{"rnb1kbnr/2p4p/pp3Pp1/3p1P2/2P5/2N5/PP3PPP/R1BQKBNR w KQkq - 14 8", "c3d5"},
+			[]string{"rnb1kbnr/2p4p/pp3Pp1/3N1P2/2P5/8/PP3PPP/R1BQKBNR b KQkq - 15 8", "a6a5"},
+			[]string{"rnb1kbnr/2p4p/1p3Pp1/p2N1P2/2P5/8/PP3PPP/R1BQKBNR w KQkq - 16 9", "d5c7"},
+			[]string{"rnb1kbnr/2N4p/1p3Pp1/p4P2/2P5/8/PP3PPP/R1BQKBNR b KQkq - 17 9", "e8f7"},
+			[]string{"rnb2bnr/2N2k1p/1p3Pp1/p4P2/2P5/8/PP3PPP/R1BQKBNR w KQ - 18 10", "d1d5"},
+			[]string{"rnb2bnr/2N2k1p/1p3Pp1/p2Q1P2/2P5/8/PP3PPP/R1B1KBNR b KQ - 19 10", "f7f6"},
+			[]string{"rnb2bnr/2N4p/1p3kp1/p2Q1P2/2P5/8/PP3PPP/R1B1KBNR w KQ - 20 11", "d5d4"},
+			[]string{"rnb2bnr/2N4p/1p3kp1/p4P2/2PQ4/8/PP3PPP/R1B1KBNR b KQ - 21 11", "f6f5"},
+			[]string{"rnb2bnr/2N4p/1p4p1/p4k2/2PQ4/8/PP3PPP/R1B1KBNR w KQ - 22 12", "g2g4"},
+		},
+	}
+
+	for _, game := range cases {
+		unit, err := ParseFEN(game[0][0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		move, err := ParseMove(game[0][1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		unit = unit.ApplyMove(move)
+		for _, move := range game[1:] {
+			if unit.FENString() != move[0] {
+				t.Errorf("Expecting FEN %s got %s", move[0], unit.FENString())
+			}
+			m, err := ParseMove(move[1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			piece := unit.Board[m.From]
+			unit = unit.ApplyMove(m)
+
+			if unit.Board[m.From] != NoPiece {
+				t.Errorf("Expecting no piece on %s", m.From)
+			}
+			if unit.Board[m.To] != piece {
+				t.Errorf("Expecting piece %s on %s, but got %s", piece, m.To, unit.Board[m.To])
+			}
+			found := false
+			for _, position := range unit.Pieces[unit.ToMove.Opposite()][piece.ToNormalizedPiece()] {
+				if position == m.To {
+					found = true
+				}
+			}
+			if !found {
+				t.Errorf("Missing position %s for %s in %s after %s", m.To, piece, move[0], move[1])
+			}
+		}
+		if !unit.IsMate() {
+			t.Errorf("It's supposed to be mate, but the engine is suggesting moves: %v", unit.ValidMoves())
+		}
 	}
 }

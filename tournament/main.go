@@ -61,12 +61,14 @@ func (e *Engine) Send(msg string) {
 
 func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
 	str := fen.FENString()
-	color := "White"
-	if fen.ToMove == chess_engine.Black {
-		color = "Black"
-	}
+	/*
+		color := "White"
+		if fen.ToMove == chess_engine.Black {
+			color = "Black"
+		}
 
-	fmt.Println(color + " to play position: " + str)
+		fmt.Println(color + " to play position: " + str)
+	*/
 	e.Send("position fen " + str)
 	e.Send("go depth 2")
 	return e.ReadUntilBestMove(fen)
@@ -181,7 +183,9 @@ func main() {
 
 		for game.Result == Unfinished {
 			move := game.White.Play(fen)
-			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+			fmt.Println(chess_engine.PawnAttacks[chess_engine.White][chess_engine.G4])
 			fen = fen.ApplyMove(move)
 			if fen.IsMate() {
 				standing[game.White] += 1
@@ -190,7 +194,8 @@ func main() {
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
-				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
 				if fen.IsMate() {
 					standing[game.Black] += 1

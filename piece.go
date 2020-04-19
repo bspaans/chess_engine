@@ -51,6 +51,14 @@ func (p Piece) SetColor(c Color) Piece {
 	}
 }
 
+func (p Piece) String() string {
+	return string([]byte{byte(p)})
+}
+
 func (p Piece) Normalize() Piece {
 	return Piece(bytes.ToLower([]byte{byte(p)})[0])
+}
+
+func (p Piece) ToNormalizedPiece() NormalizedPiece {
+	return NormalizedPiece(p.Normalize())
 }

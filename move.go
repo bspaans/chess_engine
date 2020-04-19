@@ -38,6 +38,7 @@ func (m *Move) ToPromotions() []*Move {
 			result[i] = NewMove(m.From, m.To)
 			result[i].Promote = piece.SetColor(color)
 		}
+		return result
 	}
 	return nil
 }
