@@ -46,6 +46,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
 				} else if board.IsOpposingPiece(toPos, piece.Color()) {
 					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+					// squares behind the king are also attacked
 					if board[toPos].ToNormalizedPiece() != King {
 						break
 					}

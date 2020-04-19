@@ -210,8 +210,16 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	}
 
 	// Can't do anything else if there are more than one checks
+	// UNLESS: the checks are the same pawn promoting into four different pieces...
 	if len(checks) != 1 {
-		return result
+		seenPos := Position(-1)
+		for _, c := range checks {
+			if seenPos == -1 {
+				seenPos = c.From
+			} else if c.From != seenPos {
+				return result
+			}
+		}
 	}
 
 	// 2. block the attack
@@ -365,6 +373,8 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	if move.Promote != NoPiece {
 		board[move.To] = move.Promote
 	}
+
+	// TODO: update castle status when rook gets captured
 
 	wCastle := f.WhiteCastleStatus
 	bCastle := f.BlackCastleStatus
