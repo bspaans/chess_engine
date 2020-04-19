@@ -105,16 +105,6 @@ func (f *FEN) NextFENs() []*FEN {
 	return result
 }
 
-func (f *FEN) GetIncomingAttacks() []*Move {
-	return f.GetAttacks(f.ToMove.Opposite())
-}
-
-func (f *FEN) GetAttacks(color Color) []*Move {
-	cond := func(p Position) bool {
-		return f.Board[p] != NoPiece && f.Board[p].Color() == color.Opposite()
-	}
-	return f.GetAttacksOnCondition(cond, color)
-}
 func (f *FEN) DefendsSquare(color Color, square Position) bool {
 	cond := func(p Position) bool {
 		return p == square
@@ -178,19 +168,12 @@ func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*
 }
 
 func (f *FEN) IsMate() bool {
-	incoming := f.GetIncomingAttacks()
-	checks := []*Move{}
-	for _, attack := range incoming {
-		if attack.To == f.Pieces.GetKingPos(f.ToMove) {
-			checks = append(checks, attack)
-		}
-	}
+	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
 		moves := f.validMovesInCheck(checks)
 		return len(moves) == 0
-	} else {
-		return false
 	}
+	return false
 }
 
 func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
@@ -272,18 +255,12 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 func (f *FEN) ValidMoves() []*Move {
 	result := []*Move{}
 
-	incoming := f.GetIncomingAttacks()
-	checks := []*Move{}
-	for _, attack := range incoming {
-		if attack.To == f.Pieces.GetKingPos(f.ToMove) {
-			checks = append(checks, attack)
-		}
-	}
+	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
 		return f.validMovesInCheck(checks)
 	}
 
-	for _, attack := range f.GetAttacks(f.ToMove) {
+	for _, attack := range f.Attacks.GetAttacks(f.ToMove, f.Pieces) {
 		result = append(result, attack)
 	}
 

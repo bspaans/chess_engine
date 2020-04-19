@@ -24,6 +24,36 @@ func NewAttacks() Attacks {
 	return attacks
 }
 
+// Get all the checks @color is currently in
+func (a Attacks) GetChecks(color Color, pieces PiecePositions) []*Move {
+	incoming := a.GetAttacks(color.Opposite(), pieces)
+	kingPos := pieces.GetKingPos(color)
+	checks := []*Move{}
+	for _, attack := range incoming {
+		if attack.To == kingPos {
+			checks = append(checks, attack)
+		}
+	}
+	return checks
+}
+
+// Get all the attacks by @color. Ignores pins.
+func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
+	result := []*Move{}
+	for _, positions := range pieces[color.Opposite()] {
+		for _, pos := range positions {
+			for _, pieceVectors := range a[pos] {
+				if pieceVectors.Color() == color {
+					fromPos := pieceVectors.Vector.FromPosition(pos)
+					move := NewMove(fromPos, pos)
+					result = append(result, move)
+				}
+			}
+		}
+	}
+	return result
+}
+
 // Adds a piece into the Attacks "database". Calculates all the attacks
 // that are possible for this piece and adds the appropriate vectors
 func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
@@ -54,6 +84,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	// TODO king attacks if opposing piece is undefended
 }
 
+// Whether or not @color attacks the @square
 func (a Attacks) AttacksSquare(color Color, square Position) bool {
 	for _, pieceVectors := range a[square] {
 		if pieceVectors.Piece.Color() == color {
