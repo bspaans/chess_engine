@@ -3,7 +3,6 @@ package chess_engine
 import (
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 type FEN struct {
@@ -21,8 +20,7 @@ type FEN struct {
 	Pieces PiecePositions
 
 	ToMove              Color
-	WhiteCastleStatus   CastleStatus
-	BlackCastleStatus   CastleStatus
+	CastleStatuses      CastleStatuses
 	EnPassantVulnerable Position
 	HalfmoveClock       int
 	Fullmove            int
@@ -33,8 +31,6 @@ type FEN struct {
 
 func ParseFEN(fenstr string) (*FEN, error) {
 	fen := FEN{}
-	fen.BlackCastleStatus = None
-	fen.WhiteCastleStatus = None
 	forStr := ""
 	colorStr := ""
 	castleStr := ""
@@ -55,8 +51,8 @@ func ParseFEN(fenstr string) (*FEN, error) {
 		return nil, err
 	}
 	fen.ToMove = color
+	fen.CastleStatuses = NewCastleStatusesFromString(castleStr)
 
-	fen.WhiteCastleStatus, fen.BlackCastleStatus = ParseCastleStatus(castleStr)
 	if enPassant == "-" {
 		fen.EnPassantVulnerable = NoPosition
 	} else {
@@ -376,71 +372,41 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 
 	// TODO: update castle status when rook gets captured
 
-	wCastle := f.WhiteCastleStatus
-	bCastle := f.BlackCastleStatus
 	switch movingPiece {
-	case BlackRook:
-		switch move.From {
-		case A8:
-			switch bCastle {
-			case Both:
-				bCastle = Kingside
-			case Queenside:
-				bCastle = None
-			}
-		case H8:
-			switch bCastle {
-			case Both:
-				bCastle = Queenside
-			case Kingside:
-				bCastle = None
-			}
-		}
 	case BlackKing:
 		// handle castles
 		if move.From == E8 && move.To == G8 {
-			if bCastle != Kingside && bCastle != Both {
-				panic("Invalid castle")
-			}
+			/*
+				if bCastle != Kingside && bCastle != Both {
+					panic("Invalid castle")
+				}
+			*/
 			// TODO: implement castle
 		} else if move.From == E8 && move.To == C8 {
-			if bCastle != Queenside && bCastle != Both {
-				panic("Invalid castle")
-			}
+			/*
+				if bCastle != Queenside && bCastle != Both {
+					panic("Invalid castle")
+				}
+			*/
 			// TODO: implement castle
-		}
-		bCastle = None
-	case WhiteRook:
-		switch move.From {
-		case A1:
-			switch wCastle {
-			case Both:
-				wCastle = Kingside
-			case Queenside:
-				wCastle = None
-			}
-		case H1:
-			switch wCastle {
-			case Both:
-				wCastle = Queenside
-			case Kingside:
-				wCastle = None
-			}
 		}
 	case WhiteKing:
 		// handle castles
 		if move.From == E1 && move.To == G1 {
-			if wCastle != Kingside && wCastle != Both {
-				panic("invalid castle")
-			}
+			/*
+				if wCastle != Kingside && wCastle != Both {
+					panic("invalid castle")
+				}
+			*/
 			// TODO handle castle
 		} else if move.From == E1 && move.To == C1 {
-			if wCastle != Queenside && wCastle != Both {
-				panic("invalid castle")
-			}
+			/*
+				if wCastle != Queenside && wCastle != Both {
+					panic("invalid castle")
+				}
+			*/
 			// TODO handle castle
 		}
-		wCastle = None
 	}
 
 	result.Board = board
@@ -459,8 +425,7 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	}
 
 	result.ToMove = f.ToMove.Opposite()
-	result.WhiteCastleStatus = wCastle
-	result.BlackCastleStatus = bCastle
+	result.CastleStatuses = f.CastleStatuses.ApplyMove(move, movingPiece)
 	result.EnPassantVulnerable = NoPosition // TODO
 	result.HalfmoveClock = f.HalfmoveClock + 1
 	result.Fullmove = fullMove
@@ -491,13 +456,7 @@ func (f *FEN) FENString() string {
 			forStr += "/"
 		}
 	}
-	castleStatus := f.WhiteCastleStatus.String(White) + f.BlackCastleStatus.String(Black)
-	if castleStatus == "--" {
-		castleStatus = "-"
-	}
-	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
-		castleStatus = strings.Trim(castleStatus, "-")
-	}
+	castleStatus := f.CastleStatuses.String()
 	enPassant := "-"
 	if f.EnPassantVulnerable != 0 {
 		enPassant = f.EnPassantVulnerable.String()

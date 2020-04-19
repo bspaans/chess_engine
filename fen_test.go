@@ -234,6 +234,8 @@ func Test_ApplyMove_table(t *testing.T) {
 	cases := [][]string{
 		[]string{"rn2k2r/1p3ppp/1qp5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K3 b kq - 35 1", "b6g1", "rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 2", "true"},
 		[]string{"r4b2/p3pB2/3N4/1Q4p1/6kp/P1N1B3/1PP2PPP/R3K2R w KQ - 44 1", "b5g5", "r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1", "true"},
+		// This should update the castle status, because the rook gets captured.
+		[]string{"2bqk1nr/1p1ppp1p/6pb/p1pP4/3QP3/5N2/PPP2PPP/RNB1KB1R w KQk - 14 8", "d4h8", "2bqk1nQ/1p1ppp1p/6pb/p1pP4/4P3/5N2/PPP2PPP/RNB1KB1R b KQ - 15 8", "false"},
 	}
 	for _, testCase := range cases {
 		startPos, moveStr, endPos, isMate := testCase[0], testCase[1], testCase[2], testCase[3] == "true"

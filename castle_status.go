@@ -1,6 +1,8 @@
 package chess_engine
 
-import "strings"
+import (
+	"strings"
+)
 
 type CastleStatus int8
 
@@ -36,6 +38,19 @@ func (cs CastleStatus) String(c Color) string {
 	return ""
 }
 
+func (cs CastleStatus) Remove(remove CastleStatus) CastleStatus {
+	if remove == Kingside {
+		if cs == Both {
+			return Queenside
+		}
+	} else if remove == Queenside {
+		if cs == Both {
+			return Kingside
+		}
+	}
+	return None
+}
+
 func ParseCastleStatus(castleStr string) (CastleStatus, CastleStatus) {
 	black, white := None, None
 	if strings.Contains(castleStr, "k") {
@@ -60,4 +75,62 @@ func ParseCastleStatus(castleStr string) (CastleStatus, CastleStatus) {
 		}
 	}
 	return white, black
+}
+
+type CastleStatuses struct {
+	White CastleStatus
+	Black CastleStatus
+}
+
+func NewCastleStatuses(white, black CastleStatus) CastleStatuses {
+	return CastleStatuses{white, black}
+}
+
+func NewCastleStatusesFromString(str string) CastleStatuses {
+	return NewCastleStatuses(None, None).Parse(str)
+}
+
+func (cs CastleStatuses) Parse(castleStr string) CastleStatuses {
+	cs.White, cs.Black = ParseCastleStatus(castleStr)
+	return cs
+}
+
+func (cs CastleStatuses) ApplyMove(move *Move, movingPiece Piece) CastleStatuses {
+	if movingPiece == BlackRook {
+		if move.From == A8 {
+			return NewCastleStatuses(cs.White, cs.Black.Remove(Queenside))
+		} else if move.From == H8 {
+			return NewCastleStatuses(cs.White, cs.Black.Remove(Kingside))
+		}
+	} else if movingPiece == WhiteRook {
+		if move.From == A1 {
+			return NewCastleStatuses(cs.White.Remove(Queenside), cs.Black)
+		} else if move.From == H1 {
+			return NewCastleStatuses(cs.White.Remove(Kingside), cs.Black)
+		}
+	} else if movingPiece == BlackKing {
+		return NewCastleStatuses(cs.White, None)
+	} else if movingPiece == WhiteKing {
+		return NewCastleStatuses(None, cs.Black)
+	} else if move.To == A8 {
+		return NewCastleStatuses(cs.White, cs.Black.Remove(Queenside))
+	} else if move.To == H8 {
+		return NewCastleStatuses(cs.White, cs.Black.Remove(Kingside))
+	} else if move.To == A1 {
+		return NewCastleStatuses(cs.White.Remove(Queenside), cs.Black)
+	} else if move.To == H1 {
+		return NewCastleStatuses(cs.White.Remove(Kingside), cs.Black)
+	}
+	return cs
+}
+
+func (cs CastleStatuses) String() string {
+	castleStatus := cs.White.String(White) + cs.Black.String(Black)
+	if castleStatus == "--" {
+		castleStatus = "-"
+	}
+	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
+		castleStatus = strings.Trim(castleStatus, "-")
+	}
+	return castleStatus
 }
