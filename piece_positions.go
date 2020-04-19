@@ -38,7 +38,7 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 					// This is the piece that is moving and we need to replace its
 					// position with the move's target.
 					// There's a special case for promotions, because in that case
-					// we need to remove th pawn instead, and add a new piece.
+					// we need to remove the pawn instead, and add a new piece.
 					if move.Promote == NoPiece {
 						pieces[color][piece] = append(pieces[color][piece], move.To)
 					} else {
@@ -55,5 +55,32 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 			}
 		}
 	}
+	// There is another special case for castling, because now we also
+	// need to move the rook's position.
+	if movingPiece == King && c == Black {
+		if move.From == E8 && move.To == G8 {
+			pieces.move(Black, Rook, H8, F8)
+		} else if move.From == E8 && move.To == C8 {
+			pieces.move(Black, Rook, A8, C8)
+		}
+	} else if movingPiece == King && c == White {
+		if move.From == E1 && move.To == G1 {
+			pieces.move(White, Rook, H1, F1)
+		} else if move.From == E1 && move.To == C1 {
+			pieces.move(White, Rook, A1, C1)
+		}
+	}
 	return pieces
+}
+
+func (p PiecePositions) move(c Color, piece NormalizedPiece, from, to Position) {
+	updated := []Position{}
+	for _, pos := range p[c][piece] {
+		if pos == from {
+			updated = append(updated, to)
+		} else {
+			updated = append(updated, pos)
+		}
+	}
+	p[c][piece] = updated
 }

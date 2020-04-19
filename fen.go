@@ -327,6 +327,7 @@ func (f *FEN) ValidMoves() []*Move {
 
 		}
 	}
+	// The king can only move to squares that are empty and/or unattacked
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
 	for _, p := range kingPos.GetKingMoves() {
 		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
@@ -335,7 +336,20 @@ func (f *FEN) ValidMoves() []*Move {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
-	// TODO castling
+	// Castling
+	if f.ToMove == White && f.CastleStatuses.White != None {
+		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
+			result = append(result, NewMove(kingPos, C1))
+		} else if f.Board.CanCastle(f.Attacks, White, F1, G1) {
+			result = append(result, NewMove(kingPos, G1))
+		}
+	} else if f.ToMove == Black && f.CastleStatuses.Black != None {
+		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
+			result = append(result, NewMove(kingPos, C8))
+		} else if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
+			result = append(result, NewMove(kingPos, G8))
+		}
+	}
 
 	// Make sure pieces aren't pinned
 	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
@@ -370,42 +384,23 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 		board[move.To] = move.Promote
 	}
 
-	// TODO: update castle status when rook gets captured
-
+	// Handle castles
 	switch movingPiece {
 	case BlackKing:
-		// handle castles
 		if move.From == E8 && move.To == G8 {
-			/*
-				if bCastle != Kingside && bCastle != Both {
-					panic("Invalid castle")
-				}
-			*/
-			// TODO: implement castle
+			board[F8] = board[H8]
+			board[H8] = NoPiece
 		} else if move.From == E8 && move.To == C8 {
-			/*
-				if bCastle != Queenside && bCastle != Both {
-					panic("Invalid castle")
-				}
-			*/
-			// TODO: implement castle
+			board[D8] = board[A8]
+			board[A8] = NoPiece
 		}
 	case WhiteKing:
-		// handle castles
 		if move.From == E1 && move.To == G1 {
-			/*
-				if wCastle != Kingside && wCastle != Both {
-					panic("invalid castle")
-				}
-			*/
-			// TODO handle castle
+			board[F1] = board[H1]
+			board[H1] = NoPiece
 		} else if move.From == E1 && move.To == C1 {
-			/*
-				if wCastle != Queenside && wCastle != Both {
-					panic("invalid castle")
-				}
-			*/
-			// TODO handle castle
+			board[D1] = board[A1]
+			board[A1] = NoPiece
 		}
 	}
 

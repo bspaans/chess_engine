@@ -17,3 +17,14 @@ func (b Board) IsEmpty(pos Position) bool {
 func (b Board) IsOpposingPiece(pos Position, c Color) bool {
 	return b[pos] != NoPiece && b[pos].Color() != c
 }
+
+func (b Board) CanCastle(a Attacks, color Color, from, to Position) bool {
+	for p := from; p <= to; p++ {
+		if !b.IsEmpty(p) {
+			return false
+		} else if a.AttacksSquare(color.Opposite(), p) {
+			return false
+		}
+	}
+	return true
+}
