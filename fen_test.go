@@ -59,6 +59,7 @@ func Test_IsMate(t *testing.T) {
 		"r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1",
 		"rn2k2r/1p3ppp/2p5/1p2p3/2P1n1bP/P5P1/4p2R/b1B1K1q1 w kq - 36 1",
 		"r4b2/p3pB2/3N4/6Q1/6kp/P1N1B3/1PP2PPP/R3K2R b KQ - 45 1",
+		"r3kb1r/pp3ppp/2n2n2/3p4/Pq3pbP/1P2pK2/1BPPP1P1/RN1Q1B2 w kq - 22 12",
 	}
 	for _, expected := range cases {
 		unit, err := ParseFEN(expected)
@@ -426,6 +427,30 @@ func Test_ApplyMove_game(t *testing.T) {
 			[]string{"rnb2bnr/2N4p/1p3kp1/p2Q1P2/2P5/8/PP3PPP/R1B1KBNR w KQ - 20 11", "d5d4"},
 			[]string{"rnb2bnr/2N4p/1p3kp1/p4P2/2PQ4/8/PP3PPP/R1B1KBNR b KQ - 21 11", "f6f5"},
 			[]string{"rnb2bnr/2N4p/1p4p1/p4k2/2PQ4/8/PP3PPP/R1B1KBNR w KQ - 22 12", "g2g4"},
+		},
+		[][]string{
+			[]string{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "f2f4"},
+			[]string{"rnbqkbnr/pppppppp/8/8/5P2/8/PPPPP1PP/RNBQKBNR b KQkq - 1 1", "d7d5"},
+			[]string{"rnbqkbnr/ppp1pppp/8/3p4/5P2/8/PPPPP1PP/RNBQKBNR w KQkq - 2 2", "g1f3"},
+			[]string{"rnbqkbnr/ppp1pppp/8/3p4/5P2/5N2/PPPPP1PP/RNBQKB1R b KQkq - 3 2", "g8f6"},
+			[]string{"rnbqkb1r/ppp1pppp/5n2/3p4/5P2/5N2/PPPPP1PP/RNBQKB1R w KQkq - 4 3", "f3d4"},
+			[]string{"rnbqkb1r/ppp1pppp/5n2/3p4/3N1P2/8/PPPPP1PP/RNBQKB1R b KQkq - 5 3", "c7c5"},
+			[]string{"rnbqkb1r/pp2pppp/5n2/2pp4/3N1P2/8/PPPPP1PP/RNBQKB1R w KQkq - 6 4", "b2b3"},
+			[]string{"rnbqkb1r/pp2pppp/5n2/2pp4/3N1P2/1P6/P1PPP1PP/RNBQKB1R b KQkq - 7 4", "c5d4"},
+			[]string{"rnbqkb1r/pp2pppp/5n2/3p4/3p1P2/1P6/P1PPP1PP/RNBQKB1R w KQkq - 8 5", "h2h4"},
+			[]string{"rnbqkb1r/pp2pppp/5n2/3p4/3p1P1P/1P6/P1PPP1P1/RNBQKB1R b KQkq - 9 5", "d8a5"},
+			[]string{"rnb1kb1r/pp2pppp/5n2/q2p4/3p1P1P/1P6/P1PPP1P1/RNBQKB1R w KQkq - 10 6", "h1h3"},
+			[]string{"rnb1kb1r/pp2pppp/5n2/q2p4/3p1P1P/1P5R/P1PPP1P1/RNBQKB2 b Qkq - 11 6", "b8c6"},
+			[]string{"r1b1kb1r/pp2pppp/2n2n2/q2p4/3p1P1P/1P5R/P1PPP1P1/RNBQKB2 w Qkq - 12 7", "h3e3"},
+			[]string{"r1b1kb1r/pp2pppp/2n2n2/q2p4/3p1P1P/1P2R3/P1PPP1P1/RNBQKB2 b Qkq - 13 7", "d4e3"},
+			[]string{"r1b1kb1r/pp2pppp/2n2n2/q2p4/5P1P/1P2p3/P1PPP1P1/RNBQKB2 w Qkq - 14 8", "e1f2"},
+			[]string{"r1b1kb1r/pp2pppp/2n2n2/q2p4/5P1P/1P2p3/P1PPPKP1/RNBQ1B2 b kq - 15 8", "e7e5"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/q2pp3/5P1P/1P2p3/P1PPPKP1/RNBQ1B2 w kq - 16 9", "f2f3"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/q2pp3/5P1P/1P2pK2/P1PPP1P1/RNBQ1B2 b kq - 17 9", "e5f4"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/q2p4/5p1P/1P2pK2/P1PPP1P1/RNBQ1B2 w kq - 18 10", "c1b2"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/q2p4/5p1P/1P2pK2/PBPPP1P1/RN1Q1B2 b kq - 19 10", "a5b4"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/3p4/1q3p1P/1P2pK2/PBPPP1P1/RN1Q1B2 w kq - 20 11", "a2a4"},
+			[]string{"r1b1kb1r/pp3ppp/2n2n2/3p4/Pq3p1P/1P2pK2/1BPPP1P1/RN1Q1B2 b kq - 21 11", "c8g4"},
 		},
 	}
 

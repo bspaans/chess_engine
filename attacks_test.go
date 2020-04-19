@@ -7,6 +7,7 @@ import (
 func Test_Attacks(t *testing.T) {
 
 	board := NewBoard()
+	board[E4] = WhiteQueen
 	unit := NewAttacks()
 
 	unit.AddPiece(WhiteQueen, E4, board)
@@ -29,6 +30,7 @@ func Test_Attacks(t *testing.T) {
 func Test_Attacks_king_is_ignored(t *testing.T) {
 
 	board := NewBoard()
+	board[E4] = WhiteQueen
 	board[E2] = BlackKing
 	unit := NewAttacks()
 
@@ -52,6 +54,7 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 
 	board := NewBoard()
+	board[E4] = WhiteQueen
 	board[E2] = WhiteKing
 	unit := NewAttacks()
 
@@ -72,6 +75,51 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 			t.Errorf("Expecting white queen in piece vector")
 		}
 		vector := NewMove(E4, pos).Vector()
+		if unit[pos][0].Vector != vector {
+			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		}
+	}
+}
+
+func Test_Attacks_white_pawn(t *testing.T) {
+
+	board := NewBoard()
+	board[E4] = WhitePawn
+	unit := NewAttacks()
+
+	unit.AddPiece(WhitePawn, E4, board)
+
+	positions := PawnAttacks[White][E4]
+	for _, pos := range positions {
+		if len(unit[pos]) != 1 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if unit[pos][0].Piece != WhitePawn {
+			t.Errorf("Expecting white pawn in piece vector")
+		}
+		vector := NewMove(E4, pos).Vector()
+		if unit[pos][0].Vector != vector {
+			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		}
+	}
+}
+func Test_Attacks_black_pawn(t *testing.T) {
+
+	board := NewBoard()
+	board[E3] = BlackPawn
+	unit := NewAttacks()
+
+	unit.AddPiece(BlackPawn, E3, board)
+
+	positions := PawnAttacks[Black][E3]
+	for _, pos := range positions {
+		if len(unit[pos]) != 1 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if unit[pos][0].Piece != BlackPawn {
+			t.Errorf("Expecting white pawn in piece vector")
+		}
+		vector := NewMove(E3, pos).Vector()
 		if unit[pos][0].Vector != vector {
 			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
 		}

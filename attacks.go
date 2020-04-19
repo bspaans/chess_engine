@@ -30,13 +30,8 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	// TODO en passant
 	if piece.ToNormalizedPiece() == Pawn {
 		for _, toPos := range PawnAttacks[piece.Color()][pos] {
-			if board.IsEmpty(toPos) {
+			if board.IsEmpty(toPos) || board.IsOpposingPiece(toPos, piece.Color()) {
 				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-			} else if board.IsOpposingPiece(toPos, piece.Color()) {
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-				return
-			} else {
-				return
 			}
 		}
 	} else {
