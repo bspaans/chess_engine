@@ -1,76 +1,20 @@
 package chess_engine
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-type Color int8
-
-const (
-	NoColor Color = iota
-	Black
-	White
-)
-
-func (c Color) String() string {
-	if c == White {
-		return "w"
-	} else if c == Black {
-
-		return "b"
-	}
-	return " "
-}
-
-func (c Color) Opposite() Color {
-	if c == Black {
-		return White
-	} else {
-		return Black
-	}
-}
-
-type CastleStatus int8
-
-const (
-	Both CastleStatus = iota
-	None
-	Kingside
-	Queenside
-)
-
-func (cs CastleStatus) String(c Color) string {
-	type p struct {
-		CastleStatus
-		Color
-	}
-	switch (p{cs, c}) {
-	case p{Both, Black}:
-		return "kq"
-	case p{Both, White}:
-		return "KQ"
-	case p{Kingside, Black}:
-		return "k"
-	case p{Kingside, White}:
-		return "K"
-	case p{Queenside, Black}:
-		return "q"
-	case p{Queenside, White}:
-		return "Q"
-	}
-	if cs == None {
-		return "-"
-	}
-	return ""
-}
-
 type FEN struct {
 	// An array of size 64 denoting the board.
 	// 0 index = a1
 	Board []Piece
+
+	// The board again, but this time keeping track
+	// of which pieces are attacking what squares.
+	Attacks Attacks
+
 	// The location of every piece on the board.
 	// The Pieces are normalized, because the color
 	// is already part of the map.
@@ -106,37 +50,13 @@ func ParseFEN(fenstr string) (*FEN, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch colorStr {
-	case "w":
-		fen.ToMove = White
-	case "b":
-		fen.ToMove = Black
-	default:
-		return nil, errors.New("pgn: invalid color")
+	color, err := ParseColor(colorStr)
+	if err != nil {
+		return nil, err
 	}
+	fen.ToMove = color
 
-	if strings.Contains(castleStr, "k") {
-		fen.BlackCastleStatus = Kingside
-	}
-	if strings.Contains(castleStr, "q") {
-		if fen.BlackCastleStatus == Kingside {
-			fen.BlackCastleStatus = Both
-		} else {
-			fen.BlackCastleStatus = Queenside
-		}
-	}
-
-	if strings.Contains(castleStr, "K") {
-		fen.WhiteCastleStatus = Kingside
-	}
-	if strings.Contains(castleStr, "Q") {
-		if fen.WhiteCastleStatus == Kingside {
-			fen.WhiteCastleStatus = Both
-		} else {
-			fen.WhiteCastleStatus = Queenside
-		}
-	}
-
+	fen.WhiteCastleStatus, fen.BlackCastleStatus = ParseCastleStatus(castleStr)
 	if enPassant == "-" {
 		fen.EnPassantVulnerable = NoPosition
 	} else {
@@ -145,10 +65,8 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			return nil, err
 		}
 	}
-	fen.Board = make([]Piece, 64)
-	for i := 0; i < 64; i++ {
-		fen.Board[i] = NoPiece
-	}
+	fen.Board = NewBoard()
+	fen.Attacks = NewAttacks()
 	fen.Pieces = NewPiecePositions()
 	x := 0
 	y := 7
@@ -169,6 +87,7 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			pos := y*8 + x
 			piece := Piece(forStr[i])
 			fen.Board[pos] = piece
+			fen.Attacks.AddPiece(piece, Position(pos))
 			fen.Pieces.AddPosition(piece, Position(pos))
 			x++
 		}
@@ -184,6 +103,24 @@ func (f *FEN) NextFENs() []*FEN {
 		result = append(result, f.ApplyMove(m))
 	}
 	return result
+}
+
+func (f *FEN) GetIncomingAttacks() []*Move {
+	return f.GetAttacks(f.ToMove.Opposite())
+}
+
+func (f *FEN) GetAttacks(color Color) []*Move {
+	cond := func(p Position) bool {
+		return f.Board[p] != NoPiece && f.Board[p].Color() == color.Opposite()
+	}
+	return f.GetAttacksOnCondition(cond, color)
+}
+func (f *FEN) AttacksSquare(color Color, square Position) bool {
+	cond := func(p Position) bool {
+		return p == square
+	}
+	attacks := f.GetAttacksOnCondition(cond, color)
+	return len(attacks) > 0
 }
 
 func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*Move {
@@ -237,28 +174,20 @@ func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*
 	return result
 }
 
-func (f *FEN) GetAttacks(color Color) []*Move {
-	cond := func(p Position) bool {
-		return f.Board[p] != NoPiece && f.Board[p].Color() == color.Opposite()
+func (f *FEN) IsMate() bool {
+	incoming := f.GetIncomingAttacks()
+	checks := []*Move{}
+	for _, attack := range incoming {
+		if attack.To == f.Pieces.GetKingPos(f.ToMove) {
+			checks = append(checks, attack)
+		}
 	}
-	return f.GetAttacksOnCondition(cond, color)
-}
-func (f *FEN) AttacksSquare(color Color, square Position) bool {
-	cond := func(p Position) bool {
-		return p == square
+	if len(checks) > 0 {
+		moves := f.validMovesInCheck(checks)
+		return len(moves) == 0
+	} else {
+		return false
 	}
-	attacks := f.GetAttacksOnCondition(cond, color)
-	/*
-		fmt.Println(square, attacks)
-		fmt.Println(f.Board[H2] == WhitePawn, f.Board[G2] == WhitePawn, f.Board[F2] == WhitePawn)
-		fmt.Println(f.Pieces[White][Pawn])
-		fmt.Println(f.Pieces)
-	*/
-	return len(attacks) > 0
-}
-
-func (f *FEN) GetIncomingAttacks() []*Move {
-	return f.GetAttacks(f.ToMove.Opposite())
 }
 
 func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
@@ -316,65 +245,10 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	return result
 }
 
-func (f *FEN) FENString() string {
-	forStr := ""
-	for y := 7; y >= 0; y-- {
-		empty := 0
-		for x := 0; x < 8; x++ {
-			pos := y*8 + x
-			if f.Board[pos] != NoPiece {
-				if empty != 0 {
-					forStr += strconv.Itoa(empty)
-				}
-				forStr += string([]byte{byte(f.Board[pos])})
-				empty = 0
-			} else {
-				empty += 1
-			}
-		}
-		if empty != 0 {
-			forStr += strconv.Itoa(empty)
-		}
-		if y != 0 {
-			forStr += "/"
-		}
-	}
-	castleStatus := f.WhiteCastleStatus.String(White) + f.BlackCastleStatus.String(Black)
-	if castleStatus == "--" {
-		castleStatus = "-"
-	}
-	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
-		castleStatus = strings.Trim(castleStatus, "-")
-	}
-	enPassant := "-"
-	if f.EnPassantVulnerable != 0 {
-		enPassant = f.EnPassantVulnerable.String()
-	}
-	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, enPassant, f.HalfmoveClock, f.Fullmove)
-}
-
-func (f *FEN) IsMate() bool {
-	incoming := f.GetIncomingAttacks()
-	fmt.Println(incoming)
-	checks := []*Move{}
-	for _, attack := range incoming {
-		if attack.To == f.Pieces.GetKingPos(f.ToMove) {
-			checks = append(checks, attack)
-		}
-	}
-	if len(checks) > 0 {
-		moves := f.validMovesInCheck(checks)
-		return len(moves) == 0
-	} else {
-		return false
-	}
-}
-
 func (f *FEN) ValidMoves() []*Move {
 	result := []*Move{}
 
 	incoming := f.GetIncomingAttacks()
-	fmt.Println(incoming)
 	checks := []*Move{}
 	for _, attack := range incoming {
 		if attack.To == f.Pieces.GetKingPos(f.ToMove) {
@@ -546,4 +420,41 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	result.Fullmove = fullMove
 	result.Line = line
 	return result
+}
+
+func (f *FEN) FENString() string {
+	forStr := ""
+	for y := 7; y >= 0; y-- {
+		empty := 0
+		for x := 0; x < 8; x++ {
+			pos := y*8 + x
+			if f.Board[pos] != NoPiece {
+				if empty != 0 {
+					forStr += strconv.Itoa(empty)
+				}
+				forStr += string([]byte{byte(f.Board[pos])})
+				empty = 0
+			} else {
+				empty += 1
+			}
+		}
+		if empty != 0 {
+			forStr += strconv.Itoa(empty)
+		}
+		if y != 0 {
+			forStr += "/"
+		}
+	}
+	castleStatus := f.WhiteCastleStatus.String(White) + f.BlackCastleStatus.String(Black)
+	if castleStatus == "--" {
+		castleStatus = "-"
+	}
+	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
+		castleStatus = strings.Trim(castleStatus, "-")
+	}
+	enPassant := "-"
+	if f.EnPassantVulnerable != 0 {
+		enPassant = f.EnPassantVulnerable.String()
+	}
+	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, enPassant, f.HalfmoveClock, f.Fullmove)
 }

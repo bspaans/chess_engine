@@ -185,7 +185,6 @@ func main() {
 			move := game.White.Play(fen)
 			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
-			fmt.Println(chess_engine.PawnAttacks[chess_engine.White][chess_engine.G4])
 			fen = fen.ApplyMove(move)
 			if fen.IsMate() {
 				standing[game.White] += 1
