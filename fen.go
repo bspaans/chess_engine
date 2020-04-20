@@ -150,7 +150,7 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 		pos := check.To
 		for pos != check.From {
 			pos = vector.FromPosition(pos)
-			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, f.Pieces, pos)
+			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, pos)
 			for _, move := range blocks {
 				result = append(result, move)
 			}
@@ -283,7 +283,6 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 
 	board := f.Board.Copy()
 
-	// TODO handle capture of en-passanted piece
 	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
 	movingPiece := board[move.To]
 	normalizedMovingPiece := movingPiece.ToNormalizedPiece()
@@ -327,6 +326,13 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 
 	result.Board = board
 	result.Pieces = f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
+	if move.To == f.EnPassantVulnerable {
+		if f.ToMove == White {
+			result.Pieces.Remove(Black, Pawn, move.To-8)
+		} else {
+			result.Pieces.Remove(White, Pawn, move.To+8)
+		}
+	}
 	// TODO: implement ApplyMove in Attacks
 	result.Attacks = NewAttacksFromBoard(board)
 

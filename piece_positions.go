@@ -73,6 +73,16 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 	return pieces
 }
 
+func (p PiecePositions) Remove(c Color, piece NormalizedPiece, removePos Position) {
+	result := []Position{}
+	for _, pos := range p[c][piece] {
+		if pos != removePos {
+			result = append(result, pos)
+		}
+	}
+	p[c][piece] = result
+}
+
 func (p PiecePositions) move(c Color, piece NormalizedPiece, from, to Position) {
 	updated := []Position{}
 	for _, pos := range p[c][piece] {

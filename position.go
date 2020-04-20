@@ -242,7 +242,6 @@ func init() {
 			}
 			return "[]Position{" + strings.Join(result, ", ") + "}"
 		}
-		// TODO pawns
 		result := "package chess_engine\n\nvar PieceMoves = map[Piece][][]Position{\n"
 		singleMovers := [][]interface{}{
 			[]interface{}{"WhiteKing", func(p Position) []Position { return p.GetKingMoves() }},
@@ -284,7 +283,6 @@ func init() {
 		}
 		result += "}\n\n"
 
-		// TODO: pawn attacks
 		result += "var MoveVectors = map[Piece][][][]Position{\n"
 		for _, mover := range singleMovers {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)

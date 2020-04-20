@@ -9,9 +9,9 @@ each other in tournament mode (see `tournament/`)
 
 ## Status
 
-* All moves are supported currently, except the engine won't suggest *en
-  passant* yet. Otherwise the full rules of chess are implemented, and you are
-  able to find all valid moves in a position.
+* All moves are supported currently, except for the tiniest of edge-cases (see
+  below) Otherwise the full rules of chess are implemented, and you are able to
+  find all valid moves in a position.
 * The search function is really naive/brute force and uses a lot of memory, but
   we are able to complete games against stockfish. I suggest limiting the depth 
   or number of nodes when letting the engine ponder.
@@ -20,3 +20,10 @@ each other in tournament mode (see `tournament/`)
   work will focus once the full ruleset is implemented.
 * Tournament mode is working. 
 
+### Edge Cases / Known Bugs
+
+Putting this here to shame me into fixing them:
+
+* Attacking a checking knight never occurs to the engine
+* Sometimes the white king will try to move onto a square controlled by the
+  black king alone.

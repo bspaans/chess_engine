@@ -85,7 +85,7 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 }
 
 // Get the attacks by @color on @square
-func (a Attacks) GetAttacksOnSquare(color Color, pieces PiecePositions, pos Position) []*Move {
+func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 	result := []*Move{}
 	for _, pieceVector := range a[pos] {
 		if pieceVector.Color() == color {
@@ -119,7 +119,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	} else if piece.ToNormalizedPiece() == King {
 		// King attacks only if the square is not attacked by the opponent.
 		// To work this out correctly the whole board must be initialised before adding the kings.
-		// TODO: what if the piece is actually defended by the other king? => Remove opposite king positions
+		// TODO: what if the piece is actually defended by the other king? => Remove opposite king positions? but it affects defense of pieces as well...
 		for _, toPos := range PieceMoves[piece][pos] {
 			if board.IsEmpty(toPos) && !a.AttacksSquare(piece.Color().Opposite(), toPos) {
 				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
