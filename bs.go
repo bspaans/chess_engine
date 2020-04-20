@@ -27,7 +27,7 @@ func (b *BSEngine) Start(output chan string, maxNodes, maxDepth int) {
 }
 
 func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
-	// TODO keep a FEN map to take care off transpositions
+	seen := map[string]bool{}
 	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
 	depth := 0
@@ -42,31 +42,47 @@ func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxD
 			return
 		case <-timer.C:
 			totalNodes += nodes
-			output <- fmt.Sprintf("info ns %d nodes %d", nodes, totalNodes)
+			output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
 			nodes = 0
 			timer = time.NewTimer(time.Second)
 		default:
 			if len(queue) > 0 {
 				nodes++
 				item := queue[0]
+				fenStr := item.FENString()
+				if seen[fenStr] {
+					queue[0] = nil
+					queue = queue[1:]
+					continue
+				}
+				seen[fenStr] = true
 				nextFENs := item.NextFENs()
 				for _, f := range nextFENs {
-					queue = append(queue, f)
+					if !seen[f.FENString()] {
+						queue = append(queue, f)
+					}
 				}
+				queue[0] = nil
 				queue = queue[1:]
 
 				if len(item.Line) != 0 {
 
 					score := 0.0
-					if len(nextFENs) == 0 {
-						score = math.Inf(1)
+					if item.IsDraw() {
+						score = 0.0
+					} else if len(nextFENs) == 0 && item.IsMate() {
+						if item.ToMove == White {
+							score = math.Inf(-1)
+						} else {
+							score = math.Inf(1)
+						}
 					} else {
 						score = b.heuristicScorePosition(item)
 					}
 
 					if len(item.Line) > depth && bestLine != nil {
 						tree.Prune()
-						if maxDepth > 0 && len(item.Line) >= maxDepth {
+						if maxDepth > 0 && len(item.Line) > maxDepth {
 							output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
 							return
 						}
