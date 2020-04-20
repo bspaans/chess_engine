@@ -26,5 +26,4 @@ Putting this here to shame me into fixing them:
 
 * Attacking a checking knight never occurs to the engine
 * Missing draw by repetition
-* Missing draw by stalemate
 * Missing draw by insufficient material

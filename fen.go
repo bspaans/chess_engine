@@ -101,10 +101,18 @@ func (f *FEN) NextFENs() []*FEN {
 }
 
 func (f *FEN) IsDraw() bool {
+	// Fifty move rule
 	if f.HalfmoveClock >= 100 {
 		return true
 	}
-	return false
+	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
+	if len(checks) > 0 {
+		return false
+	}
+	// TODO: draw by repetition
+	// TODO: draw by insufficient material
+	// Stalemate
+	return len(f.ValidMoves()) == 0
 }
 
 func (f *FEN) IsMate() bool {
@@ -202,7 +210,7 @@ func (f *FEN) ValidMoves() []*Move {
 
 	for _, attack := range f.Attacks.GetAttacks(f.ToMove, f.Pieces) {
 		if f.Board[attack.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(f.ToMove.Opposite(), attack.To) {
-			fmt.Println("Filtering invalid king move")
+			// Filtering invalid king move
 
 		} else {
 			result = append(result, attack)

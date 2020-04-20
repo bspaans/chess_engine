@@ -36,7 +36,7 @@ func (e *Engine) Start() error {
 }
 func (e *Engine) Restart() error {
 	fmt.Println("Starting", e.Name)
-	cmd := exec.Command(e.Path)
+	cmd := exec.Command(e.Path, e.Args...)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -107,9 +107,9 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 
 var Engines = []*Engine{
 	//NewEngine("bs-engine-no-eval", "bs-engine", nil),
+	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
-	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space --naive-material"}),
 	NewEngine("stockfish", "stockfish", nil),
 }
 
@@ -173,7 +173,7 @@ type Tournament struct {
 }
 
 func NewTournament(engines []*Engine, rounds int) *Tournament {
-	games := GenerateGames(Engines, 10)
+	games := GenerateGames(Engines, 2)
 	standing := map[*Engine]float64{}
 	for _, engine := range engines {
 		standing[engine] = 0.0
@@ -231,10 +231,13 @@ func (t *Tournament) Start() {
 			panic(err)
 		}
 
+		fmt.Println("Starting game", game.White.Name, "   v.   ", game.Black.Name)
+
 		for game.Result == Unfinished {
+			fmt.Println(fen.Board)
 			move := game.White.Play(fen)
-			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
-			fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
 			if fen.IsDraw() {
 				t.SetResult(game, fen, Draw)
@@ -243,7 +246,7 @@ func (t *Tournament) Start() {
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
-				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
 				fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
 				if fen.IsDraw() {

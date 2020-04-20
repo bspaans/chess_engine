@@ -119,6 +119,9 @@ func Test_ValidMoves_table(t *testing.T) {
 		[]string{"nn5k/P7/8/8/8/8/7r/K7 w - - 0 1", "a1b1 a7b8N a7b8Q a7b8R a7b8B"},
 		[]string{"8/8/8/8/1k6/8/1K6/8 w - - 4 54", "b2a1 b2b1 b2c1 b2a2 b2c2"},
 		[]string{"8/8/8/8/1k6/8/1K6/8 b - - 4 54", "b4a4 b4a5 b4b5 b4c5 b4c4"},
+		[]string{"3R4/2B5/5k2/4N1P1/PPB4P/8/2P5/4K3 b - - 0 35", "f6e7 f6g7 f6f5"},
+		// stalemate
+		[]string{"3R4/2B1k3/8/4N1P1/PPB4P/8/2P5/4K3 b - - 0 35", ""},
 	}
 	for _, testCase := range cases {
 		fenStr, movesStr := testCase[0], testCase[1]
