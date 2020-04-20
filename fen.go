@@ -100,68 +100,6 @@ func (f *FEN) NextFENs() []*FEN {
 	return result
 }
 
-func (f *FEN) DefendsSquare(color Color, square Position) bool {
-	cond := func(p Position) bool {
-		return p == square
-	}
-	attacks := f.GetAttacksOnCondition(cond, color)
-	return len(attacks) > 0
-}
-
-func (f *FEN) GetAttacksOnCondition(cond func(p Position) bool, color Color) []*Move {
-
-	result := []*Move{}
-
-	for _, pawnPos := range f.Pieces.Positions(color, Pawn) {
-		positions := PawnAttacks[color][pawnPos]
-		for _, p := range positions {
-			if cond(p) {
-				move := NewMove(pawnPos, p)
-				// Handle promotions
-				promotions := move.ToPromotions()
-				if promotions == nil {
-					result = append(result, move)
-				} else {
-					for _, m := range promotions {
-						result = append(result, m)
-					}
-				}
-			}
-		}
-		// TODO en passant
-	}
-	for _, piece := range []NormalizedPiece{Knight} {
-		for _, fromPos := range f.Pieces.Positions(color, piece) {
-			for _, toPos := range PieceMoves[Piece(piece)][fromPos] {
-				if cond(toPos) {
-					result = append(result, NewMove(fromPos, toPos))
-				}
-			}
-
-		}
-	}
-	for _, piece := range []NormalizedPiece{Bishop, Rook, Queen} {
-		for _, fromPos := range f.Pieces.Positions(color, piece) {
-			for _, line := range MoveVectors[Piece(piece)][fromPos] {
-				for _, toPos := range line {
-					if cond(toPos) {
-						result = append(result, NewMove(fromPos, toPos))
-						if f.Board[toPos].ToNormalizedPiece() == King {
-							continue
-						}
-					} else if f.Board[toPos] == NoPiece {
-						continue
-					}
-					break
-				}
-			}
-
-		}
-	}
-	// TODO king attacks only if piece is undefended
-	return result
-}
-
 func (f *FEN) IsMate() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
@@ -178,7 +116,7 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	for _, p := range kingPos.GetKingMoves() {
 		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
-		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.DefendsSquare(f.ToMove.Opposite(), p) {
+		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.Attacks.DefendsSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
@@ -305,7 +243,7 @@ func (f *FEN) ValidMoves() []*Move {
 	for _, p := range kingPos.GetKingMoves() {
 		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
-		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.DefendsSquare(f.ToMove.Opposite(), p) {
+		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.Attacks.DefendsSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}

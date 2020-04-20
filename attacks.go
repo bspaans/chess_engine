@@ -161,6 +161,11 @@ func (a Attacks) AttacksSquare(color Color, square Position) bool {
 	return false
 }
 
+// Whether or not @color defends the @square
+func (a Attacks) DefendsSquare(color Color, square Position) bool {
+	return a.AttacksSquare(color, square)
+}
+
 func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map[Position]bool {
 	result := map[Position]bool{}
 	// Look at all the diagonals and lines emanating from the king's position
