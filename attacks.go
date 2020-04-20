@@ -27,7 +27,9 @@ func NewAttacks() Attacks {
 func NewAttacksFromBoard(board Board) Attacks {
 	result := NewAttacks()
 	for pos, piece := range board {
-		result.AddPiece(piece, Position(pos), board)
+		if piece != NoPiece {
+			result.AddPiece(piece, Position(pos), board)
+		}
 	}
 	return result
 }
