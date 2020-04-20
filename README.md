@@ -15,10 +15,29 @@ each other in tournament mode (see `tournament/`)
 * The search function is really naive/brute force and uses a lot of memory, but
   we are able to complete games against stockfish. I suggest limiting the depth 
   or number of nodes when letting the engine ponder.
-* The only evaluator that is currently implemented is one that returns random
-  numbers. It hasn't taken a single game from stockfish yet. This is where the 
-  work will focus once the full ruleset is implemented.
-* Tournament mode is working. 
+* A few simple position evaluators are implemented. It hasn't taken a single
+  game from stockfish yet. Improving this is the major focus at the moment.
+* Tournament mode is working and we can see very naive approaches beating
+  random moves. ELO rankings coming soon.
+
+
+The first recorded engine checkmate:
+
+```
+===============================================================
+=  bs-engine-naive-material   v.   bs-engine-random-move 1-0  =
+===============================================================
+ +--------------------------+
+ |        ♝     ♚  ♝     ♜  | 
+ |  ♖        ♕     ♟     ♟  | 
+ |              ♟        ♞  | 
+ |        ♟           ♟     | 
+ |                          | 
+ |                          | 
+ |     ♙  ♙  ♙  ♙  ♙  ♙  ♙  | 
+ |     ♘  ♗  ♕  ♔  ♗  ♘  ♖  | 
+ +--------------------------+
+```
 
 ### Edge Cases / Known Bugs
 

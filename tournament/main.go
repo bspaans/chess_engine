@@ -110,7 +110,7 @@ var Engines = []*Engine{
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
-	NewEngine("stockfish", "stockfish", nil),
+	//NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
@@ -195,7 +195,9 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.FEN, result GameRes
 		t.Standing[game.Black] += 1.0
 	}
 	fmt.Println(game.ResultAnnouncement())
-	fmt.Println(fen.Board)
+	if result != Draw {
+		fmt.Println(fen.Board)
+	}
 }
 
 func (t *Tournament) StandingToString() string {
@@ -234,9 +236,9 @@ func (t *Tournament) Start() {
 		fmt.Println("Starting game", game.White.Name, "   v.   ", game.Black.Name)
 
 		for game.Result == Unfinished {
-			fmt.Println(fen.Board)
+			//fmt.Println(fen.Board)
 			move := game.White.Play(fen)
-			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
 			if fen.IsDraw() {
@@ -246,8 +248,8 @@ func (t *Tournament) Start() {
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
-				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
-				fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
 				if fen.IsDraw() {
 					t.SetResult(game, fen, Draw)
