@@ -27,3 +27,6 @@ Putting this here to shame me into fixing them:
 * Attacking a checking knight never occurs to the engine
 * Sometimes the white king will try to move onto a square controlled by the
   black king alone.
+* Missing draw by repetition
+* Missing draw by 50 move rule
+* Missing draw by stalemate

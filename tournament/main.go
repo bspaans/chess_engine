@@ -12,16 +12,18 @@ import (
 type Engine struct {
 	Name    string
 	Path    string
+	Args    []string
 	started bool
 	cmd     *exec.Cmd
 	stdout  *bufio.Reader
 	stdin   *bufio.Writer
 }
 
-func NewEngine(name, path string) *Engine {
+func NewEngine(name, path string, args []string) *Engine {
 	return &Engine{
 		Name: name,
 		Path: path,
+		Args: args,
 	}
 }
 
@@ -103,8 +105,11 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
-	NewEngine("bs-engine", "bs-engine"),
-	NewEngine("stockfish", "stockfish"),
+	//NewEngine("bs-engine-no-eval", "bs-engine", nil),
+	//NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
+	//NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
+	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space --naive-material"}),
+	NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
