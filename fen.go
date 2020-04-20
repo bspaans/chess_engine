@@ -100,6 +100,13 @@ func (f *FEN) NextFENs() []*FEN {
 	return result
 }
 
+func (f *FEN) IsDraw() bool {
+	if f.HalfmoveClock >= 100 {
+		return true
+	}
+	return false
+}
+
 func (f *FEN) IsMate() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
@@ -152,7 +159,9 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 			pos = vector.FromPosition(pos)
 			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, pos)
 			for _, move := range blocks {
-				result = append(result, move)
+				if move.From != kingPos {
+					result = append(result, move)
+				}
 			}
 			// Pawns move differently when they don't attack so we
 			// need to have a separate check to see if a pawn move
@@ -192,7 +201,12 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 
 	for _, attack := range f.Attacks.GetAttacks(f.ToMove, f.Pieces) {
-		result = append(result, attack)
+		if f.Board[attack.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(f.ToMove.Opposite(), attack.To) {
+			fmt.Println("Filtering invalid king move")
+
+		} else {
+			result = append(result, attack)
+		}
 	}
 
 	for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
@@ -340,11 +354,15 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	if f.ToMove == Black {
 		fullMove += 1
 	}
+	halfMove := f.HalfmoveClock + 1
+	if normalizedMovingPiece == Pawn || capturedPiece != NoNPiece {
+		halfMove = 0
+	}
 
 	result.ToMove = f.ToMove.Opposite()
 	result.CastleStatuses = f.CastleStatuses.ApplyMove(move, movingPiece)
 	result.EnPassantVulnerable = enpassant
-	result.HalfmoveClock = f.HalfmoveClock + 1
+	result.HalfmoveClock = halfMove
 	result.Fullmove = fullMove
 	result.Line = line
 	return result

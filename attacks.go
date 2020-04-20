@@ -26,19 +26,9 @@ func NewAttacks() Attacks {
 
 func NewAttacksFromBoard(board Board) Attacks {
 	result := NewAttacks()
-	kingPos1 := NoPosition
-	kingPos2 := NoPosition
 	for pos, piece := range board {
-		if piece == WhiteKing {
-			kingPos1 = Position(pos)
-		} else if piece == BlackKing {
-			kingPos2 = Position(pos)
-		} else if piece != NoPiece {
-			result.AddPiece(piece, Position(pos), board)
-		}
+		result.AddPiece(piece, Position(pos), board)
 	}
-	result.AddPiece(WhiteKing, Position(kingPos1), board)
-	result.AddPiece(BlackKing, Position(kingPos2), board)
 	return result
 }
 
@@ -115,20 +105,6 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	if piece.ToNormalizedPiece() == Pawn {
 		for _, toPos := range PawnAttacks[piece.Color()][pos] {
 			a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-		}
-	} else if piece.ToNormalizedPiece() == King {
-		// King attacks only if the square is not attacked by the opponent.
-		// To work this out correctly the whole board must be initialised before adding the kings.
-		// TODO: what if the piece is actually defended by the other king? => Remove opposite king positions? but it affects defense of pieces as well...
-		for _, toPos := range PieceMoves[piece][pos] {
-			if board.IsEmpty(toPos) && !a.AttacksSquare(piece.Color().Opposite(), toPos) {
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-			} else if board.IsOpposingPiece(toPos, piece.Color()) && !a.AttacksSquare(piece.Color().Opposite(), toPos) {
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-			} else if !board.IsEmpty(toPos) && !board.IsOpposingPiece(toPos, piece.Color()) {
-				// King defends its pieces
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-			}
 		}
 	} else {
 		for _, line := range MoveVectors[piece][pos] {

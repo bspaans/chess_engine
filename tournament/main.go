@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"github.com/bspaans/chess_engine"
@@ -106,8 +107,8 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 
 var Engines = []*Engine{
 	//NewEngine("bs-engine-no-eval", "bs-engine", nil),
-	//NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
-	//NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
+	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
+	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space --naive-material"}),
 	NewEngine("stockfish", "stockfish", nil),
 }
@@ -166,12 +167,56 @@ func GenerateGames(engines []*Engine, rounds int) []*Game {
 	return result
 }
 
-func main() {
+type Tournament struct {
+	Games    []*Game
+	Standing map[*Engine]float64
+}
 
+func NewTournament(engines []*Engine, rounds int) *Tournament {
 	games := GenerateGames(Engines, 10)
-	standing := map[*Engine]int{}
-	fmt.Println("Starting tournament", len(games), "games")
-	for _, game := range games {
+	standing := map[*Engine]float64{}
+	for _, engine := range engines {
+		standing[engine] = 0.0
+	}
+	return &Tournament{
+		Games:    games,
+		Standing: standing,
+	}
+}
+
+func (t *Tournament) SetResult(game *Game, fen *chess_engine.FEN, result GameResult) {
+	game.Result = result
+	if result == Draw {
+		t.Standing[game.White] += 0.5
+		t.Standing[game.Black] += 0.5
+	} else if result == WhiteWins {
+		t.Standing[game.White] += 1.0
+	} else if result == BlackWins {
+		t.Standing[game.Black] += 1.0
+	}
+	fmt.Println(game.ResultAnnouncement())
+	fmt.Println(fen.Board)
+}
+
+func (t *Tournament) StandingToString() string {
+	result := ""
+	engines := []*Engine{}
+	for engine, _ := range t.Standing {
+		engines = append(engines, engine)
+	}
+	sort.Slice(engines, func(i, j int) bool {
+		return t.Standing[engines[i]] > t.Standing[engines[j]]
+	})
+	for place, engine := range engines {
+		result += fmt.Sprintf("%02d. %-40s %.1f\n", place+1, engine.Name, t.Standing[engine])
+	}
+	return result
+}
+
+func (t *Tournament) Start() {
+
+	fmt.Println("Starting tournament with", len(t.Games), "games")
+	for _, game := range t.Games {
 
 		fenStr := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 		fen, err := chess_engine.ParseFEN(fenStr)
@@ -191,26 +236,30 @@ func main() {
 			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
-			if fen.IsMate() {
-				standing[game.White] += 1
-				game.Result = WhiteWins
-				fmt.Println(game.ResultAnnouncement())
-				fmt.Println(fen.Board)
+			if fen.IsDraw() {
+				t.SetResult(game, fen, Draw)
+			} else if fen.IsMate() {
+				t.SetResult(game, fen, WhiteWins)
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
 				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
 				fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
-				if fen.IsMate() {
-					standing[game.Black] += 1
-					game.Result = BlackWins
-					fmt.Println(game.ResultAnnouncement())
-					fmt.Println(fen.Board)
+				if fen.IsDraw() {
+					t.SetResult(game, fen, Draw)
+				} else if fen.IsMate() {
+					t.SetResult(game, fen, BlackWins)
 				} else {
 					//fmt.Println("Valid moves: ", fen.ValidMoves())
 				}
 			}
 		}
 	}
+	fmt.Println(t.StandingToString())
+}
+
+func main() {
+	tournament := NewTournament(Engines, 4)
+	tournament.Start()
 }
