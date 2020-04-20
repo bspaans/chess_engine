@@ -62,7 +62,7 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 
 	positions := PieceMoves[WhiteQueen][E4]
 	for _, pos := range positions {
-		if pos == E1 || pos == E2 {
+		if pos == E1 {
 			if len(unit[pos]) != 0 {
 				t.Errorf("Expecting no attacks on %s", pos)
 			}
@@ -123,5 +123,22 @@ func Test_Attacks_black_pawn(t *testing.T) {
 		if unit[pos][0].Vector != vector {
 			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
 		}
+	}
+}
+
+func Test_Attacks_get_checks(t *testing.T) {
+	board := NewBoard()
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackKing, E1)
+	pieces.AddPosition(WhiteQueen, E2)
+	board[E1] = BlackKing
+	board[E2] = WhiteQueen
+	unit := NewAttacks()
+	for _, pos := range []Position{E1, E2} {
+		unit.AddPiece(board[pos], pos, board)
+	}
+	checks := unit.GetChecks(Black, pieces)
+	if len(checks) != 1 {
+		t.Errorf("Supposed to have a check")
 	}
 }

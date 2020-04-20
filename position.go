@@ -102,7 +102,7 @@ const (
 	G8
 	H8
 
-	NoPosition Position = 0
+	NoPosition Position = 0x7f
 )
 
 func ParsePosition(pstr string) (Position, error) {

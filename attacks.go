@@ -24,6 +24,24 @@ func NewAttacks() Attacks {
 	return attacks
 }
 
+func NewAttacksFromBoard(board Board) Attacks {
+	result := NewAttacks()
+	kingPos1 := NoPosition
+	kingPos2 := NoPosition
+	for pos, piece := range board {
+		if piece == WhiteKing {
+			kingPos1 = Position(pos)
+		} else if piece == BlackKing {
+			kingPos2 = Position(pos)
+		} else if piece != NoPiece {
+			result.AddPiece(piece, Position(pos), board)
+		}
+	}
+	result.AddPiece(WhiteKing, Position(kingPos1), board)
+	result.AddPiece(BlackKing, Position(kingPos2), board)
+	return result
+}
+
 // Get all the checks @color is currently in
 func (a Attacks) GetChecks(color Color, pieces PiecePositions) []*Move {
 	incoming := a.GetAttacks(color.Opposite(), pieces)
@@ -42,12 +60,49 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 	result := []*Move{}
 	for _, positions := range pieces[color.Opposite()] {
 		for _, pos := range positions {
-			for _, pieceVectors := range a[pos] {
-				if pieceVectors.Color() == color {
-					fromPos := pieceVectors.Vector.FromPosition(pos)
+			for _, pieceVector := range a[pos] {
+				if pieceVector.Color() == color {
+					fromPos := pieceVector.Vector.FromPosition(pos)
 					move := NewMove(fromPos, pos)
-					result = append(result, move)
+					// Handle attacks that come with promotion
+					if pieceVector.Piece.ToNormalizedPiece() == Pawn {
+						promotions := move.ToPromotions()
+						if promotions == nil {
+							result = append(result, move)
+						} else {
+							for _, m := range promotions {
+								result = append(result, m)
+							}
+						}
+					} else {
+						result = append(result, move)
+					}
 				}
+			}
+		}
+	}
+	return result
+}
+
+// Get the attacks by @color on @square
+func (a Attacks) GetAttacksOnSquare(color Color, pieces PiecePositions, pos Position) []*Move {
+	result := []*Move{}
+	for _, pieceVector := range a[pos] {
+		if pieceVector.Color() == color {
+			fromPos := pieceVector.Vector.FromPosition(pos)
+			move := NewMove(fromPos, pos)
+			// Handle attacks that come with promotion
+			if pieceVector.Piece.ToNormalizedPiece() == Pawn {
+				promotions := move.ToPromotions()
+				if promotions == nil {
+					result = append(result, move)
+				} else {
+					for _, m := range promotions {
+						result = append(result, m)
+					}
+				}
+			} else {
+				result = append(result, move)
 			}
 		}
 	}
@@ -57,10 +112,21 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 // Adds a piece into the Attacks "database". Calculates all the attacks
 // that are possible for this piece and adds the appropriate vectors
 func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
-	// TODO en passant
 	if piece.ToNormalizedPiece() == Pawn {
 		for _, toPos := range PawnAttacks[piece.Color()][pos] {
-			if board.IsEmpty(toPos) || board.IsOpposingPiece(toPos, piece.Color()) {
+			a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+		}
+	} else if piece.ToNormalizedPiece() == King {
+		// King attacks only if the square is not attacked by the opponent.
+		// To work this out correctly the whole board must be initialised before adding the kings.
+		// TODO: what if the piece is actually defended by the other king? => Remove opposite king positions
+		for _, toPos := range PieceMoves[piece][pos] {
+			if board.IsEmpty(toPos) && !a.AttacksSquare(piece.Color().Opposite(), toPos) {
+				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+			} else if board.IsOpposingPiece(toPos, piece.Color()) && !a.AttacksSquare(piece.Color().Opposite(), toPos) {
+				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+			} else if !board.IsEmpty(toPos) && !board.IsOpposingPiece(toPos, piece.Color()) {
+				// King defends its pieces
 				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
 			}
 		}
@@ -76,12 +142,13 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 						break
 					}
 				} else {
+					// Pieces defend their own pieces
+					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
 					break
 				}
 			}
 		}
 	}
-	// TODO king attacks if opposing piece is undefended
 }
 
 // Whether or not @color attacks the @square

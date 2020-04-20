@@ -62,7 +62,6 @@ func ParseFEN(fenstr string) (*FEN, error) {
 		}
 	}
 	fen.Board = NewBoard()
-	fen.Attacks = NewAttacks()
 	fen.Pieces = NewPiecePositions()
 	x := 0
 	y := 7
@@ -87,11 +86,7 @@ func ParseFEN(fenstr string) (*FEN, error) {
 			x++
 		}
 	}
-	for pos, piece := range fen.Board {
-		if piece != NoPiece {
-			fen.Attacks.AddPiece(piece, Position(pos), fen.Board)
-		}
-	}
+	fen.Attacks = NewAttacksFromBoard(fen.Board)
 	return &fen, nil
 }
 
@@ -210,33 +205,31 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 			// TODO: but it can be captured
 			break
 		}
+		// Follow the attack vector to see if there are any
+		// pieces that can block the square or attack the checking
+		// piece
 		vector := check.NormalizedVector()
-		blocks := map[Position]bool{}
 		pos := check.To
-		i := 0
 		for pos != check.From {
 			pos = vector.FromPosition(pos)
-			blocks[pos] = true
-			i++
-			if i > 7 {
-				fmt.Println(checks)
-				fmt.Println(string([]byte{byte(f.Board[pos])}))
-				panic("wtf")
+			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, f.Pieces, pos)
+			for _, move := range blocks {
+				result = append(result, move)
 			}
-		}
-		cond := func(p Position) bool {
-			return blocks[p]
-		}
-		for _, m := range f.GetAttacksOnCondition(cond, f.ToMove) {
-			result = append(result, m)
-		}
-		// Pawns move differently when they don't attack so we
-		// need to have a separate check to see if a pawn move
-		// would block the check
-		for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
-			for _, targetPos := range PieceMoves[f.Board[pawnPos]][pawnPos] {
-				if blocks[targetPos] && f.Board.IsEmpty(targetPos) {
-					result = append(result, NewMove(pawnPos, targetPos))
+			// Pawns move differently when they don't attack so we
+			// need to have a separate check to see if a pawn move
+			// would block the check
+			for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
+				for _, lines := range MoveVectors[WhitePawn.SetColor(f.ToMove)][pawnPos] {
+					for _, toPos := range lines {
+						if f.Board.IsEmpty(toPos) {
+							if toPos == pos {
+								result = append(result, NewMove(pawnPos, pos))
+							}
+						} else {
+							break
+						}
+					}
 				}
 			}
 		}
@@ -377,26 +370,27 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 			board.ApplyMove(A1, D1)
 		}
 	case WhitePawn:
-		if move.From.GetRank() == '2' && move.From.GetRank() == '3' {
+		if move.From.GetRank() == '2' && move.To.GetRank() == '4' {
 			// Mark the skipped over square as vulnerable
 			enpassant = move.To - 8
+		} else if move.To == f.EnPassantVulnerable {
+			// Remove the pawn that was captured by en-passant
+			board[move.To-8] = NoPiece
 		}
 	case BlackPawn:
-		if move.From.GetRank() == '7' && move.From.GetRank() == '8' {
+		if move.From.GetRank() == '7' && move.To.GetRank() == '5' {
 			// Mark the skipped over square as vulnerable
 			enpassant = move.From - 8
+		} else if move.To == f.EnPassantVulnerable {
+			// Remove the pawn that was captured by en-passant
+			board[move.To+8] = NoPiece
 		}
 	}
 
 	result.Board = board
 	result.Pieces = f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
 	// TODO: implement ApplyMove in Attacks
-	result.Attacks = NewAttacks()
-	for pos, piece := range board {
-		if piece != NoPiece {
-			result.Attacks.AddPiece(piece, Position(pos), board)
-		}
-	}
+	result.Attacks = NewAttacksFromBoard(board)
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {
@@ -437,7 +431,7 @@ func (f *FEN) FENString() string {
 	}
 	castleStatus := f.CastleStatuses.String()
 	enPassant := "-"
-	if f.EnPassantVulnerable != 0 {
+	if f.EnPassantVulnerable != NoPosition {
 		enPassant = f.EnPassantVulnerable.String()
 	}
 	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, enPassant, f.HalfmoveClock, f.Fullmove)
