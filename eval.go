@@ -32,27 +32,41 @@ func NewEvalTree(move *Move, score float64) *EvalTree {
 	}
 }
 
-func (t *EvalTree) UpdateScore() {
+func (t *EvalTree) Depth() int {
+	depth := 0
+	tree := t
+	for tree.Parent != nil {
+		depth++
+		tree = tree.Parent
 
+	}
+	return depth
+}
+func (t *EvalTree) UpdateBestLine() {
 	var maxChild *EvalTree
 	maxScore := math.Inf(-1)
+	oldScore := t.Score
 	for _, child := range t.Replies {
 		if child.Score > maxScore {
 			maxScore = child.Score
 			maxChild = child
 		}
 	}
-	oldScore := t.Score
-	if maxChild != nil && t.Score != maxScore {
+	if t.Depth()%2 == 1 {
+		t.Score = maxScore * -1
+	} else {
 		t.Score = maxScore
+	}
+	if maxChild != nil {
 		t.BestLine = maxChild
 	}
-	if t.Parent != nil && oldScore != t.Score {
-		t.Parent.UpdateScore()
+	if t.Score != oldScore && t.Parent != nil {
+		t.Parent.UpdateBestLine()
 	}
 }
 
 func (t *EvalTree) Insert(line []*Move, score float64) {
+	//fmt.Println("Insert", line, score)
 	tree := t
 	var calcScoreOn *EvalTree
 	for _, move := range line {
@@ -61,7 +75,7 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 			if calcScoreOn == nil {
 				calcScoreOn = tree
 			}
-			tree.Replies[move] = NewEvalTree(move, score)
+			tree.Replies[move] = NewEvalTree(move, math.Inf(-1))
 			tree.Replies[move].Parent = tree
 			if tree.BestLine == nil {
 				tree.BestLine = tree.Replies[move]
@@ -69,13 +83,12 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 			next = tree.Replies[move]
 		}
 		tree = next
-		score = -1 * score
 	}
-	if calcScoreOn == nil {
+	if len(tree.Replies) == 0 {
 		tree.Score = score
-		tree.UpdateScore()
-	} else {
-		calcScoreOn.UpdateScore()
+	}
+	if tree.Parent != nil {
+		tree.Parent.UpdateBestLine()
 	}
 }
 

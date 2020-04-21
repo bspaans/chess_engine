@@ -10,7 +10,7 @@ import (
 
 func main() {
 	engine := &chess_engine.DFSEngine{}
-	engine.SelDepth = 4
+	engine.SelDepth = 3
 	for i, arg := range os.Args {
 		if arg == "--random" {
 			engine.AddEvaluator(chess_engine.RandomEvaluator)

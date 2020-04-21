@@ -73,7 +73,7 @@ func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
 		fmt.Println(color + " to play position: " + str)
 	*/
 	e.Send("position fen " + str)
-	e.Send("go depth 2")
+	e.Send("go depth 4")
 	return e.ReadUntilBestMove(fen)
 }
 
