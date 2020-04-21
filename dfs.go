@@ -119,7 +119,10 @@ func (b *DFSEngine) InitialBestLine(depth int) []*FEN {
 
 func (b *DFSEngine) BestMove(game *FEN) *Move {
 	nextFENs := game.NextFENs()
-	bestScore := 0.0
+	bestScore := math.Inf(1)
+	if game.ToMove == White {
+		bestScore = math.Inf(-1)
+	}
 	var bestMove *Move
 	for _, f := range nextFENs {
 		score := 0.0
@@ -135,7 +138,10 @@ func (b *DFSEngine) BestMove(game *FEN) *Move {
 		} else {
 			score = b.heuristicScorePosition(f)
 		}
-		if score >= bestScore {
+		if game.ToMove == White && score > bestScore {
+			bestScore = score
+			bestMove = f.Line[len(f.Line)-1]
+		} else if game.ToMove == Black && score < bestScore {
 			bestScore = score
 			bestMove = f.Line[len(f.Line)-1]
 		}
