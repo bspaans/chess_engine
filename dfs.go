@@ -15,6 +15,7 @@ type DFSEngine struct {
 	Cancel           context.CancelFunc
 	Evaluators       []Evaluator
 	EvalTree         *EvalTree
+	SelDepth         int
 }
 
 func (b *DFSEngine) SetPosition(fen *FEN) {
@@ -31,14 +32,13 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	seen := map[string]bool{}
 	b.EvalTree = NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
-	depth := 0
-	selDepth := 20
+	depth := b.SelDepth + 1
 	nodes := 0
 	totalNodes := 0
 
-	firstLine := b.InitialBestLine(selDepth)
+	firstLine := b.InitialBestLine(b.SelDepth)
 	queue := list.New()
-	for d := 0; d < selDepth; d++ {
+	for d := 0; d < b.SelDepth; d++ {
 		if firstLine[d] != nil {
 			queue.PushBack(firstLine[d])
 		}
@@ -80,19 +80,21 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 				b.EvalTree.Insert(game.Line, score)
 
-				if len(game.Line) != selDepth {
+				if len(game.Line) != b.SelDepth {
 					nextFENs := game.NextFENs()
 					for _, f := range nextFENs {
-						if !seen[game.FENString()] {
+						if !seen[f.FENString()] {
 							queue.PushFront(f)
 						}
 					}
 				}
 				if maxNodes > 0 && totalNodes+nodes >= maxNodes {
+					output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
 					output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 					return
 				}
 			} else {
+				output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
 				output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 				return
 			}
