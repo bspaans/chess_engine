@@ -38,7 +38,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 	firstLine := b.InitialBestLine(b.SelDepth)
 	queue := list.New()
-	for d := 0; d < b.SelDepth; d++ {
+	for d := 0; d < b.SelDepth-2; d++ {
 		if firstLine[d] != nil {
 			queue.PushBack(firstLine[d])
 		}
@@ -51,7 +51,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			return
 		case <-timer.C:
 			totalNodes += nodes
-			output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
+			output <- fmt.Sprintf("info ns %d nodes %d depth %d queue %d", nodes, totalNodes, depth, queue.Len())
 			nodes = 0
 			timer = time.NewTimer(time.Second)
 		default:

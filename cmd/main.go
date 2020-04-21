@@ -18,8 +18,8 @@ func main() {
 			engine.AddEvaluator(chess_engine.NaiveMaterialEvaluator)
 		} else if arg == "--space" {
 			engine.AddEvaluator(chess_engine.SpaceEvaluator)
-		} else if arg == "--seldepth" {
-			selDepth, err := strconv.Atoi(os.Args[i])
+		} else if arg == "--depth" {
+			selDepth, err := strconv.Atoi(os.Args[i+1])
 			if err != nil {
 				panic(err)
 			}

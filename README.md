@@ -13,7 +13,8 @@ each other in tournament mode (see `tournament/`)
   below). Otherwise the full rules of chess are implemented, and you are able to
   find all valid moves in a position.
 * The search function is a bit naive/brute force (depth first search), but
-  for the moment this is good enough for the evaluators we implement.
+  for the moment this is good enough for the evaluators we implement. The 
+  search depth can be set by using the `--depth` flag.
 * A few simple position evaluators are implemented. It hasn't taken a single
   game from stockfish yet. Improving this is the major focus at the moment.
 * Tournament mode is working and we can see very naive approaches beating
