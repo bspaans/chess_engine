@@ -30,7 +30,7 @@ func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 
 func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
 	seen := map[string]bool{}
-	b.EvalTree = NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
+	b.EvalTree = NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, math.Inf(-1))
 	timer := time.NewTimer(time.Second)
 	depth := b.SelDepth + 1
 	nodes := 0
@@ -65,7 +65,8 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					if bestLine != b.EvalTree.BestLine {
 						bestLine = b.EvalTree.BestLine
 						bestResult := bestLine.GetBestLine()
-						output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), Line(bestResult.Line))
+						line := Line(bestResult.Line).String()
+						output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), line)
 					}
 				}
 				fenStr := game.FENString()

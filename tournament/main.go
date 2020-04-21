@@ -87,8 +87,7 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 			if err := e.Restart(); err != nil {
 				panic(err)
 			}
-			panic("to")
-			return e.Play(fen)
+			return nil
 		}
 		line := strings.TrimSpace(text)
 		//fmt.Println(line)
@@ -106,11 +105,11 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
-	NewEngine("stockfish", "stockfish", nil),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
+	//NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
@@ -168,8 +167,10 @@ func GenerateGames(engines []*Engine, rounds int) []*Game {
 }
 
 type Tournament struct {
-	Games    []*Game
-	Standing map[*Engine]float64
+	Games       []*Game
+	Standing    map[*Engine]float64
+	OutputBoard bool
+	QuitOnCrash bool
 }
 
 func NewTournament(engines []*Engine, rounds int) *Tournament {
@@ -236,19 +237,38 @@ func (t *Tournament) Start() {
 		fmt.Printf("Starting game %d/%d: %s v. %s\n", i+1, len(t.Games), game.White.Name, game.Black.Name)
 
 		for game.Result == Unfinished {
-			t.OutputStatus(fen)
+			if t.OutputBoard {
+				t.OutputStatus(fen)
+			}
 			move := game.White.Play(fen)
+			if move == nil {
+				fmt.Printf("White (%s) crashed on FEN: %s\n", game.White.Name, fen.FENString())
+				t.SetResult(game, fen, BlackWins)
+				if t.QuitOnCrash {
+					return
+				}
+				continue
+			}
 			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
-			t.OutputStatus(fen)
+			if t.OutputBoard {
+				t.OutputStatus(fen)
+			}
 			if fen.IsDraw() {
 				t.SetResult(game, fen, Draw)
 			} else if fen.IsMate() {
 				t.SetResult(game, fen, WhiteWins)
 			} else {
-				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
+				if move == nil {
+					fmt.Printf("Black (%s) crashed on FEN: %s\n", game.Black.Name, fen.FENString())
+					t.SetResult(game, fen, WhiteWins)
+					if t.QuitOnCrash {
+						return
+					}
+					continue
+				}
 				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
 				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
@@ -266,13 +286,20 @@ func (t *Tournament) Start() {
 }
 
 func (t *Tournament) OutputStatus(game *chess_engine.FEN) {
-	fmt.Println(game.Board)
-	fmt.Println(game.ToMove, "to play")
+	toPlay := "White"
+	if game.ToMove == chess_engine.Black {
+		toPlay = "Black"
+	}
+	fmt.Println(toPlay, "to play")
 	fmt.Println("Space:", chess_engine.SpaceEvaluator(game))
 	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(game))
+	fmt.Println("FEN:", game.FENString())
+	fmt.Println(game.Board)
 }
 
 func main() {
 	tournament := NewTournament(Engines, 1)
+	tournament.OutputBoard = true
+	tournament.QuitOnCrash = true
 	tournament.Start()
 }

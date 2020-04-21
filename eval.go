@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -36,36 +37,32 @@ func NewEvalTree(color Color, move *Move, score float64) *EvalTree {
 
 func (t *EvalTree) UpdateScore() {
 
-	minScore := math.Inf(1)
-	var minChild, maxChild *EvalTree
+	var maxChild *EvalTree
 	maxScore := math.Inf(-1)
 	for _, child := range t.Replies {
-		if child.Score < minScore {
-			minScore = child.Score
-			minChild = child
-		}
 		if child.Score > maxScore {
 			maxScore = child.Score
 			maxChild = child
 		}
 	}
 	oldScore := t.Score
-	if t.Color == White && minChild != nil {
-		t.Score = minScore
-		t.BestLine = minChild
-		if t.Parent != nil && oldScore != t.Score {
-			t.Parent.UpdateScore()
-		}
-	} else if t.Color == Black && maxChild != nil {
+	if maxChild != nil {
 		t.Score = maxScore
 		t.BestLine = maxChild
-		if t.Parent != nil && oldScore != t.Score {
-			t.Parent.UpdateScore()
-		}
+	}
+	if t.Parent != nil && oldScore > t.Score {
+		t.Parent.UpdateScore()
 	}
 }
 
 func (t *EvalTree) Insert(line []*Move, score float64) {
+	if t.Color == Black {
+		score = -score
+	}
+	// Skipping moves that are worse
+	if score < t.Score {
+		return
+	}
 	tree := t
 	var calcScoreOn *EvalTree
 	for _, move := range line {
@@ -84,16 +81,10 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 		tree = next
 	}
 	if calcScoreOn == nil {
-		// Tree node already exists, update the score
-		if tree.Score == score {
-			//panic("No calc score and score is the same??" + Line(line).String())
-		} else {
-			tree.Score = score
-			if tree.Parent != nil {
-				tree.Parent.UpdateScore()
-			}
+		if tree.Score > score {
+			tree.UpdateScore()
 		}
-	} else if (calcScoreOn.Color == Black && calcScoreOn.Score < score) || (calcScoreOn.Color == White && calcScoreOn.Score > score) {
+	} else if calcScoreOn.Score > score {
 		calcScoreOn.UpdateScore()
 	}
 }
@@ -103,19 +94,19 @@ func (t *EvalTree) GetBestLine() *EvalResult {
 	tree := t
 	for tree.BestLine != nil {
 		if tree.Move != nil {
+			fmt.Println("Adding", tree.Move)
 			bestLine = append(bestLine, tree.Move)
 		}
 		tree = tree.BestLine
 	}
-	bestLine = append(bestLine, tree.Move)
+	if tree.Move != nil {
+		bestLine = append(bestLine, tree.Move)
+	}
 	return NewEvalResult(bestLine, tree.Score)
 }
 
 func (t *EvalTree) Prune() {
 	if t.BestLine == nil {
-		if len(t.Replies) != 0 {
-			panic("No best line but replies")
-		}
 		return
 	}
 	if len(t.Replies) <= 1 {
@@ -128,9 +119,6 @@ func (t *EvalTree) Prune() {
 	i := 0
 	toDelete := make([]*Move, len(t.Replies)-1)
 	for move, child := range t.Replies {
-		if t.BestLine == nil {
-			panic("Inspecting move without best line " + t.Move.String())
-		}
 		if child != t.BestLine {
 			toDelete[i] = move
 			i++
