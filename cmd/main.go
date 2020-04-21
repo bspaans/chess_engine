@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	engine := &chess_engine.BSEngine{}
+	engine := &chess_engine.DFSEngine{}
 	for _, arg := range os.Args {
 		if arg == "--random" {
 			engine.AddEvaluator(chess_engine.RandomEvaluator)

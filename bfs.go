@@ -4,29 +4,28 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/rand"
 	"time"
 )
 
-type Evaluator func(fen *FEN) float64
+// Uses breadth first search and all the memory in the world
 
-type BSEngine struct {
+type BFSEngine struct {
 	StartingPosition *FEN
 	Cancel           context.CancelFunc
 	Evaluators       []Evaluator
 }
 
-func (b *BSEngine) SetPosition(fen *FEN) {
+func (b *BFSEngine) SetPosition(fen *FEN) {
 	b.StartingPosition = fen
 }
 
-func (b *BSEngine) Start(output chan string, maxNodes, maxDepth int) {
+func (b *BFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cancel = cancel
 	go b.start(ctx, output, maxNodes, maxDepth)
 }
 
-func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
+func (b *BFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
 	seen := map[string]bool{}
 	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
@@ -109,11 +108,11 @@ func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxD
 	}
 }
 
-func (b *BSEngine) AddEvaluator(e Evaluator) {
+func (b *BFSEngine) AddEvaluator(e Evaluator) {
 	b.Evaluators = append(b.Evaluators, e)
 }
 
-func (b *BSEngine) heuristicScorePosition(f *FEN) float64 {
+func (b *BFSEngine) heuristicScorePosition(f *FEN) float64 {
 	score := 0.0
 	for _, eval := range b.Evaluators {
 		score += eval(f)
@@ -121,49 +120,6 @@ func (b *BSEngine) heuristicScorePosition(f *FEN) float64 {
 	return score
 }
 
-func (b *BSEngine) Stop() {
+func (b *BFSEngine) Stop() {
 	b.Cancel()
-}
-
-func NaiveMaterialEvaluator(f *FEN) float64 {
-	score := 0.0
-	materialScore := map[NormalizedPiece]float64{
-		Pawn:   1.0,
-		Knight: 3.0,
-		Bishop: 3.25,
-		King:   4.0,
-		Rook:   5.0,
-		Queen:  9.0,
-	}
-	for piece, positions := range f.Pieces[White] {
-		for _ = range positions {
-			score += materialScore[piece]
-		}
-	}
-	for piece, positions := range f.Pieces[Black] {
-		for _ = range positions {
-			score -= materialScore[piece]
-		}
-	}
-	return score
-}
-
-func SpaceEvaluator(f *FEN) float64 {
-	score := 0.0
-	for pos, pieceVectors := range f.Attacks {
-		for _, pieceVector := range pieceVectors {
-			if pos < 32 && pieceVector.Piece.Color() == Black {
-				// Count black pieces in white's halve
-				score -= 0.25
-			} else if pos >= 32 && pieceVector.Piece.Color() == White {
-				// Count white pieces in black's halve
-				score += 0.25
-			}
-		}
-	}
-	return score
-}
-
-func RandomEvaluator(f *FEN) float64 {
-	return rand.NormFloat64()
 }
