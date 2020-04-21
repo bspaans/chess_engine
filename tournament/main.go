@@ -106,11 +106,11 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
+	NewEngine("stockfish", "stockfish", nil),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
-	//NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
@@ -236,12 +236,12 @@ func (t *Tournament) Start() {
 		fmt.Printf("Starting game %d/%d: %s v. %s\n", i+1, len(t.Games), game.White.Name, game.Black.Name)
 
 		for game.Result == Unfinished {
-			fmt.Println(fen.Board)
+			t.OutputStatus(fen)
 			move := game.White.Play(fen)
-			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
-			fmt.Println(fen.Board)
+			t.OutputStatus(fen)
 			if fen.IsDraw() {
 				t.SetResult(game, fen, Draw)
 			} else if fen.IsMate() {
@@ -249,7 +249,7 @@ func (t *Tournament) Start() {
 			} else {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
-				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
 				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
 				if fen.IsDraw() {
@@ -265,7 +265,14 @@ func (t *Tournament) Start() {
 	fmt.Println(t.StandingToString())
 }
 
+func (t *Tournament) OutputStatus(game *chess_engine.FEN) {
+	fmt.Println(game.Board)
+	fmt.Println(game.ToMove, "to play")
+	fmt.Println("Space:", chess_engine.SpaceEvaluator(game))
+	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(game))
+}
+
 func main() {
-	tournament := NewTournament(Engines, 10)
+	tournament := NewTournament(Engines, 1)
 	tournament.Start()
 }

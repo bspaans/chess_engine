@@ -17,14 +17,10 @@ func NaiveMaterialEvaluator(f *FEN) float64 {
 		Queen:  9.0,
 	}
 	for piece, positions := range f.Pieces[White] {
-		for _ = range positions {
-			score += materialScore[piece]
-		}
+		score += float64(len(positions)) * materialScore[piece]
 	}
 	for piece, positions := range f.Pieces[Black] {
-		for _ = range positions {
-			score -= materialScore[piece]
-		}
+		score += -1 * float64(len(positions)) * materialScore[piece]
 	}
 	return score
 }

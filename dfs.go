@@ -35,6 +35,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	depth := b.SelDepth + 1
 	nodes := 0
 	totalNodes := 0
+	var bestLine *EvalTree
 
 	firstLine := b.InitialBestLine(b.SelDepth)
 	queue := list.New()
@@ -61,6 +62,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				if len(game.Line) < depth {
 					depth = len(game.Line)
 					b.EvalTree.Prune()
+					if bestLine != b.EvalTree.BestLine {
+						bestLine = b.EvalTree.BestLine
+						bestResult := bestLine.GetBestLine()
+						output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), Line(bestResult.Line))
+					}
 				}
 				fenStr := game.FENString()
 				seen[fenStr] = true
@@ -131,9 +137,9 @@ func (b *DFSEngine) BestMove(game *FEN) *Move {
 		} else if f.IsMate() {
 			// TODO negamax
 			if game.ToMove == White {
-				score = math.Inf(-1)
-			} else {
 				score = math.Inf(1)
+			} else {
+				score = math.Inf(-1)
 			}
 		} else {
 			score = b.heuristicScorePosition(f)
