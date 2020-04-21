@@ -238,7 +238,7 @@ func (t *Tournament) Start() {
 
 		for game.Result == Unfinished {
 			if t.OutputBoard {
-				t.OutputStatus(fen)
+				t.OutputStatus(game, fen)
 			}
 			move := game.White.Play(fen)
 			if move == nil {
@@ -253,7 +253,7 @@ func (t *Tournament) Start() {
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
 			if t.OutputBoard {
-				t.OutputStatus(fen)
+				t.OutputStatus(game, fen)
 			}
 			if fen.IsDraw() {
 				t.SetResult(game, fen, Draw)
@@ -285,16 +285,18 @@ func (t *Tournament) Start() {
 	fmt.Println(t.StandingToString())
 }
 
-func (t *Tournament) OutputStatus(game *chess_engine.FEN) {
+func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.FEN) {
 	toPlay := "White"
-	if game.ToMove == chess_engine.Black {
+	engineName := game.White.Name
+	if fen.ToMove == chess_engine.Black {
 		toPlay = "Black"
+		engineName = game.Black.Name
 	}
-	fmt.Println(toPlay, "to play")
-	fmt.Println("Space:", chess_engine.SpaceEvaluator(game))
-	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(game))
-	fmt.Println("FEN:", game.FENString())
-	fmt.Println(game.Board)
+	fmt.Printf("%s (%s) to play.\n", toPlay, engineName)
+	fmt.Println("Space:", chess_engine.SpaceEvaluator(fen))
+	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(fen))
+	fmt.Println("position fen", fen.FENString())
+	fmt.Println(fen.Board)
 }
 
 func main() {

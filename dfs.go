@@ -30,7 +30,7 @@ func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 
 func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
 	seen := map[string]bool{}
-	b.EvalTree = NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, math.Inf(-1))
+	b.EvalTree = NewEvalTree(nil, math.Inf(-1))
 	timer := time.NewTimer(time.Second)
 	depth := b.SelDepth + 1
 	nodes := 0
@@ -42,6 +42,13 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	for d := 0; d < b.SelDepth-2; d++ {
 		if firstLine[d] != nil {
 			queue.PushBack(firstLine[d])
+		}
+	}
+	// Queue all the other positions from the starting position
+	nextFENs := b.StartingPosition.NextFENs()
+	for _, f := range nextFENs {
+		if f.Line[0] != firstLine[0].Line[0] {
+			queue.PushBack(f)
 		}
 	}
 
@@ -101,6 +108,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					return
 				}
 			} else {
+				bestLine = b.EvalTree.BestLine
+				bestResult := bestLine.GetBestLine()
+				line := Line(bestResult.Line).String()
+				output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), line)
 				output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
 				output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 				return
@@ -126,29 +137,19 @@ func (b *DFSEngine) InitialBestLine(depth int) []*FEN {
 
 func (b *DFSEngine) BestMove(game *FEN) *Move {
 	nextFENs := game.NextFENs()
-	bestScore := math.Inf(1)
-	if game.ToMove == White {
-		bestScore = math.Inf(-1)
-	}
+	bestScore := math.Inf(-1)
 	var bestMove *Move
+
 	for _, f := range nextFENs {
 		score := 0.0
 		if f.IsDraw() {
 			score = 0.0
 		} else if f.IsMate() {
-			// TODO negamax
-			if game.ToMove == White {
-				score = math.Inf(1)
-			} else {
-				score = math.Inf(-1)
-			}
+			score = math.Inf(1)
 		} else {
 			score = b.heuristicScorePosition(f)
 		}
-		if game.ToMove == White && score > bestScore {
-			bestScore = score
-			bestMove = f.Line[len(f.Line)-1]
-		} else if game.ToMove == Black && score < bestScore {
+		if score > bestScore {
 			bestScore = score
 			bestMove = f.Line[len(f.Line)-1]
 		}
@@ -165,6 +166,9 @@ func (b *DFSEngine) heuristicScorePosition(f *FEN) float64 {
 	score := 0.0
 	for _, eval := range b.Evaluators {
 		score += eval(f)
+	}
+	if f.ToMove == Black {
+		return score * -1
 	}
 	return score
 }

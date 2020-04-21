@@ -1,7 +1,6 @@
 package chess_engine
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -18,7 +17,6 @@ func NewEvalResult(line []*Move, score float64) *EvalResult {
 }
 
 type EvalTree struct {
-	Color    Color
 	Score    float64
 	Move     *Move
 	Replies  map[*Move]*EvalTree
@@ -26,9 +24,8 @@ type EvalTree struct {
 	Parent   *EvalTree
 }
 
-func NewEvalTree(color Color, move *Move, score float64) *EvalTree {
+func NewEvalTree(move *Move, score float64) *EvalTree {
 	return &EvalTree{
-		Color:   color,
 		Score:   score,
 		Move:    move,
 		Replies: map[*Move]*EvalTree{},
@@ -46,23 +43,16 @@ func (t *EvalTree) UpdateScore() {
 		}
 	}
 	oldScore := t.Score
-	if maxChild != nil {
+	if maxChild != nil && t.Score != maxScore {
 		t.Score = maxScore
 		t.BestLine = maxChild
 	}
-	if t.Parent != nil && oldScore > t.Score {
+	if t.Parent != nil && oldScore != t.Score {
 		t.Parent.UpdateScore()
 	}
 }
 
 func (t *EvalTree) Insert(line []*Move, score float64) {
-	if t.Color == Black {
-		score = -score
-	}
-	// Skipping moves that are worse
-	if score < t.Score {
-		return
-	}
 	tree := t
 	var calcScoreOn *EvalTree
 	for _, move := range line {
@@ -71,7 +61,7 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 			if calcScoreOn == nil {
 				calcScoreOn = tree
 			}
-			tree.Replies[move] = NewEvalTree(tree.Color.Opposite(), move, score)
+			tree.Replies[move] = NewEvalTree(move, score)
 			tree.Replies[move].Parent = tree
 			if tree.BestLine == nil {
 				tree.BestLine = tree.Replies[move]
@@ -79,12 +69,12 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 			next = tree.Replies[move]
 		}
 		tree = next
+		score = -1 * score
 	}
 	if calcScoreOn == nil {
-		if tree.Score > score {
-			tree.UpdateScore()
-		}
-	} else if calcScoreOn.Score > score {
+		tree.Score = score
+		tree.UpdateScore()
+	} else {
 		calcScoreOn.UpdateScore()
 	}
 }
@@ -94,7 +84,6 @@ func (t *EvalTree) GetBestLine() *EvalResult {
 	tree := t
 	for tree.BestLine != nil {
 		if tree.Move != nil {
-			fmt.Println("Adding", tree.Move)
 			bestLine = append(bestLine, tree.Move)
 		}
 		tree = tree.BestLine
