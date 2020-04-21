@@ -236,12 +236,12 @@ func (t *Tournament) Start() {
 		fmt.Printf("Starting game %d/%d: %s v. %s\n", i+1, len(t.Games), game.White.Name, game.Black.Name)
 
 		for game.Result == Unfinished {
-			fmt.Println(fen.Board)
+			//fmt.Println(fen.Board)
 			move := game.White.Play(fen)
 			//fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
-			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+			fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
-			fmt.Println(fen.Board)
+			//fmt.Println(fen.Board)
 			if fen.IsDraw() {
 				t.SetResult(game, fen, Draw)
 			} else if fen.IsMate() {
@@ -250,7 +250,7 @@ func (t *Tournament) Start() {
 				//fmt.Println("Valid moves: ", fen.ValidMoves())
 				move = game.Black.Play(fen)
 				//fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
-				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+				fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
 				if fen.IsDraw() {
 					t.SetResult(game, fen, Draw)

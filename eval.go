@@ -1,7 +1,6 @@
 package chess_engine
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -85,13 +84,16 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 		tree = next
 	}
 	if calcScoreOn == nil {
+		// Tree node already exists, update the score
 		if tree.Score == score {
-			panic("No calc score and score is the same??" + Line(line).String())
+			//panic("No calc score and score is the same??" + Line(line).String())
 		} else {
-			panic("no calc score different score=>" + Line(line).String() + " " + tree.Move.String() + " " + fmt.Sprintf("%f %f", tree.Score, score))
+			tree.Score = score
+			if tree.Parent != nil {
+				tree.Parent.UpdateScore()
+			}
 		}
-	}
-	if (calcScoreOn.Color == Black && calcScoreOn.Score < score) || (calcScoreOn.Color == White && calcScoreOn.Score > score) {
+	} else if (calcScoreOn.Color == Black && calcScoreOn.Score < score) || (calcScoreOn.Color == White && calcScoreOn.Score > score) {
 		calcScoreOn.UpdateScore()
 	}
 }

@@ -14,6 +14,7 @@ type DFSEngine struct {
 	StartingPosition *FEN
 	Cancel           context.CancelFunc
 	Evaluators       []Evaluator
+	EvalTree         *EvalTree
 }
 
 func (b *DFSEngine) SetPosition(fen *FEN) {
@@ -28,7 +29,7 @@ func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 
 func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
 	seen := map[string]bool{}
-	tree := NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
+	b.EvalTree = NewEvalTree(b.StartingPosition.ToMove.Opposite(), nil, 0.0)
 	timer := time.NewTimer(time.Second)
 	depth := 0
 	selDepth := 20
@@ -46,7 +47,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	for {
 		select {
 		case <-ctx.Done():
-			output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
+			output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 			return
 		case <-timer.C:
 			totalNodes += nodes
@@ -59,7 +60,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				game := queue.Remove(queue.Front()).(*FEN)
 				if len(game.Line) < depth {
 					depth = len(game.Line)
-					tree.Prune()
+					b.EvalTree.Prune()
 				}
 				fenStr := game.FENString()
 				seen[fenStr] = true
@@ -77,7 +78,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					score = b.heuristicScorePosition(game)
 				}
 
-				tree.Insert(game.Line, score)
+				b.EvalTree.Insert(game.Line, score)
 
 				if len(game.Line) != selDepth {
 					nextFENs := game.NextFENs()
@@ -88,11 +89,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					}
 				}
 				if maxNodes > 0 && totalNodes+nodes >= maxNodes {
-					output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
+					output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 					return
 				}
 			} else {
-				output <- fmt.Sprintf("bestmove %s", tree.BestLine.Move.String())
+				output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
 				return
 			}
 		}
@@ -137,6 +138,7 @@ func (b *DFSEngine) BestMove(game *FEN) *Move {
 			bestMove = f.Line[len(f.Line)-1]
 		}
 	}
+	b.EvalTree.Insert(append(game.Line, bestMove), bestScore)
 	return bestMove
 }
 
