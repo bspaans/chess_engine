@@ -139,13 +139,27 @@ func (a Attacks) AttacksSquare(color Color, square Position) bool {
 	return false
 }
 
+// Whether or not @color attacks the @square with a ray piece
+func (a Attacks) AttacksSquareWithRayPiece(color Color, square Position) bool {
+	for _, pieceVectors := range a[square] {
+		if pieceVectors.Piece.Color() == color {
+			normPiece := pieceVectors.Piece.ToNormalizedPiece()
+			if normPiece == Pawn || normPiece == Knight {
+				continue
+			}
+			return true
+		}
+	}
+	return false
+}
+
 // Whether or not @color defends the @square
 func (a Attacks) DefendsSquare(color Color, square Position) bool {
 	return a.AttacksSquare(color, square)
 }
 
-func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map[Position]bool {
-	result := map[Position]bool{}
+func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map[Position][]Position {
+	result := map[Position][]Position{}
 	// Look at all the diagonals and lines emanating from the king's position
 	for _, line := range kingPos.GetQueenMoves() {
 		for _, pos := range line {
@@ -154,8 +168,17 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 			} else if board.IsOpposingPiece(pos, color) {
 				break
 			} else {
-				if a.AttacksSquare(color.Opposite(), pos) {
-					result[pos] = true
+				for _, pieceVector := range a[pos] {
+					if pieceVector.Piece.Color() != color {
+						normPiece := pieceVector.Piece.ToNormalizedPiece()
+						if normPiece == Pawn || normPiece == Knight {
+							continue
+						}
+						tmpMove := NewMove(pos, kingPos)
+						if pieceVector.Vector.Normalize() == tmpMove.Vector().Normalize() {
+							result[pos] = append(result[pos], pieceVector.Vector.FromPosition(pos))
+						}
+					}
 				}
 				break
 			}

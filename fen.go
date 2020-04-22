@@ -193,8 +193,19 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
 	filteredResult := []*Move{}
 	for _, move := range result {
-		if !pinned[move.From] {
+		attackers := pinned[move.From]
+		if len(attackers) == 0 {
 			filteredResult = append(filteredResult, move)
+		} else if len(attackers) == 1 {
+			// Attack the one piece that is pinning this piece
+			if move.To == attackers[0] {
+				filteredResult = append(filteredResult, move)
+			} else {
+				//fmt.Println("Piece is pinned; filtering", move)
+			}
+
+		} else {
+			//fmt.Println("Piece is pinned; filtering", move)
 		}
 	}
 	return filteredResult
@@ -288,8 +299,19 @@ func (f *FEN) ValidMoves() []*Move {
 	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
 	filteredResult := []*Move{}
 	for _, move := range result {
-		if !pinned[move.From] {
+		attackers := pinned[move.From]
+		if len(attackers) == 0 {
 			filteredResult = append(filteredResult, move)
+		} else if len(attackers) == 1 {
+			// Attack the one piece that is pinning this piece
+			if move.To == attackers[0] {
+				filteredResult = append(filteredResult, move)
+			} else {
+				//fmt.Println("Piece is pinned; filtering", move, attackers)
+			}
+
+		} else {
+			//fmt.Println("Piece is pinned; filtering", move, attackers)
 		}
 	}
 	return filteredResult

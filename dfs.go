@@ -18,6 +18,12 @@ type DFSEngine struct {
 	SelDepth         int
 }
 
+func NewDFSEngine(depth int) *DFSEngine {
+	return &DFSEngine{
+		SelDepth: depth,
+	}
+}
+
 func (b *DFSEngine) SetPosition(fen *FEN) {
 	b.StartingPosition = fen
 }
@@ -39,8 +45,16 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 	firstLine := b.InitialBestLine(b.SelDepth)
 	queue := list.New()
+	lineLength := 0
+	for _, m := range firstLine {
+		if m != nil {
+			fenStr := m.FENString()
+			seen[fenStr] = true
+		}
+	}
 	for d := 0; d < b.SelDepth-2; d++ {
 		if firstLine[d] != nil {
+			lineLength++
 			queue.PushFront(firstLine[d])
 		}
 	}
@@ -56,7 +70,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 		select {
 		case <-ctx.Done():
 			output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
-			return
+			goto end
 		case <-timer.C:
 			totalNodes += nodes
 			output <- fmt.Sprintf("info ns %d nodes %d depth %d queue %d", nodes, totalNodes, depth, queue.Len())
@@ -65,22 +79,16 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			bestLine = b.EvalTree.BestLine
 			bestResult := bestLine.GetBestLine()
 			line := Line(bestResult.Line).String()
-			output <- fmt.Sprintf("info cp %f pv %s", bestResult.Score, line)
+			output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), line)
 		default:
 			if queue.Len() > 0 {
 				nodes++
 				game := queue.Remove(queue.Front()).(*FEN)
 				if len(game.Line) < depth {
-					depth = len(game.Line)
 					b.EvalTree.UpdateBestLine()
 					//b.EvalTree.Prune()
-					if bestLine != b.EvalTree.BestLine {
-						bestLine = b.EvalTree.BestLine
-						bestResult := bestLine.GetBestLine()
-						line := Line(bestResult.Line).String()
-						output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), line)
-					}
 				}
+				depth = len(game.Line)
 				fenStr := game.FENString()
 				seen[fenStr] = true
 
@@ -88,18 +96,14 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				if game.IsDraw() {
 					score = 0.0
 				} else if game.IsMate() {
-					if game.ToMove == White {
-						score = math.Inf(1)
-					} else {
-						score = math.Inf(-1)
-					}
+					score = 58008
 				} else {
 					score = b.heuristicScorePosition(game)
 				}
 
 				b.EvalTree.Insert(game.Line, score)
 
-				if len(game.Line) != b.SelDepth {
+				if len(game.Line) < b.SelDepth {
 					nextFENs := game.NextFENs()
 					for _, f := range nextFENs {
 						if !seen[f.FENString()] {
@@ -116,24 +120,27 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				bestLine = b.EvalTree.BestLine
 				bestResult := bestLine.GetBestLine()
 				line := Line(bestResult.Line).String()
-				fmt.Println(bestResult.Score)
 				output <- fmt.Sprintf("info depth %d score cp %d pv %s", len(bestResult.Line), int(math.Round(bestResult.Score*100)), line)
 				output <- fmt.Sprintf("info ns %d nodes %d depth %d", nodes, totalNodes, depth)
 				output <- fmt.Sprintf("bestmove %s", b.EvalTree.BestLine.Move.String())
-				return
+				goto end
 			}
 		}
 	}
+end:
 }
 
 func (b *DFSEngine) InitialBestLine(depth int) []*FEN {
 	line := make([]*FEN, depth)
 	game := b.StartingPosition
 	for d := 0; d < depth; d++ {
-		move := b.BestMove(game)
+		move, gameFinished := b.BestMove(game)
 		if move != nil {
 			game = game.ApplyMove(move)
 			line[d] = game
+			if gameFinished {
+				break
+			}
 		} else {
 			break
 		}
@@ -141,9 +148,10 @@ func (b *DFSEngine) InitialBestLine(depth int) []*FEN {
 	return line
 }
 
-func (b *DFSEngine) BestMove(game *FEN) *Move {
+func (b *DFSEngine) BestMove(game *FEN) (*Move, bool) {
 	nextFENs := game.NextFENs()
 	bestScore := math.Inf(-1)
+	var bestGame *FEN
 	var bestMove *Move
 
 	for _, f := range nextFENs {
@@ -151,22 +159,18 @@ func (b *DFSEngine) BestMove(game *FEN) *Move {
 		if f.IsDraw() {
 			score = 0.0
 		} else if f.IsMate() {
-			if game.ToMove == White {
-				score = math.Inf(1)
-			} else {
-				score = math.Inf(-1)
-			}
+			score = math.Inf(1)
 		} else {
 			score = b.heuristicScorePosition(f) * -1
 		}
 		if score > bestScore {
 			bestScore = score
+			bestGame = f
 			bestMove = f.Line[len(f.Line)-1]
 		}
 	}
-	fmt.Println(game.Line, bestMove, bestScore)
-	b.EvalTree.Insert(append(game.Line, bestMove), bestScore)
-	return bestMove
+	//b.EvalTree.Insert(append(game.Line, bestMove), bestScore)
+	return bestMove, bestGame.IsDraw() || bestGame.IsMate()
 }
 
 func (b *DFSEngine) AddEvaluator(e Evaluator) {

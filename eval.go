@@ -19,7 +19,7 @@ func NewEvalResult(line []*Move, score float64) *EvalResult {
 type EvalTree struct {
 	Score    float64
 	Move     *Move
-	Replies  map[*Move]*EvalTree
+	Replies  map[string]*EvalTree
 	BestLine *EvalTree
 	Parent   *EvalTree
 }
@@ -28,7 +28,7 @@ func NewEvalTree(move *Move, score float64) *EvalTree {
 	return &EvalTree{
 		Score:   score,
 		Move:    move,
-		Replies: map[*Move]*EvalTree{},
+		Replies: map[string]*EvalTree{},
 	}
 }
 
@@ -45,14 +45,16 @@ func (t *EvalTree) Depth() int {
 func (t *EvalTree) UpdateBestLine() {
 	var maxChild *EvalTree
 	maxScore := math.Inf(-1)
-	oldScore := t.Score
+	//fmt.Println("Finding max for", t.Move)
 	for _, child := range t.Replies {
-		if child.Score > maxScore {
+		//fmt.Println("Seen", child.Move, child.Score)
+		if child.Score >= maxScore {
 			maxScore = child.Score
 			maxChild = child
 		}
 	}
-	if t.Depth()%2 == 1 {
+	//fmt.Println("Found", maxChild.Move, maxScore)
+	if t.Parent != nil {
 		t.Score = maxScore * -1
 	} else {
 		t.Score = maxScore
@@ -60,8 +62,11 @@ func (t *EvalTree) UpdateBestLine() {
 	if maxChild != nil {
 		t.BestLine = maxChild
 	}
-	if t.Score != oldScore && t.Parent != nil {
+	if t.Parent != nil {
+		//fmt.Println("update parent line", t.Move, maxScore)
 		t.Parent.UpdateBestLine()
+	} else {
+		//fmt.Println("set root to", maxScore, t.BestLine.Move)
 	}
 }
 
@@ -70,17 +75,18 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 	tree := t
 	var calcScoreOn *EvalTree
 	for _, move := range line {
-		next, ok := tree.Replies[move]
+		moveStr := move.String()
+		next, ok := tree.Replies[moveStr]
 		if !ok {
 			if calcScoreOn == nil {
 				calcScoreOn = tree
 			}
-			tree.Replies[move] = NewEvalTree(move, math.Inf(-1))
-			tree.Replies[move].Parent = tree
+			tree.Replies[moveStr] = NewEvalTree(move, math.Inf(-1))
+			tree.Replies[moveStr].Parent = tree
 			if tree.BestLine == nil {
-				tree.BestLine = tree.Replies[move]
+				tree.BestLine = tree.Replies[moveStr]
 			}
-			next = tree.Replies[move]
+			next = tree.Replies[moveStr]
 		}
 		tree = next
 	}
@@ -119,7 +125,7 @@ func (t *EvalTree) Prune() {
 	}
 
 	i := 0
-	toDelete := make([]*Move, len(t.Replies)-1)
+	toDelete := make([]string, len(t.Replies)-1)
 	for move, child := range t.Replies {
 		if child != t.BestLine {
 			toDelete[i] = move
