@@ -58,7 +58,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			seen[fenStr] = true
 		}
 	}
-	for d := 0; d < b.SelDepth-2; d++ {
+	for d := 0; d < b.SelDepth; d++ {
 		if firstLine[d] != nil {
 			lineLength++
 			queue.PushFront(firstLine[d])
@@ -67,9 +67,9 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	// Queue all the other positions from the starting position
 	nextFENs := b.StartingPosition.NextFENs()
 	for _, f := range nextFENs {
-		if f.Line[0] != firstLine[0].Line[0] {
+		if f.Line[0].String() != firstLine[0].Line[0].String() {
 			// Skip uninteresting moves
-			if !f.InCheck() {
+			if !b.ShouldCheckPosition(f) {
 				continue
 			}
 			queue.PushBack(f)
@@ -94,7 +94,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			if queue.Len() > 0 {
 				nodes++
 				game := queue.Remove(queue.Front()).(*FEN)
-				// TODO: if mate is found on this level back out
+
 				if len(game.Line) < depth {
 					b.EvalTree.UpdateBestLine()
 					//b.EvalTree.Prune()
@@ -116,9 +116,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 				if len(game.Line) < b.SelDepth {
 					nextFENs := game.NextFENs()
+					wasForced := len(nextFENs) == 1
 					for _, f := range nextFENs {
 						// Skip "uninteresting" moves
-						if !f.InCheck() {
+						if !wasForced && !b.ShouldCheckPosition(f) {
 							continue
 						}
 						if !seen[f.FENString()] {
@@ -143,6 +144,23 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 		}
 	}
 end:
+}
+
+func (b *DFSEngine) ShouldCheckPosition(position *FEN) bool {
+	valid := position.ValidMoves()
+
+	/*
+			TODO: enable this when we can shortcut the searchtree for Mate in Ns; otherwise this makes the tests blow up
+		attacks := position.Attacks.GetAttacks(position.ToMove, position.Pieces)
+		validAttacks := position.FilterPinnedPieces(attacks)
+				// Look at all the moves leading to checks
+				for _, m := range valid {
+					if position.ApplyMove(m).InCheck() {
+						return true
+					}
+				}
+	*/
+	return position.InCheck() || len(valid) <= 1 //|| len(validAttacks) > 0
 }
 
 func (b *DFSEngine) InitialBestLine(depth int) []*FEN {
