@@ -12,7 +12,7 @@ func getBestMove(unit *DFSEngine, timeLimit time.Duration) string {
 	outputs := make(chan string, 1000)
 	maxDepth := 0
 	maxNodes := 0
-	fmt.Println("Starting with position", unit.StartingPosition.FENString())
+	//fmt.Println("Starting with position", unit.StartingPosition.FENString())
 	unit.Start(outputs, maxNodes, maxDepth)
 	timer := time.NewTimer(timeLimit)
 	finalTimer := time.NewTimer(timeLimit + 2*time.Second)

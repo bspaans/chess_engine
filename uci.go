@@ -8,9 +8,17 @@ import (
 	"strings"
 )
 
+type EngineOption uint8
+
+const (
+	SELDEPTH EngineOption = iota
+)
+
 type Engine interface {
 	SetPosition(*FEN)
+	AddEvaluator(Evaluator)
 	Start(engineOutput chan string, maxNodes int, maxDepth int)
+	SetOption(EngineOption, int)
 	Stop()
 }
 

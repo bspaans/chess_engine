@@ -28,6 +28,12 @@ func (b *DFSEngine) SetPosition(fen *FEN) {
 	b.StartingPosition = fen
 }
 
+func (b *DFSEngine) SetOption(opt EngineOption, val int) {
+	if opt == SELDEPTH {
+		b.SelDepth = val
+	}
+}
+
 func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cancel = cancel

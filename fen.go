@@ -353,7 +353,14 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	case WhitePawn:
 		if move.From.GetRank() == '2' && move.To.GetRank() == '4' {
 			// Mark the skipped over square as vulnerable
-			enpassant = move.To - 8
+			enpassantSquare := move.To - 8
+			// Is en passant actually possible?
+			for _, pos := range PawnAttacks[White][enpassantSquare] {
+				// TODO: check if pawn is pinned
+				if board[pos] == BlackPawn {
+					enpassant = enpassantSquare
+				}
+			}
 		} else if move.To == f.EnPassantVulnerable {
 			// Remove the pawn that was captured by en-passant
 			board[move.To-8] = NoPiece
@@ -361,7 +368,14 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	case BlackPawn:
 		if move.From.GetRank() == '7' && move.To.GetRank() == '5' {
 			// Mark the skipped over square as vulnerable
-			enpassant = move.From - 8
+			enpassantSquare := move.From - 8
+			// Is en passant actually possible?
+			for _, pos := range PawnAttacks[Black][enpassantSquare] {
+				// TODO: check if pawn is pinned
+				if board[pos] == WhitePawn {
+					enpassant = enpassantSquare
+				}
+			}
 		} else if move.To == f.EnPassantVulnerable {
 			// Remove the pawn that was captured by en-passant
 			board[move.To+8] = NoPiece

@@ -9,11 +9,11 @@ import (
 )
 
 func main() {
-	engine := &chess_engine.DFSEngine{}
-	engine.SelDepth = 5
+	var engine chess_engine.Engine
+	engine = chess_engine.NewDFSEngine(3)
 	for i, arg := range os.Args {
 		if arg == "--random" {
-			engine.AddEvaluator(chess_engine.RandomEvaluator)
+			engine = chess_engine.NewRandomEngine()
 		} else if arg == "--naive-material" {
 			engine.AddEvaluator(chess_engine.NaiveMaterialEvaluator)
 		} else if arg == "--space" {
@@ -23,7 +23,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			engine.SelDepth = selDepth
+			engine.SetOption(chess_engine.SELDEPTH, selDepth)
 		}
 	}
 	uci := chess_engine.NewUCI("bs-engine", "Bart Spaans", engine)
