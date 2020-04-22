@@ -68,6 +68,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	nextFENs := b.StartingPosition.NextFENs()
 	for _, f := range nextFENs {
 		if f.Line[0] != firstLine[0].Line[0] {
+			// Skip uninteresting moves
+			if !f.InCheck() {
+				continue
+			}
 			queue.PushBack(f)
 		}
 	}
@@ -90,6 +94,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			if queue.Len() > 0 {
 				nodes++
 				game := queue.Remove(queue.Front()).(*FEN)
+				// TODO: if mate is found on this level back out
 				if len(game.Line) < depth {
 					b.EvalTree.UpdateBestLine()
 					//b.EvalTree.Prune()
@@ -112,6 +117,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				if len(game.Line) < b.SelDepth {
 					nextFENs := game.NextFENs()
 					for _, f := range nextFENs {
+						// Skip "uninteresting" moves
+						if !f.InCheck() {
+							continue
+						}
 						if !seen[f.FENString()] {
 							queue.PushFront(f)
 						}
@@ -175,7 +184,7 @@ func (b *DFSEngine) BestMove(game *FEN) (*Move, bool) {
 			bestMove = f.Line[len(f.Line)-1]
 		}
 	}
-	//b.EvalTree.Insert(append(game.Line, bestMove), bestScore)
+	b.EvalTree.Insert(append(game.Line, bestMove), bestScore)
 	return bestMove, bestGame.IsDraw() || bestGame.IsMate()
 }
 

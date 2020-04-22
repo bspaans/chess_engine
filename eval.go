@@ -69,6 +69,17 @@ func (t *EvalTree) UpdateBestLine() {
 		//fmt.Println("set root to", maxScore, t.BestLine.Move)
 	}
 }
+func (t *EvalTree) GetLine(line []*Move) *EvalTree {
+	tree := t
+	for _, move := range line {
+		child, ok := tree.Replies[move.String()]
+		if !ok {
+			return nil
+		}
+		tree = child
+	}
+	return tree
+}
 
 func (t *EvalTree) Insert(line []*Move, score float64) {
 	//fmt.Println("Insert", line, score)

@@ -105,8 +105,8 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
-	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
+	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
 	//NewEngine("stockfish", "stockfish", nil),

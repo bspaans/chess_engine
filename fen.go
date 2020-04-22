@@ -115,6 +115,11 @@ func (f *FEN) IsDraw() bool {
 	return len(f.ValidMoves()) == 0
 }
 
+func (f *FEN) InCheck() bool {
+	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
+	return len(checks) > 0
+}
+
 func (f *FEN) IsMate() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {

@@ -74,8 +74,7 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 			if depth > selDepth {
 				selDepth = depth
 			}
-			unit := NewDFSEngine(selDepth)
-			depth--
+			unit := NewDFSEngine(depth)
 			unit.AddEvaluator(NaiveMaterialEvaluator)
 			unit.SetPosition(fen)
 			bestmove := getBestMove(unit, 200.0*time.Second)

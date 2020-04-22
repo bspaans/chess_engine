@@ -10,7 +10,7 @@ import (
 
 func main() {
 	var engine chess_engine.Engine
-	engine = chess_engine.NewDFSEngine(3)
+	engine = chess_engine.NewDFSEngine(4)
 	for i, arg := range os.Args {
 		if arg == "--random" {
 			engine = chess_engine.NewRandomEngine()
