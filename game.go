@@ -160,15 +160,12 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 		}
 	}
 
-	// 2. block the attack
-	// 3. remove the attacking piece
-	for _, check := range checks {
-		// if the piece is a knight the check cannot be blocked
-		attackingPiece := f.Board[check.From]
-		if NormalizedPiece(attackingPiece.Normalize()) == Knight {
-			// TODO: but it can be captured
-			break
-		}
+	check := checks[0]
+
+	attackingPiece := f.Board[check.From].ToNormalizedPiece()
+
+	// 2. block the attack; or take the piece
+	if attackingPiece != Knight && attackingPiece != Pawn {
 		// Follow the attack vector to see if there are any
 		// pieces that can block the square or attack the checking
 		// piece
@@ -178,7 +175,12 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 			pos = vector.FromPosition(pos)
 			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, pos)
 			for _, move := range blocks {
-				if move.From != kingPos {
+				// Pawns can only capture if there's actually a piece there
+				if f.Board[move.From].ToNormalizedPiece() == Pawn {
+					if move.To == check.From {
+						result = append(result, move)
+					}
+				} else if move.From != kingPos {
 					result = append(result, move)
 				}
 			}
@@ -199,7 +201,15 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 				}
 			}
 		}
+	} else {
+		// 3. remove the attacking piece
+		for _, move := range f.Attacks.GetAttacksOnSquare(f.ToMove, check.From) {
+			if move.From != kingPos {
+				result = append(result, move)
+			}
+		}
 	}
+
 	return f.FilterPinnedPieces(result)
 }
 

@@ -41,8 +41,5 @@ The first recorded engine checkmate:
 
 ### Edge Cases / Known Bugs
 
-Putting this here to shame me into fixing them:
-
-* Attacking a checking knight never occurs to the engine
 * Missing draw by repetition
 * Missing draw by insufficient material
