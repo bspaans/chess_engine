@@ -56,7 +56,6 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
 		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
 		// Madame de Remusat vs Napoleon I, Paris, 1802
-		// TODO propagate Mate?
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 
 		// Mate in four
@@ -64,17 +63,14 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 		// Jules De Riviere vs Paul Journoud, Paris, 1860
 		[]string{"r1bk3r/pppq1ppp/5n2/4N1N1/2Bp4/Bn6/P4PPP/4R1K1 w - - 1 0", "7"},
 
-		// TODO: propagate Mate - N
-
 		// Paul Morphy vs Samuel Boden, London, 1859
 		//[]string{"2r1r3/p3P1k1/1p1pR1Pp/n2q1P2/8/2p4P/P4Q2/1B3RK1 w - - 1 0", "7"},
 
 		// Paul Morphy vs NN, New Orleans (blind, simul), 1858
 		[]string{"r1b3kr/3pR1p1/ppq4p/5P2/4Q3/B7/P5PP/5RK1 w - - 1 0", "7"},
 		// TODO it doesn't find this mate
-		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "9"},
-		// TODO because it doesn't look for forcing lines in
-		// r2qr3/ppp1B2p/1b4p1/n3Q1Pk/3P2b1/2P2B2/P4P2/RN4K1 w - - 1 0
+		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "7"},
+		[]string{"r2qr3/ppp1B2p/1b4p1/n3Q1Pk/3P2b1/2P2B2/P4P2/RN4K1 w - - 1 0", "7"},
 	}
 
 	for _, testCase := range cases {
