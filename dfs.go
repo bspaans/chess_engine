@@ -14,7 +14,7 @@ import (
 type DFSEngine struct {
 	StartingPosition *FEN
 	Cancel           context.CancelFunc
-	Evaluators       []Evaluator
+	Evaluators       Evaluators
 	EvalTree         *EvalTree
 	SelDepth         int
 
@@ -93,20 +93,18 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 				if len(game.Line) < depth {
 					b.EvalTree.UpdateBestLine()
+					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
+					if tree != nil && tree.Score == -Mate {
+						// Already found mate at this depth
+						continue
+					}
 					//b.EvalTree.Prune()
 				}
 				depth = len(game.Line)
 				fenStr := game.FENString()
 				seen[fenStr] = true
 
-				score := Score(0.0)
-				if game.IsDraw() {
-					score = 0.0
-				} else if game.IsMate() {
-					score = 58008
-				} else {
-					score = b.Eval(game)
-				}
+				score := b.Evaluators.Eval(game)
 
 				b.EvalTree.Insert(game.Line, score)
 
@@ -163,7 +161,7 @@ func (b *DFSEngine) outputInfo(output chan string, sendBestMove bool) {
 }
 
 func (b *DFSEngine) ShouldCheckPosition(position *FEN, bestScore Score) bool {
-	if b.Eval(position)-bestScore > 2.0 {
+	if b.Evaluators.Eval(position)-bestScore > 2.0 {
 		return true
 	}
 	valid := position.ValidMoves()
@@ -185,15 +183,15 @@ func (b *DFSEngine) ShouldCheckPosition(position *FEN, bestScore Score) bool {
 func (b *DFSEngine) InitialBestLine(depth int) ([]*FEN, Score) {
 	line := make([]*FEN, depth)
 	game := b.StartingPosition
-	b.Eval(game) // eval to set score
+	b.Evaluators.Eval(game) // eval to set score
 	finalScore := Score(0.0)
 	for d := 0; d < depth; d++ {
-		move, score, gameFinished := b.BestMove(game)
-		if move != nil {
+		bestGame, score := b.Evaluators.BestMove(game)
+		if bestGame != nil {
 			finalScore = score
-			game = game.ApplyMove(move)
+			game = bestGame
 			line[d] = game
-			if gameFinished {
+			if score.GameFinished() {
 				break
 			}
 		} else {
@@ -205,18 +203,18 @@ func (b *DFSEngine) InitialBestLine(depth int) ([]*FEN, Score) {
 
 func (b *DFSEngine) BestMove(game *FEN) (*Move, Score, bool) {
 	nextFENs := game.NextFENs()
-	bestScore := Score(math.Inf(-1))
+	bestScore := LowestScore
 	var bestGame *FEN
 	var bestMove *Move
 
 	for _, f := range nextFENs {
-		score := Score(math.Inf(-1))
+		score := LowestScore
 		if f.IsDraw() {
-			score = 0.0
+			score = Draw
 		} else if f.IsMate() {
-			score = Score(math.Inf(1))
+			score = Mate
 		} else {
-			score = b.Eval(f) * -1
+			score = b.Evaluators.Eval(f) * -1
 		}
 		if score > bestScore {
 			bestScore = score
@@ -230,22 +228,6 @@ func (b *DFSEngine) BestMove(game *FEN) (*Move, Score, bool) {
 
 func (b *DFSEngine) AddEvaluator(e Evaluator) {
 	b.Evaluators = append(b.Evaluators, e)
-}
-
-func (b *DFSEngine) Eval(f *FEN) Score {
-	if f.Score != nil {
-		return *f.Score
-	}
-	score := Score(0.0)
-	for _, eval := range b.Evaluators {
-		score += eval(f)
-	}
-	result := score
-	if f.ToMove == Black {
-		result = score * -1
-	}
-	f.Score = &result
-	return result
 }
 
 func (b *DFSEngine) Stop() {

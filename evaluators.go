@@ -6,6 +6,8 @@ import (
 
 type Evaluator func(fen *FEN) Score
 
+type Evaluators []Evaluator
+
 func NaiveMaterialEvaluator(f *FEN) Score {
 	score := 0.0
 	materialScore := map[NormalizedPiece]float64{
@@ -43,4 +45,51 @@ func SpaceEvaluator(f *FEN) Score {
 
 func RandomEvaluator(f *FEN) Score {
 	return Score(rand.NormFloat64())
+}
+
+func (e Evaluators) Eval(position *FEN) Score {
+	if position.Score != nil {
+		return *position.Score
+	}
+	score := Score(0.0)
+	if position.IsDraw() {
+		score = Draw
+	} else if position.IsMate() {
+		if position.ToMove == Black {
+			score = OpponentMate // because we're going to *-1 below
+		} else {
+			score = Mate
+		}
+	} else {
+		for _, eval := range e {
+			score += eval(position)
+		}
+	}
+	if position.ToMove == Black {
+		score = score * -1
+	}
+	position.Score = &score
+	return score
+}
+
+func (e Evaluators) BestMove(position *FEN) (*FEN, Score) {
+	nextFENs := position.NextFENs()
+	bestScore := LowestScore
+	var bestGame *FEN
+
+	for _, f := range nextFENs {
+		score := LowestScore
+		if f.IsDraw() {
+			score = Draw
+		} else if f.IsMate() {
+			score = Mate
+		} else {
+			score = e.Eval(f) * -1
+		}
+		if score > bestScore {
+			bestScore = score
+			bestGame = f
+		}
+	}
+	return bestGame, bestScore
 }

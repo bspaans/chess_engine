@@ -98,7 +98,7 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 			unit.AddEvaluator(NaiveMaterialEvaluator)
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
-			bestmove := getBestMove(unit, 200.0*time.Second)
+			bestmove := getBestMove(unit, 5.0*time.Second)
 			unit.Stop()
 			if bestmove == "" {
 				t.Fatal("Did not get a best move in time", testCase)
