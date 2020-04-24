@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -188,9 +189,13 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 		t.Standing[game.Black] += 1.0
 	}
 	fmt.Println(game.ResultAnnouncement())
-	if result != Draw {
-		fmt.Println(fen.Board)
+	fenStr := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	pos, err := chess_engine.ParseFEN(fenStr)
+	if err != nil {
+		panic(err)
 	}
+	fmt.Println(chess_engine.LineToPGN(pos, fen.Line))
+	os.Exit(1)
 }
 
 func (t *Tournament) StandingToString() string {
@@ -229,9 +234,6 @@ func (t *Tournament) Start() {
 		fmt.Printf("Starting game %d/%d: %s v. %s\n", i+1, len(t.Games), game.White.Name, game.Black.Name)
 
 		for game.Result == Unfinished {
-			if t.OutputBoard {
-				t.OutputStatus(game, fen)
-			}
 			move := game.White.Play(fen)
 			if move == nil {
 				fmt.Printf("White (%s) crashed on FEN: %s\n", game.White.Name, fen.FENString())
@@ -241,7 +243,7 @@ func (t *Tournament) Start() {
 				}
 				continue
 			}
-			fmt.Printf("White (%s) plays %s\n", game.White.Name, move.String())
+			fmt.Printf("White (%s) plays %s\n", game.White.Name, chess_engine.MoveToAlgebraicMove(fen, move))
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 			fen = fen.ApplyMove(move)
 			if t.OutputBoard {
@@ -261,9 +263,12 @@ func (t *Tournament) Start() {
 					}
 					continue
 				}
-				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, move.String())
+				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, chess_engine.MoveToAlgebraicMove(fen, move))
 				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
 				fen = fen.ApplyMove(move)
+				if t.OutputBoard {
+					t.OutputStatus(game, fen)
+				}
 				if fen.IsDraw() {
 					t.SetResult(game, fen, Draw)
 				} else if fen.IsMate() {
