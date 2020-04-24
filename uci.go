@@ -15,7 +15,7 @@ const (
 )
 
 type Engine interface {
-	SetPosition(*FEN)
+	SetPosition(*Game)
 	AddEvaluator(Evaluator)
 	Start(engineOutput chan string, maxNodes int, maxDepth int)
 	SetOption(EngineOption, int)

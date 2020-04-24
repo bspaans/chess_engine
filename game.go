@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-type FEN struct {
+type Game struct {
 	// An array of size 64 denoting the board.
 	// 0 index = a1
 	Board Board
@@ -35,8 +35,8 @@ type FEN struct {
 	Score *Score
 }
 
-func ParseFEN(fenstr string) (*FEN, error) {
-	fen := FEN{}
+func ParseFEN(fenstr string) (*Game, error) {
+	fen := Game{}
 	forStr := ""
 	colorStr := ""
 	castleStr := ""
@@ -96,17 +96,17 @@ func ParseFEN(fenstr string) (*FEN, error) {
 	return &fen, nil
 }
 
-// Returns new FENs for every valid move from the current FEN
-func (f *FEN) NextFENs() []*FEN {
+// Returns new Games for every valid move from the current Game
+func (f *Game) NextGames() []*Game {
 	moves := f.ValidMoves()
-	result := []*FEN{}
+	result := []*Game{}
 	for _, m := range moves {
 		result = append(result, f.ApplyMove(m))
 	}
 	return result
 }
 
-func (f *FEN) IsDraw() bool {
+func (f *Game) IsDraw() bool {
 	// Fifty move rule
 	if f.HalfmoveClock >= 100 {
 		return true
@@ -121,12 +121,12 @@ func (f *FEN) IsDraw() bool {
 	return len(f.ValidMoves()) == 0
 }
 
-func (f *FEN) InCheck() bool {
+func (f *Game) InCheck() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	return len(checks) > 0
 }
 
-func (f *FEN) IsMate() bool {
+func (f *Game) IsMate() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
 		moves := f.validMovesInCheck(checks)
@@ -135,7 +135,7 @@ func (f *FEN) IsMate() bool {
 	return false
 }
 
-func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
+func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 	result := []*Move{}
 	// 1. move the king
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
@@ -203,7 +203,7 @@ func (f *FEN) validMovesInCheck(checks []*Move) []*Move {
 	return f.FilterPinnedPieces(result)
 }
 
-func (f *FEN) FilterPinnedPieces(result []*Move) []*Move {
+func (f *Game) FilterPinnedPieces(result []*Move) []*Move {
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
 	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
 	filteredResult := []*Move{}
@@ -226,7 +226,7 @@ func (f *FEN) FilterPinnedPieces(result []*Move) []*Move {
 	return filteredResult
 }
 
-func (f *FEN) ValidMoves() []*Move {
+func (f *Game) ValidMoves() []*Move {
 	if f.valid != nil {
 		return *f.valid
 	}
@@ -321,8 +321,8 @@ func (f *FEN) ValidMoves() []*Move {
 	return result
 }
 
-func (f *FEN) ApplyMove(move *Move) *FEN {
-	result := &FEN{}
+func (f *Game) ApplyMove(move *Move) *Game {
+	result := &Game{}
 	line := make([]*Move, len(f.Line)+1)
 	for i, m := range f.Line {
 		line[i] = m
@@ -416,7 +416,7 @@ func (f *FEN) ApplyMove(move *Move) *FEN {
 	return result
 }
 
-func (f *FEN) FENString() string {
+func (f *Game) FENString() string {
 	forStr := ""
 	for y := 7; y >= 0; y-- {
 		empty := 0

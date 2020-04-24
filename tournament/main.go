@@ -62,14 +62,14 @@ func (e *Engine) Send(msg string) {
 	e.stdin.Flush()
 }
 
-func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
+func (e *Engine) Play(fen *chess_engine.Game) *chess_engine.Move {
 	str := fen.FENString()
 	e.Send("position fen " + str)
 	e.Send("go depth 2")
 	return e.ReadUntilBestMove(fen)
 }
 
-func (e *Engine) ReadUntilBestMove(fen *chess_engine.FEN) *chess_engine.Move {
+func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
 	for {
 		text, err := e.stdout.ReadString('\n')
 		if err != nil {
@@ -177,7 +177,7 @@ func NewTournament(engines []*Engine, rounds int) *Tournament {
 	}
 }
 
-func (t *Tournament) SetResult(game *Game, fen *chess_engine.FEN, result GameResult) {
+func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameResult) {
 	game.Result = result
 	if result == Draw {
 		t.Standing[game.White] += 0.5
@@ -277,7 +277,7 @@ func (t *Tournament) Start() {
 	fmt.Println(t.StandingToString())
 }
 
-func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.FEN) {
+func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.Game) {
 	toPlay := "White"
 	engineName := game.White.Name
 	if fen.ToMove == chess_engine.Black {

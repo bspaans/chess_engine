@@ -4,11 +4,11 @@ import (
 	"math/rand"
 )
 
-type Evaluator func(fen *FEN) Score
+type Evaluator func(fen *Game) Score
 
 type Evaluators []Evaluator
 
-func NaiveMaterialEvaluator(f *FEN) Score {
+func NaiveMaterialEvaluator(f *Game) Score {
 	score := 0.0
 	materialScore := map[NormalizedPiece]float64{
 		Pawn:   1.0,
@@ -27,7 +27,7 @@ func NaiveMaterialEvaluator(f *FEN) Score {
 	return Score(score)
 }
 
-func SpaceEvaluator(f *FEN) Score {
+func SpaceEvaluator(f *Game) Score {
 	score := 0.0
 	for pos, pieceVectors := range f.Attacks {
 		for _, pieceVector := range pieceVectors {
@@ -43,11 +43,11 @@ func SpaceEvaluator(f *FEN) Score {
 	return Score(score)
 }
 
-func RandomEvaluator(f *FEN) Score {
+func RandomEvaluator(f *Game) Score {
 	return Score(rand.NormFloat64())
 }
 
-func (e Evaluators) Eval(position *FEN) Score {
+func (e Evaluators) Eval(position *Game) Score {
 	if position.Score != nil {
 		return *position.Score
 	}
@@ -72,12 +72,12 @@ func (e Evaluators) Eval(position *FEN) Score {
 	return score
 }
 
-func (e Evaluators) BestMove(position *FEN) (*FEN, Score) {
-	nextFENs := position.NextFENs()
+func (e Evaluators) BestMove(position *Game) (*Game, Score) {
+	nextGames := position.NextGames()
 	bestScore := LowestScore
-	var bestGame *FEN
+	var bestGame *Game
 
-	for _, f := range nextFENs {
+	for _, f := range nextGames {
 		score := LowestScore
 		if f.IsDraw() {
 			score = Draw

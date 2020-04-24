@@ -6,21 +6,21 @@ import (
 )
 
 type RandomEngine struct {
-	StartingPosition *FEN
+	StartingPosition *Game
 }
 
 func NewRandomEngine() *RandomEngine {
 	return &RandomEngine{}
 }
-func (b *RandomEngine) SetPosition(fen *FEN) {
+func (b *RandomEngine) SetPosition(fen *Game) {
 	b.StartingPosition = fen
 }
 func (b *RandomEngine) AddEvaluator(eval Evaluator) {
 	fmt.Println("This is a random engine...ignoring the evaluator")
 }
 func (b *RandomEngine) Start(output chan string, maxNodes, maxDepth int) {
-	nextFENs := b.StartingPosition.NextFENs()
-	board := nextFENs[rand.Intn(len(nextFENs))]
+	nextGames := b.StartingPosition.NextGames()
+	board := nextGames[rand.Intn(len(nextGames))]
 	output <- fmt.Sprintf("bestmove %s", board.Line[0])
 }
 
