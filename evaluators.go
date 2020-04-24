@@ -4,9 +4,9 @@ import (
 	"math/rand"
 )
 
-type Evaluator func(fen *FEN) float64
+type Evaluator func(fen *FEN) Score
 
-func NaiveMaterialEvaluator(f *FEN) float64 {
+func NaiveMaterialEvaluator(f *FEN) Score {
 	score := 0.0
 	materialScore := map[NormalizedPiece]float64{
 		Pawn:   1.0,
@@ -22,10 +22,10 @@ func NaiveMaterialEvaluator(f *FEN) float64 {
 	for piece, positions := range f.Pieces[Black] {
 		score += -1 * float64(len(positions)) * materialScore[piece]
 	}
-	return score
+	return Score(score)
 }
 
-func SpaceEvaluator(f *FEN) float64 {
+func SpaceEvaluator(f *FEN) Score {
 	score := 0.0
 	for pos, pieceVectors := range f.Attacks {
 		for _, pieceVector := range pieceVectors {
@@ -38,9 +38,9 @@ func SpaceEvaluator(f *FEN) float64 {
 			}
 		}
 	}
-	return score
+	return Score(score)
 }
 
-func RandomEvaluator(f *FEN) float64 {
-	return rand.NormFloat64()
+func RandomEvaluator(f *FEN) Score {
+	return Score(rand.NormFloat64())
 }

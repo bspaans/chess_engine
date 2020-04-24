@@ -27,6 +27,12 @@ type FEN struct {
 
 	// The line we're currently pondering on
 	Line []*Move
+
+	// Valid moves cache
+	valid *[]*Move
+
+	// Evaluation cache
+	Score *Score
 }
 
 func ParseFEN(fenstr string) (*FEN, error) {
@@ -221,11 +227,16 @@ func (f *FEN) FilterPinnedPieces(result []*Move) []*Move {
 }
 
 func (f *FEN) ValidMoves() []*Move {
+	if f.valid != nil {
+		return *f.valid
+	}
 	result := []*Move{}
 
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
-		return f.validMovesInCheck(checks)
+		result := f.validMovesInCheck(checks)
+		f.valid = &result
+		return result
 	}
 
 	for _, attack := range f.Attacks.GetAttacks(f.ToMove, f.Pieces) {
@@ -305,7 +316,9 @@ func (f *FEN) ValidMoves() []*Move {
 	}
 
 	// Make sure pieces aren't pinned
-	return f.FilterPinnedPieces(result)
+	result = f.FilterPinnedPieces(result)
+	f.valid = &result
+	return result
 }
 
 func (f *FEN) ApplyMove(move *Move) *FEN {

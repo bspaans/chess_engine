@@ -64,16 +64,8 @@ func (e *Engine) Send(msg string) {
 
 func (e *Engine) Play(fen *chess_engine.FEN) *chess_engine.Move {
 	str := fen.FENString()
-	/*
-		color := "White"
-		if fen.ToMove == chess_engine.Black {
-			color = "Black"
-		}
-
-		fmt.Println(color + " to play position: " + str)
-	*/
 	e.Send("position fen " + str)
-	e.Send("go depth 4")
+	e.Send("go depth 2")
 	return e.ReadUntilBestMove(fen)
 }
 
@@ -109,7 +101,7 @@ var Engines = []*Engine{
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
-	//NewEngine("stockfish", "stockfish", nil),
+	NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
@@ -292,11 +284,11 @@ func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.FEN) {
 		toPlay = "Black"
 		engineName = game.Black.Name
 	}
-	fmt.Printf("%s (%s) to play.\n", toPlay, engineName)
 	fmt.Println("Space:", chess_engine.SpaceEvaluator(fen))
 	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(fen))
 	fmt.Println("position fen", fen.FENString())
 	fmt.Println(fen.Board)
+	fmt.Printf("%s (%s) to play.\n\n", toPlay, engineName)
 }
 
 func main() {

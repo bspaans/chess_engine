@@ -1,5 +1,7 @@
 package chess_engine
 
+import "strconv"
+
 type Board []Piece
 
 func NewBoard() Board {
@@ -46,7 +48,7 @@ func (b Board) Copy() Board {
 }
 
 func (b Board) String() string {
-	result := " +--------------------------+\n | "
+	result := "   +--------------------------------+\n"
 	characters := map[Piece]string{
 		NoPiece:     " ",
 		WhiteKing:   "♔",
@@ -63,14 +65,16 @@ func (b Board) String() string {
 		BlackPawn:   "♟",
 	}
 	for rank := 7; rank >= 0; rank-- {
+		result += " " + strconv.Itoa(rank+1) + " |"
 		for file := 0; file <= 7; file++ {
-			result += " " + characters[b[rank*8+file]] + " "
+			result += " " + characters[b[rank*8+file]] + " |"
 		}
-		result += " | \n"
+		result += "\n"
 		if rank != 0 {
-			result += " | "
+			result += "   +--------------------------------+\n"
 		}
 	}
-	result += " +--------------------------+\n"
+	result += "   +--------------------------------+\n"
+	result += "     a   b   c   d   e   f   g   h\n"
 	return result
 }

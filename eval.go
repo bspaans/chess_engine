@@ -5,11 +5,11 @@ import (
 )
 
 type EvalResult struct {
-	Score float64
-	Line  []*Move
+	Score
+	Line []*Move
 }
 
-func NewEvalResult(line []*Move, score float64) *EvalResult {
+func NewEvalResult(line []*Move, score Score) *EvalResult {
 	return &EvalResult{
 		Score: score,
 		Line:  line,
@@ -17,14 +17,14 @@ func NewEvalResult(line []*Move, score float64) *EvalResult {
 }
 
 type EvalTree struct {
-	Score    float64
+	Score
 	Move     *Move
 	Replies  map[string]*EvalTree
 	BestLine *EvalTree
 	Parent   *EvalTree
 }
 
-func NewEvalTree(move *Move, score float64) *EvalTree {
+func NewEvalTree(move *Move, score Score) *EvalTree {
 	return &EvalTree{
 		Score:   score,
 		Move:    move,
@@ -42,9 +42,29 @@ func (t *EvalTree) Depth() int {
 	}
 	return depth
 }
+
+func (t *EvalTree) Traverse(line []*Move) *EvalTree {
+	tree := t
+	for _, m := range line {
+		if child, ok := tree.Replies[m.String()]; ok {
+			tree = child
+		} else {
+			return nil
+		}
+	}
+	return tree
+}
+
+func (t *EvalTree) GetScore(line []*Move) (Score, bool) {
+	tree := t.Traverse(line)
+	if tree != nil {
+		return tree.Score, true
+	}
+	return 0.0, false
+}
 func (t *EvalTree) UpdateBestLine() {
 	var maxChild *EvalTree
-	maxScore := math.Inf(-1)
+	maxScore := Score(math.Inf(-1))
 	//fmt.Println("Finding max for", t.Move)
 	for _, child := range t.Replies {
 		//fmt.Println("Seen", child.Move, child.Score)
@@ -81,7 +101,7 @@ func (t *EvalTree) GetLine(line []*Move) *EvalTree {
 	return tree
 }
 
-func (t *EvalTree) Insert(line []*Move, score float64) {
+func (t *EvalTree) Insert(line []*Move, score Score) {
 	//fmt.Println("Insert", line, score)
 	tree := t
 	var calcScoreOn *EvalTree
@@ -92,7 +112,7 @@ func (t *EvalTree) Insert(line []*Move, score float64) {
 			if calcScoreOn == nil {
 				calcScoreOn = tree
 			}
-			tree.Replies[moveStr] = NewEvalTree(move, math.Inf(-1))
+			tree.Replies[moveStr] = NewEvalTree(move, Score(math.Inf(-1)))
 			tree.Replies[moveStr].Parent = tree
 			if tree.BestLine == nil {
 				tree.BestLine = tree.Replies[moveStr]

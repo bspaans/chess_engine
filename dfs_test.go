@@ -96,6 +96,7 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 			}
 			unit := NewDFSEngine(depth)
 			unit.AddEvaluator(NaiveMaterialEvaluator)
+			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
 			bestmove := getBestMove(unit, 200.0*time.Second)
 			unit.Stop()
