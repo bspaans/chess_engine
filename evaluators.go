@@ -78,13 +78,9 @@ func (e Evaluators) BestMove(position *Game) (*Game, Score) {
 	var bestGame *Game
 
 	for _, f := range nextGames {
-		score := LowestScore
-		if f.IsDraw() {
-			score = Draw
-		} else if f.IsMate() {
-			score = Mate
-		} else {
-			score = e.Eval(f) * -1
+		score := e.Eval(f)
+		if score != Mate {
+			score *= -1
 		}
 		if score > bestScore {
 			bestScore = score
@@ -92,4 +88,19 @@ func (e Evaluators) BestMove(position *Game) (*Game, Score) {
 		}
 	}
 	return bestGame, bestScore
+}
+
+func (e Evaluators) BestLine(position *Game, depth int) []*Game {
+	e.Eval(position)
+	line := []*Game{position}
+	game := position
+	for d := 0; d < depth; d++ {
+		g, score := e.BestMove(game)
+		game = g
+		line = append(line, game)
+		if score.GameFinished() {
+			return line
+		}
+	}
+	return line
 }

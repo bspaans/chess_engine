@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"sort"
 	"time"
 )
 
@@ -53,28 +52,15 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	b.NodesPerSecond = 0
 	b.TotalNodes = 0
 
-	firstLine, firstScore := b.InitialBestLine(b.SelDepth)
 	queue := list.New()
-	for d := 0; d < b.SelDepth; d++ {
-		if firstLine[d] != nil {
-			fenStr := firstLine[d].FENString()
-			seen[fenStr] = true
-			queue.PushFront(firstLine[d])
-		}
+	firstLine := b.Evaluators.BestLine(b.StartingPosition, b.SelDepth)
+	for _, game := range firstLine {
+		fenStr := game.FENString()
+		seen[fenStr] = true
+		queue.PushFront(game)
 	}
-	skippedOpeningMoves := []*Game{}
-	// Queue all the other positions from the starting position
-	nextGames := b.StartingPosition.NextGames()
-	for _, f := range nextGames {
-		if f.Line[0].String() != firstLine[0].Line[0].String() {
-			// Skip uninteresting moves
-			if !b.ShouldCheckPosition(f, firstScore) {
-				skippedOpeningMoves = append(skippedOpeningMoves, f)
-				continue
-			}
-			queue.PushBack(f)
-		}
-	}
+	lastInLine := firstLine[len(firstLine)-1]
+	b.EvalTree.Insert(lastInLine.Line, *lastInLine.Score)
 
 	for {
 		select {
@@ -91,7 +77,13 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				b.NodesPerSecond++
 				game := queue.Remove(queue.Front()).(*Game)
 
-				if len(game.Line) < depth {
+				if len(game.Line) == 0 {
+					b.EvalTree.UpdateBestLine()
+					if b.EvalTree.Score == Mate {
+						b.outputInfo(output, true)
+						return
+					}
+				} else if len(game.Line) < depth {
 					b.EvalTree.UpdateBestLine()
 					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
 					if tree != nil && tree.Score == -Mate {
@@ -126,20 +118,22 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					return
 				}
 			} else {
-				// The queue is empty, but if we are losing or drawing look,
-				// at some opening moves we have skipped
-				if *b.StartingPosition.Score > b.EvalTree.BestLine.Score && len(skippedOpeningMoves) > 0 {
-					sort.Slice(skippedOpeningMoves, func(i, j int) bool {
-						return *skippedOpeningMoves[i].Score > *skippedOpeningMoves[j].Score
-					})
-					queue.PushFront(skippedOpeningMoves[0])
-					skippedOpeningMoves[0] = nil
-					skippedOpeningMoves = skippedOpeningMoves[1:]
-				} else {
-					// Otherwise output the best move
-					b.outputInfo(output, true)
-					return
-				}
+				/*
+					// The queue is empty, but if we are losing or drawing look,
+					// at some opening moves we have skipped
+					if *b.StartingPosition.Score > b.EvalTree.BestLine.Score && len(skippedOpeningMoves) > 0 {
+						sort.Slice(skippedOpeningMoves, func(i, j int) bool {
+							return *skippedOpeningMoves[i].Score > *skippedOpeningMoves[j].Score
+						})
+						queue.PushFront(skippedOpeningMoves[0])
+						skippedOpeningMoves[0] = nil
+						skippedOpeningMoves = skippedOpeningMoves[1:]
+					} else {
+				*/
+				// Otherwise output the best move
+				b.outputInfo(output, true)
+				return
+				//}
 			}
 		}
 	}
@@ -178,28 +172,6 @@ func (b *DFSEngine) ShouldCheckPosition(position *Game, bestScore Score) bool {
 				}
 	*/
 	return position.InCheck() || len(valid) <= 1 //|| len(validAttacks) > 0
-}
-
-func (b *DFSEngine) InitialBestLine(depth int) ([]*Game, Score) {
-	line := make([]*Game, depth)
-	game := b.StartingPosition
-	b.Evaluators.Eval(game) // eval to set score
-	finalScore := Score(0.0)
-	for d := 0; d < depth; d++ {
-		bestGame, score := b.Evaluators.BestMove(game)
-		if bestGame != nil {
-			b.EvalTree.Insert(bestGame.Line, score)
-			finalScore = score
-			game = bestGame
-			line[d] = game
-			if score.GameFinished() {
-				break
-			}
-		} else {
-			break
-		}
-	}
-	return line, finalScore
 }
 
 func (b *DFSEngine) AddEvaluator(e Evaluator) {

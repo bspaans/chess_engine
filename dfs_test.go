@@ -70,7 +70,7 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 		//[]string{"2r1r3/p3P1k1/1p1pR1Pp/n2q1P2/8/2p4P/P4Q2/1B3RK1 w - - 1 0", "7"},
 
 		// Paul Morphy vs NN, New Orleans (blind, simul), 1858
-		//[]string{"r1b3kr/3pR1p1/ppq4p/5P2/4Q3/B7/P5PP/5RK1 w - - 1 0", "7"},
+		[]string{"r1b3kr/3pR1p1/ppq4p/5P2/4Q3/B7/P5PP/5RK1 w - - 1 0", "7"},
 		// TODO it doesn't find this mate
 		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "9"},
 		// TODO because it doesn't look for forcing lines in
@@ -98,10 +98,11 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 			unit.AddEvaluator(NaiveMaterialEvaluator)
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
-			bestmove := getBestMove(unit, 5.0*time.Second)
+			bestmove := getBestMove(unit, 3*time.Second)
 			unit.Stop()
 			if bestmove == "" {
 				t.Fatal("Did not get a best move in time", testCase)
+				break
 			}
 			move, err := ParseMove(bestmove)
 			if err != nil {
