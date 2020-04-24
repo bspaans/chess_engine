@@ -1,8 +1,43 @@
 package chess_engine
 
 import (
+	"bytes"
 	"strconv"
+	"text/template"
 )
+
+type PGNTags struct {
+	Event          string
+	Site           string
+	Date           string
+	Round          string
+	White          string
+	Black          string
+	Result         string
+	AdditionalTags map[string]string
+}
+
+func LineToPGNWithTags(position *Game, line []*Move, tags PGNTags) string {
+	tpl := `[Event "{{.Event}}"]
+[Site "{{.Site}}"]
+[Date "{{.Date}}"]
+[Round "{{.Round}}"]
+[White "{{.White}}"]
+[Black "{{.Black}}"]
+[Result "{{.Result}}"]
+
+`
+	templ, err := template.New("pgn").Parse(tpl)
+	if err != nil {
+		panic(err)
+	}
+	buf := bytes.NewBuffer([]byte{})
+	err = templ.Execute(buf, tags)
+	if err != nil {
+		panic(err)
+	}
+	return buf.String() + LineToPGN(position, line)
+}
 
 func LineToPGN(position *Game, line []*Move) string {
 
@@ -44,10 +79,29 @@ func LineToPGN(position *Game, line []*Move) string {
 
 func MoveToAlgebraicMove(position *Game, move *Move) string {
 	movingPiece := position.Board[move.From].ToNormalizedPiece()
+	capture := ""
+	if position.Board[move.To] != NoPiece {
+		capture = "x"
+	}
+	pieceMap := map[NormalizedPiece]string{
+		Knight: "N",
+		Bishop: "B",
+		King:   "K",
+		Queen:  "Q",
+		Rook:   "R",
+	}
 
 	result := ""
 	if movingPiece == Pawn {
-		result = move.To.String()
+		moveStr := move.To.String()
+		if move.Promote != NoPiece {
+			moveStr += pieceMap[move.Promote.ToNormalizedPiece()]
+		}
+		if capture == "" {
+			result = moveStr
+		} else {
+			result = string([]byte{byte(move.From.GetFile())}) + "x" + moveStr
+		}
 	} else {
 		others := []Position{}
 		fileTheSame := true
@@ -60,21 +114,15 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 			}
 
 		}
-		result = map[NormalizedPiece]string{
-			Knight: "N",
-			Bishop: "B",
-			King:   "K",
-			Queen:  "Q",
-			Rook:   "R",
-		}[movingPiece]
+		result = pieceMap[movingPiece]
 		if len(others) == 0 {
-			result += move.To.String()
+			result += capture + move.To.String()
 		} else if !fileTheSame {
-			result += string([]byte{byte(move.From.GetFile())}) + move.To.String()
+			result += string([]byte{byte(move.From.GetFile())}) + capture + move.To.String()
 		} else if !rankTheSame {
-			result += string([]byte{byte(move.From.GetRank())}) + move.To.String()
+			result += string([]byte{byte(move.From.GetRank())}) + capture + move.To.String()
 		} else {
-			result += move.From.String() + move.To.String()
+			result += move.From.String() + capture + move.To.String()
 		}
 	}
 	next := position.ApplyMove(move)

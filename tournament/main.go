@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bspaans/chess_engine"
 )
@@ -194,7 +195,16 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(chess_engine.LineToPGN(pos, fen.Line))
+	tags := chess_engine.PGNTags{
+		Event:  "bs-engine tournament",
+		Site:   "Camberwell",
+		Date:   time.Now().Format("2006.01.02"),
+		Round:  "",
+		White:  game.White.Name,
+		Black:  game.Black.Name,
+		Result: game.Result.String(),
+	}
+	fmt.Println(chess_engine.LineToPGNWithTags(pos, fen.Line, tags))
 	os.Exit(1)
 }
 
@@ -245,6 +255,9 @@ func (t *Tournament) Start() {
 			}
 			fmt.Printf("White (%s) plays %s\n", game.White.Name, chess_engine.MoveToAlgebraicMove(fen, move))
 			//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+			if fen.Board[move.From] == chess_engine.NoPiece {
+				panic("Invalid move")
+			}
 			fen = fen.ApplyMove(move)
 			if t.OutputBoard {
 				t.OutputStatus(game, fen)
@@ -265,6 +278,9 @@ func (t *Tournament) Start() {
 				}
 				fmt.Printf("Black (%s) plays %s\n", game.Black.Name, chess_engine.MoveToAlgebraicMove(fen, move))
 				//fmt.Printf(`[]string{"%s", "%s"},`+"\n", fen.FENString(), move)
+				if fen.Board[move.From] == chess_engine.NoPiece {
+					panic("Invalid move")
+				}
 				fen = fen.ApplyMove(move)
 				if t.OutputBoard {
 					t.OutputStatus(game, fen)
