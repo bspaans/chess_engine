@@ -5,7 +5,7 @@ import (
 )
 
 func Test_EvalTree_insert(t *testing.T) {
-	unit := NewEvalTree(nil, 0.0)
+	unit := NewEvalTree(nil)
 
 	m1 := NewMove(A2, A3)
 	m2 := NewMove(E2, E4)
@@ -77,7 +77,7 @@ func Test_EvalTree_insert(t *testing.T) {
 }
 
 func Test_EvalTree_prune(t *testing.T) {
-	unit := NewEvalTree(nil, 0.0)
+	unit := NewEvalTree(nil)
 
 	m1 := NewMove(A2, A3)
 	m2 := NewMove(E2, E4)

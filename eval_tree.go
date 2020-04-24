@@ -24,23 +24,12 @@ type EvalTree struct {
 	Parent   *EvalTree
 }
 
-func NewEvalTree(move *Move, score Score) *EvalTree {
+func NewEvalTree(move *Move) *EvalTree {
 	return &EvalTree{
-		Score:   score,
+		Score:   LowestScore,
 		Move:    move,
 		Replies: map[string]*EvalTree{},
 	}
-}
-
-func (t *EvalTree) Depth() int {
-	depth := 0
-	tree := t
-	for tree.Parent != nil {
-		depth++
-		tree = tree.Parent
-
-	}
-	return depth
 }
 
 func (t *EvalTree) Traverse(line []*Move) *EvalTree {
@@ -112,7 +101,7 @@ func (t *EvalTree) Insert(line []*Move, score Score) {
 			if calcScoreOn == nil {
 				calcScoreOn = tree
 			}
-			tree.Replies[moveStr] = NewEvalTree(move, Score(math.Inf(-1)))
+			tree.Replies[moveStr] = NewEvalTree(move)
 			tree.Replies[moveStr].Parent = tree
 			if tree.BestLine == nil {
 				tree.BestLine = tree.Replies[moveStr]

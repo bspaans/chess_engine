@@ -76,6 +76,14 @@ func ParseMove(moveStr string) (*Move, error) {
 	}, nil
 }
 
+func MustParseMove(moveStr string) *Move {
+	m, err := ParseMove(moveStr)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
 type Line []*Move
 
 func (l Line) String() string {

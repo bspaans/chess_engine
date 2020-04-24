@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -55,6 +56,7 @@ func (e Evaluators) Eval(position *Game) Score {
 	if position.IsDraw() {
 		score = Draw
 	} else if position.IsMate() {
+		score = Mate
 		if position.ToMove == Black {
 			score = OpponentMate // because we're going to *-1 below
 		} else {
@@ -103,4 +105,44 @@ func (e Evaluators) BestLine(position *Game, depth int) []*Game {
 		}
 	}
 	return line
+}
+
+func (e Evaluators) Debug(position *Game) {
+	boardScore := e.Eval(position)
+	fmt.Println(position.Board)
+	fmt.Println("Board evaluation:", boardScore)
+	for _, f := range position.NextGames() {
+		score := e.Eval(f)
+		fmt.Println(f.Line[0], score*-1)
+	}
+}
+
+func (e Evaluators) GetAlternativeMove(position *Game, tree *EvalTree) *Game {
+	nextBest := LowestScore
+	var nextBestGame *Game
+	for _, game := range position.NextGames() {
+		move := game.Line[len(game.Line)-1].String()
+		//fmt.Println(move)
+		if _, ok := tree.Replies[move]; !ok {
+			score := e.Eval(game) * -1
+			if score > nextBest {
+				nextBest = score
+				nextBestGame = game
+			}
+		}
+	}
+	if nextBest < tree.Score {
+		// TODO: maybe look at other candidate moves?
+		//fmt.Println(position.Board)
+		//fmt.Println("Couldn't find better line from start position; best:", nextBest, tree.Score)
+		//return nil
+	}
+	return nextBestGame
+}
+
+func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, tree *EvalTree) *Game {
+	for _, m := range line {
+		position = position.ApplyMove(m)
+	}
+	return e.GetAlternativeMove(position, tree)
 }

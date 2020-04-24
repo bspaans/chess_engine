@@ -14,6 +14,7 @@ func getBestMove(unit *DFSEngine, timeLimit time.Duration) string {
 	maxNodes := 0
 	//fmt.Println("Starting with position", unit.StartingPosition.FENString())
 	unit.Start(outputs, maxNodes, maxDepth)
+	defer unit.Stop()
 	timer := time.NewTimer(timeLimit)
 	finalTimer := time.NewTimer(timeLimit + 2*time.Second)
 	running := true
@@ -95,7 +96,6 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
 			bestmove := getBestMove(unit, 3*time.Second)
-			unit.Stop()
 			if bestmove == "" {
 				t.Fatal("Did not get a best move in time", testCase)
 				break
@@ -113,5 +113,53 @@ func Test_Engine_Can_Find_Mates(t *testing.T) {
 		if !fen.IsMate() {
 			t.Errorf("Expecting mate in line %s in %s, but it aint", line, testCase)
 		}
+	}
+}
+
+func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
+	// The initial best move in this position is to take the knight with the
+	// queen, h5h6, but this loses, because the knight is defended. The
+	// NaiveMaterialEvaluator should catch this at depth 2.
+	pos := "rnbqkb1r/1ppppppp/7n/p6Q/4P3/8/PPPP1PPP/RNB1KBNR w KQkq - 2 3"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(8)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 25*time.Second)
+	if bestmove == "h5h6" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than h5h6")
+	} else if bestmove == "h5f7" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than h5f7")
+	} else if bestmove == "h5g6" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than h5g6")
+	}
+}
+func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
+	// The initial best move in this position is to take the pawn with the
+	// queen, h5g6, but this loses, because the pawn is defended. The
+	// NaiveMaterialEvaluator should catch this at depth 2.
+	pos := "rnbqkbnr/1pppp2p/6p1/p4p1Q/4P3/P7/1PPP1PPP/RNB1KBNR w KQkq - 0 4"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(8)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "h5g6" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than h5g6")
+	} else if bestmove == "h5f7" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than h5f7")
 	}
 }
