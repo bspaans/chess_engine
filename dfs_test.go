@@ -108,9 +108,6 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 }
 
 func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
-	if !isTestEnabled(t, "INTEGRATION", "MATE_IN_ONE") {
-		return
-	}
 	cases := [][]string{
 		[]string{"8/8/8/qn6/kn6/1n6/1KP5/8 w - - 0 0", "1"},
 		[]string{"8/1kp5/1N6/KN6/QN6/8/8/8 b - - 0 0", "1"},
@@ -122,9 +119,6 @@ func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
 }
 
 func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
-	if !isTestEnabled(t, "INTEGRATION", "MATE_IN_TWO") {
-		return
-	}
 	cases := [][]string{
 		[]string{"r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PPQ2P1/R3K2R w - - 0 0", "3"},
 		// Henry Buckle vs NN, London, 1840
@@ -168,6 +162,10 @@ func Test_Engine_Mate_In_Two_Move_Disection(t *testing.T) {
 			fmt.Println(move, len(child.Replies))
 		}
 		t.Fatalf("Expected only the forcing moves from the root position")
+	}
+
+	if unit.EvalTree.MaxDepth() != 4 {
+		t.Fatalf("Expecting tree with max depth 4")
 	}
 }
 
@@ -262,12 +260,12 @@ func Test_Engine_Mate_In_Two_Move_Disection_for_black_2(t *testing.T) {
 		}
 		t.Fatalf("Expected only the forcing moves from the root position, got %d", len(unit.EvalTree.Replies))
 	}
+	if unit.EvalTree.MaxDepth() != 4 {
+		t.Fatalf("Expecting tree with max depth 4")
+	}
 }
 
 func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
-	if !isTestEnabled(t, "INTEGRATION", "MATE_IN_THREE") {
-		return
-	}
 	cases := [][]string{
 		[]string{"k7/1PK5/8/8/8/8/8/q2qqq2 b - - 0 0", "5"},
 		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
@@ -276,6 +274,54 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 	}
 	runUntilMate(t, cases, 2)
+}
+
+func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
+	pos := "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1 5"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(5)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "" {
+		t.Fatal("Did not get a best move in time", pos)
+	}
+	if bestmove != "f8c5" {
+		fmt.Println(fen.Board)
+		for move, child := range unit.EvalTree.Replies[bestmove].Replies {
+			fmt.Println(move, len(child.Replies), child.Score)
+		}
+		t.Errorf("Expecting best move f8c5, got %v", bestmove)
+	}
+	// There are eleven forcing moves in this position, one of which leads to
+	// check mate. So there should only be eleven nodes in the root EvalTree
+	if len(unit.EvalTree.Replies) != 11 {
+		fmt.Println(fen.Board)
+		for move, child := range unit.EvalTree.Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		fmt.Println()
+		for move, child := range unit.EvalTree.Replies["f8c5"].Replies {
+			fmt.Println(move, len(child.Replies), child.Score)
+		}
+		t.Errorf("Expected only the forcing moves from the root position, got %d", len(unit.EvalTree.Replies))
+	}
+	if unit.EvalTree.MaxDepth() != 6 {
+		t.Fatalf("Expecting tree with max depth 6, got %d", unit.EvalTree.MaxDepth())
+	}
+	if unit.EvalTree.Replies["f8c5"].Score != Mate {
+		t.Errorf("Expecting mate in f8c5, got %f", unit.EvalTree.Replies["f8c5"].Score)
+	}
+	if unit.EvalTree.Replies["e5c6"].Score == Mate {
+		t.Errorf("Not expecting mate in e5c6")
+	}
+	if len(unit.EvalTree.Replies["e5c6"].Replies) == 1 {
+		t.Errorf("Expecting multiple replies to e5c6, because best move is bad")
+	}
 }
 
 func Test_Engine_Can_Find_Mate_In_Four(t *testing.T) {

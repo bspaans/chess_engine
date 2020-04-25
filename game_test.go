@@ -121,6 +121,7 @@ func Test_ValidMoves_table(t *testing.T) {
 		[]string{"8/8/8/8/1k6/8/1K6/8 b - - 4 54", "b4a4 b4a5 b4b5 b4c5 b4c4"},
 		[]string{"3R4/2B5/5k2/4N1P1/PPB4P/8/2P5/4K3 b - - 0 35", "f6e7 f6g7 f6f5"},
 		[]string{"rnbqkbnr/ppp1pppp/8/1B6/8/8/PPPP1PPP/RNBQK1NR b KQkq - 1 3", "c8d7 d8d7 c7c6 b8c6 b8d7"},
+		[]string{"r1b1k2r/pppp1ppp/1q6/2K1n3/4P3/2N3PN/PPP4P/R1BQ1B1R w kq - 1 3", "c5d5"},
 		// stalemate
 		[]string{"3R4/2B1k3/8/4N1P1/PPB4P/8/2P5/4K3 b - - 0 35", ""},
 		// mate in one

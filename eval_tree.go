@@ -159,3 +159,14 @@ func (t *EvalTree) Prune() {
 		reply.Prune()
 	}
 }
+
+func (t *EvalTree) MaxDepth() int {
+	depth := 0
+	for _, reply := range t.Replies {
+		max := reply.MaxDepth()
+		if max > depth {
+			depth = max
+		}
+	}
+	return depth + 1
+}

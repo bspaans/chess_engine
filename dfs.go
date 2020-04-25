@@ -77,6 +77,9 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			if queue.Len() > 0 {
 				b.NodesPerSecond++
 				game := queue.Remove(queue.Front()).(*Game)
+				if len(game.Line) > 1 && game.Line[0].String() == "e5c6" {
+					fmt.Println(game.Line)
+				}
 				if game == nil {
 					panic("game nil")
 				}
@@ -92,6 +95,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					//	return
 					//}
 				} else if len(game.Line) < depth {
+					debug := false
+					if len(game.Line) > 1 && game.Line[0].String() == "e5c6" && game.Line[1].String() == "d4d5" {
+						fmt.Println(game.Line)
+						debug = true
+					}
 					//b.EvalTree.UpdateBestLine()
 					depth = len(game.Line)
 					// tree is actually the parent tree
@@ -114,18 +122,22 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 						TODO: move all the eval functions into EvalTree for easier bookkeeping
 					*/
 					tree = b.EvalTree.Traverse(game.Line[:len(game.Line)])
-					if tree.Score == Mate {
-						continue
-					}
 					// TODO queue forcing lines before alternative moves
 
+					// TODO insert self if there's something to insert otherwise
+					// UpdateBestLine doesn't run???
 					b.queueForcingLines(game, tree, queue)
 
 					if tree != nil && tree.Parent != nil && tree.Parent.Move != nil {
+						fmt.Println("Looking for alternative")
 						// Positive diff means that the move is winning
 						// Negative diff means that the move is losing
 						diff := (tree.Score * -1) - tree.Parent.Score
+						if debug {
+							fmt.Println(diff)
+						}
 						if float64(diff) < -2 { // if blunder / major gain
+							fmt.Println("Major loss", game.Line, diff)
 							b.queueAlternativeLine(game, tree, queue)
 							/*
 									if !b.queueAlternativeLine(game, tree, queue) && tree.Parent != nil {
@@ -145,32 +157,28 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 							*/
 						}
 					}
+					if len(game.Line) > 1 && game.Line[0].String() == "e5c6" && game.Line[1].String() == "d4d5" {
+						fmt.Println("done")
+					}
 				} else {
+
+					// We are at search depth and we should only
+					// queue the best move in this line
 
 					depth = len(game.Line)
 
 					if *game.Score != Mate && len(game.Line) < b.SelDepth {
-						nextGames := game.NextGames()
-						wasForced := len(nextGames) == 1
-						for _, f := range nextGames {
-							// Skip "uninteresting" moves
-							if !wasForced && !b.ShouldCheckPosition(f, *game.Score) {
-								continue
-							}
-							if !b.Seen[f.FENString()] {
-								b.Evaluators.Eval(f)
-								queue.PushFront(f)
-							}
-						}
+						nextGame, _ := b.Evaluators.BestMove(game)
+						queue.PushFront(nextGame)
 					}
 				}
 			} else {
-				// If we are now worse than before, try to find a better move
+				// The queue is empty so there are no more moves to look at.
+				// However we can queue more moves if it turns out our current
+				// best move leads to a worse position than what we started with.
 				if b.EvalTree.BestLine == nil || *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
 					// Queue forcing lines, than queue alternative best moves
-					//fmt.Println("We are worse after", Line(b.EvalTree.GetBestLine().Line))
-					//fmt.Println("???")
-					hasNext := b.queueForcingOrAlternativeLines(b.StartingPosition, b.EvalTree, queue)
+					hasNext := b.queueAlternativeLine(b.StartingPosition, b.EvalTree, queue)
 					if !hasNext {
 						b.outputInfo(output, true)
 						return
@@ -211,7 +219,8 @@ func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.Lis
 	for _, nextGame := range nextGames {
 		fenStr := nextGame.FENString()
 		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
-			//fmt.Println("queue forcing line", nextGame.Line)
+			fmt.Println("queue forcing line", nextGame.Line)
+			// TODO generate line, but stop at quiet positions => does that mean only adding the next position?
 			b.queueLine(pos, nextGame, queue)
 			foundForcingLines = true
 		}
