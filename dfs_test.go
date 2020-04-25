@@ -266,6 +266,9 @@ func Test_Engine_Mate_In_Two_Move_Disection_for_black_2(t *testing.T) {
 }
 
 func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
+	if !isTestEnabled(t, "INTEGRATION", "MATE_IN_THREE") {
+		return
+	}
 	cases := [][]string{
 		[]string{"k7/1PK5/8/8/8/8/8/q2qqq2 b - - 0 0", "5"},
 		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
@@ -273,10 +276,13 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 		// Madame de Remusat vs Napoleon I, Paris, 1802
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 	}
-	runUntilMate(t, cases, 2)
+	runUntilMate(t, cases, 3)
 }
 
 func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
+	if !isTestEnabled(t, "INTEGRATION", "MATE_IN_THREE") {
+		return
+	}
 	pos := "r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1 5"
 	fen, err := ParseFEN(pos)
 	if err != nil {
@@ -321,8 +327,13 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 	}
 	for _, move := range unit.EvalTree.Replies {
 
-		if move.Move.String() != "f8c5" && len(move.Replies) == 1 {
-			t.Errorf("Expecting multiple replies to %s, because best move is bad", move.Move)
+		if move.Move.String() != "f8c5" {
+			if move.Score == Mate {
+				t.Errorf("Not expecting mate in %s", move.Move)
+			}
+			if len(move.Replies) == 1 {
+				t.Errorf("Expecting multiple replies to %s, because best move is bad", move.Move)
+			}
 		}
 	}
 }
@@ -349,9 +360,6 @@ func Test_Engine_Can_Find_Mate_In_Four(t *testing.T) {
 }
 
 func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
-	if !isTestEnabled(t, "INTEGRATION", "SAC") {
-		return
-	}
 	// The initial best move in this position is to take the knight with the
 	// queen, h5h6, but this loses, because the knight is defended. The
 	// NaiveMaterialEvaluator should catch this at depth 2.
@@ -360,7 +368,7 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unit := NewDFSEngine(8)
+	unit := NewDFSEngine(2)
 	unit.AddEvaluator(SpaceEvaluator)
 	unit.AddEvaluator(NaiveMaterialEvaluator)
 	unit.SetPosition(fen)
@@ -375,11 +383,12 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 		unit.Evaluators.Debug(fen)
 		t.Errorf("Expecting a better move than h5g6")
 	}
+
+	if len(unit.EvalTree.Replies) == 1 {
+		t.Errorf("Expecting more replies, because first move is bad")
+	}
 }
 func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
-	if !isTestEnabled(t, "INTEGRATION", "SAC") {
-		return
-	}
 	// The initial best move in this position is to take the pawn with the
 	// queen, h5g6, but this loses, because the pawn is defended. The
 	// NaiveMaterialEvaluator should catch this at depth 2.
@@ -388,7 +397,7 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unit := NewDFSEngine(8)
+	unit := NewDFSEngine(2)
 	unit.AddEvaluator(SpaceEvaluator)
 	unit.AddEvaluator(NaiveMaterialEvaluator)
 	unit.SetPosition(fen)
@@ -399,5 +408,17 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	} else if bestmove == "h5f7" {
 		unit.Evaluators.Debug(fen)
 		t.Errorf("Expecting a better move than h5f7")
+	}
+	if len(unit.EvalTree.Replies) == 1 {
+		t.Errorf("Expecting more replies, because first move is bad")
+	}
+	if unit.EvalTree.Replies["h5g6"].Score > 0 {
+		for move, child := range unit.EvalTree.Replies["h5g6"].Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		t.Errorf("Not expecting a positive score in reply, got %f", unit.EvalTree.Replies["h5g6"].Score)
+	}
+	if unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score < 0 {
+		t.Errorf("Not expecting a negative score in reply h7g6, got %f", unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score)
 	}
 }

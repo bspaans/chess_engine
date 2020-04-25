@@ -51,7 +51,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	b.TotalNodes = 0
 
 	timer := time.NewTimer(time.Second)
-	depth := b.SelDepth + 1
+	//depth := b.SelDepth + 1
 	queue := list.New()
 
 	// Queue all the forcing moves.
@@ -96,10 +96,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					//	b.outputInfo(output, true)
 					//	return
 					//}
-				} else if len(game.Line) < depth {
+				} else if len(game.Line) < b.SelDepth {
 					debug := false
 					//b.EvalTree.UpdateBestLine()
-					depth = len(game.Line)
+					//depth = len(game.Line)
 					// tree is actually the parent tree
 					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
 					tree.UpdateBestLine()
@@ -117,11 +117,21 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					// TODO queue forcing lines before alternative moves
 
 					// TODO insert self if there's something to insert otherwise
-					// UpdateBestLine doesn't run???
-					b.queueForcingLines(game, tree, queue)
+					// we'll never look at this position again even if the alternatives
+					// we're queueing now are bad
+					frontElem := queue.Front()
+					queuedForcingLines := false
+					if b.queueForcingLines(game, tree, queue) {
+						queuedForcingLines = true
+						if frontElem == nil {
+							queue.PushBack(game)
+						} else {
+							queue.InsertBefore(game, frontElem)
+						}
+					}
 
 					// The root position is already looked after
-					if len(game.Line) == 1 {
+					if len(game.Line) == 1 || queuedForcingLines {
 						continue
 					}
 					if tree != nil && tree.Parent != nil && tree.Parent.Move != nil {
@@ -133,7 +143,8 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 						}
 						if float64(diff) < -2 { // if blunder / major gain
 							//fmt.Println("Major loss", game.Line, diff)
-							b.queueAlternativeLine(game.Parent, tree.Parent, queue)
+							if b.queueAlternativeLine(game.Parent, tree.Parent, queue) {
+							}
 							/*
 									if !b.queueAlternativeLine(game, tree, queue) && tree.Parent != nil {
 										// TODO: not b.StartingPosition obviously
@@ -157,11 +168,13 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					// We are at search depth and we should only
 					// queue the best move in this line
 
-					depth = len(game.Line)
+					//depth = len(game.Line)
 
 					if *game.Score != Mate && len(game.Line) < b.SelDepth {
 						nextGame, _ := b.Evaluators.BestMove(game)
-						queue.PushFront(nextGame)
+						if nextGame != nil {
+							queue.PushFront(nextGame)
+						}
 					}
 				}
 			} else {
@@ -205,15 +218,18 @@ func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.Lis
 	foundForcingLines := false
 	nextGames := pos.NextGames()
 	if len(nextGames) == 1 {
-		b.queueLine(pos, nextGames[0], queue)
-		return true
+		if !b.Seen[nextGames[0].FENString()] {
+			b.queueLine(pos, nextGames[0], queue)
+			return true
+		}
 	}
 	for _, nextGame := range nextGames {
 		fenStr := nextGame.FENString()
 		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
 			//fmt.Println("queue forcing line", nextGame.Line)
 			// TODO generate line, but stop at quiet positions => does that mean only adding the next position?
-			b.queueLine(pos, nextGame, queue)
+			//queue.PushFront(nextGame)
+			b.queueLineToQuietPosition(nextGame, queue)
 			foundForcingLines = true
 		}
 	}
@@ -243,6 +259,13 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	}
 	b.Seen[fenStr] = true
 	b.queueBestLine(game, queue)
+}
+func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
+	newLine := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line)-1)
+	for _, move := range newLine {
+		b.Seen[game.FENString()] = true
+		queue.PushFront(move)
+	}
 }
 func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
 	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line)-1)

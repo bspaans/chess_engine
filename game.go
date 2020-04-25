@@ -467,3 +467,21 @@ func (f *Game) FENString() string {
 	}
 	return fmt.Sprintf("%s %s %s %s %d %d", forStr, f.ToMove.String(), castleStatus, enPassant, f.HalfmoveClock, f.Fullmove)
 }
+
+func (f *Game) String() string {
+	return fmt.Sprintf(`Tempo: %f
+Space: %f 
+Mobility: %f
+Material: %f
+Pawn structure: %f
+position fen %s 
+%s`,
+		TempoEvaluator(f),
+		SpaceEvaluator(f),
+		MobilityEvaluator(f),
+		NaiveMaterialEvaluator(f),
+		PawnStructureEvaluator(f),
+		f.FENString(),
+		f.Board.String(),
+	)
+}

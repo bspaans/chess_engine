@@ -64,8 +64,10 @@ func (t *EvalTree) UpdateBestLine() {
 	}
 	//fmt.Println("Found", maxChild.Move, maxScore)
 	if t.Parent != nil {
+		//fmt.Println("[1] setting score", maxScore*-1, t.Move)
 		t.Score = maxScore * -1
 	} else {
+		//fmt.Println("[2] setting score", maxScore, t.Move)
 		t.Score = maxScore
 	}
 	if maxChild != nil {

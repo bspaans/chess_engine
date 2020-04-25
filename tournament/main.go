@@ -304,13 +304,7 @@ func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.Game) {
 		toPlay = "Black"
 		engineName = game.Black.Name
 	}
-	fmt.Println("Tempo:", chess_engine.TempoEvaluator(fen))
-	fmt.Println("Space:", chess_engine.SpaceEvaluator(fen))
-	fmt.Println("Mobility:", chess_engine.MobilityEvaluator(fen))
-	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(fen))
-	fmt.Println("Pawn structure:", chess_engine.PawnStructureEvaluator(fen))
-	fmt.Println("position fen", fen.FENString())
-	fmt.Println(fen.Board)
+	fmt.Println(game.String())
 	fmt.Printf("%s (%s) to play.\n\n", toPlay, engineName)
 }
 

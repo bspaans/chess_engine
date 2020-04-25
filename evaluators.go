@@ -216,7 +216,7 @@ func (e Evaluators) Eval(position *Game) Score {
 		score = Draw
 	} else if position.IsMate() {
 		score = Mate
-		if position.ToMove == Black {
+		if position.ToMove == White {
 			score = OpponentMate // because we're going to *-1 below
 		} else {
 			score = Mate
@@ -226,7 +226,7 @@ func (e Evaluators) Eval(position *Game) Score {
 			score += eval(position)
 		}
 	}
-	if position.ToMove == Black {
+	if position.ToMove == White {
 		score = score * -1
 	}
 	position.Score = &score
@@ -240,9 +240,6 @@ func (e Evaluators) BestMove(position *Game) (*Game, Score) {
 
 	for _, f := range nextGames {
 		score := e.Eval(f)
-		if score != Mate {
-			score *= -1
-		}
 		if score > bestScore {
 			bestScore = score
 			bestGame = f
@@ -287,7 +284,7 @@ func (e Evaluators) GetAlternativeMove(position *Game, seen map[string]bool) *Ga
 	var nextBestGame *Game
 	for _, game := range position.NextGames() {
 		if _, ok := seen[game.FENString()]; !ok {
-			score := e.Eval(game) * -1
+			score := e.Eval(game)
 			if score > nextBest {
 				nextBest = score
 				nextBestGame = game
@@ -302,4 +299,35 @@ func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, seen 
 		position = position.ApplyMove(m)
 	}
 	return e.GetAlternativeMove(position, seen)
+}
+
+func (e Evaluators) GetLineToQuietPosition(position *Game, depth int) []*Game {
+	e.Eval(position)
+	line := []*Game{position}
+	game := position
+	if game.Score != nil && game.IsFinished() {
+		return line
+	}
+	for d := 0; d < depth; d++ {
+		g, _ := e.BestMove(game)
+		if g == nil {
+			panic("Nil next game, but game is not finished")
+		}
+		game = g
+		line = append(line, game)
+		if game.IsFinished() || e.IsQuietPosition(game) {
+			return line
+		}
+	}
+	return line
+}
+
+func (e Evaluators) IsQuietPosition(position *Game) bool {
+	score := e.Eval(position)
+	for _, nextMove := range position.NextGames() {
+		if e.Eval(nextMove)-score > 0.5 {
+			return false
+		}
+	}
+	return true
 }
