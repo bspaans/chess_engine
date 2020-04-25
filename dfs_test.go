@@ -385,8 +385,22 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 	}
 
 	if len(unit.EvalTree.Replies) == 1 {
+		for move, child := range unit.EvalTree.Replies[bestmove].Replies {
+			fmt.Println(move, len(child.Replies))
+		}
 		t.Errorf("Expecting more replies, because first move is bad")
 	}
+	if unit.EvalTree.Score < 0 {
+		t.Errorf("Expecting a positive score")
+	}
+	for move, reply := range unit.EvalTree.Replies {
+		if move != bestmove {
+			if reply.Score > 0 {
+				t.Errorf("positve")
+			}
+		}
+	}
+
 }
 func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	// The initial best move in this position is to take the pawn with the

@@ -185,6 +185,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					// Queue forcing lines, than queue alternative best moves
 					hasNext := b.queueAlternativeLine(b.StartingPosition, b.EvalTree, queue)
 					if !hasNext {
+						//fmt.Println("we are losing")
 						b.outputInfo(output, true)
 						return
 					}
@@ -261,14 +262,14 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	b.queueBestLine(game, queue)
 }
 func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
-	newLine := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line)-1)
+	newLine := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line))
 	for _, move := range newLine {
 		b.Seen[game.FENString()] = true
 		queue.PushFront(move)
 	}
 }
 func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
-	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line)-1)
+	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
 	for _, move := range newLine {
 		b.Seen[game.FENString()] = true
 		queue.PushFront(move)

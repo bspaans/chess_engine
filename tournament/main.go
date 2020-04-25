@@ -304,7 +304,7 @@ func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.Game) {
 		toPlay = "Black"
 		engineName = game.Black.Name
 	}
-	fmt.Println(game.String())
+	fmt.Println(fen.String())
 	fmt.Printf("%s (%s) to play.\n\n", toPlay, engineName)
 }
 
