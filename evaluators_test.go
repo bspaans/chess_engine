@@ -158,17 +158,17 @@ func Test_Eval_AlternativeMove_space_evaluator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tree := NewEvalTree(nil)
-	tree.Insert(position.Line, unit.Eval(position))
+	fenMap := map[string]bool{}
+	fenMap[fen] = true
 
-	game := unit.GetAlternativeMove(position, tree)
+	game := unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "e2e4" {
 		t.Errorf("Expecting e2e4 as opening move for space evaluator, got %s", game.Line)
 	}
 
-	tree.Insert(game.Line, *game.Score)
+	fenMap[game.FENString()] = true
 
-	game = unit.GetAlternativeMove(position, tree)
+	game = unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "d2d4" {
 		t.Errorf("Expecting d2d4 as an alternative opening move for space evaluator, got %s", game.Line)
 	}
@@ -182,17 +182,17 @@ func Test_Eval_AlternativeMove_space_evaluator_black(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tree := NewEvalTree(nil)
-	tree.Insert(position.Line, unit.Eval(position))
+	fenMap := map[string]bool{}
+	fenMap[fen] = true
 
-	game := unit.GetAlternativeMove(position, tree)
+	game := unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "e7e5" {
 		t.Errorf("Expecting e7e5 as opening move for space evaluator, got %s", game.Line)
 	}
 
-	tree.Insert(game.Line, *game.Score)
+	fenMap[game.FENString()] = true
 
-	game = unit.GetAlternativeMove(position, tree)
+	game = unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "d7d5" {
 		t.Errorf("Expecting d7d5 as an alternative opening move for space evaluator, got %s", game.Line)
 	}

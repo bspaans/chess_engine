@@ -282,14 +282,11 @@ func (e Evaluators) Debug(position *Game) {
 	}
 }
 
-func (e Evaluators) GetAlternativeMove(position *Game, tree *EvalTree) *Game {
+func (e Evaluators) GetAlternativeMove(position *Game, seen map[string]bool) *Game {
 	nextBest := LowestScore
 	var nextBestGame *Game
 	for _, game := range position.NextGames() {
-		move := game.Line[len(game.Line)-1].String()
-		//fmt.Println(move)
-		if _, ok := tree.Replies[move]; !ok {
-
+		if _, ok := seen[game.FENString()]; !ok {
 			score := e.Eval(game) * -1
 			if score > nextBest {
 				nextBest = score
@@ -297,18 +294,12 @@ func (e Evaluators) GetAlternativeMove(position *Game, tree *EvalTree) *Game {
 			}
 		}
 	}
-	if nextBest < tree.Score {
-		// TODO: maybe look at other candidate moves?
-		//fmt.Println(position.Board)
-		//fmt.Println("Couldn't find better line from start position; best:", nextBest, tree.Score)
-		//return nil
-	}
 	return nextBestGame
 }
 
-func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, tree *EvalTree) *Game {
+func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, seen map[string]bool) *Game {
 	for _, m := range line {
 		position = position.ApplyMove(m)
 	}
-	return e.GetAlternativeMove(position, tree)
+	return e.GetAlternativeMove(position, seen)
 }

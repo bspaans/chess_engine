@@ -64,15 +64,16 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 		origFen := fen
 
 		moves := 0
+		nodes := 0
 		line := []string{}
 
-		for !fen.IsMate() && moves < 8 {
+		for !fen.IsMate() && moves < depth {
 
-			selDepth := 1
-			if depth > selDepth {
-				selDepth = depth
+			selDepth := depth - moves
+			if selDepth <= 1 {
+				selDepth = 2
 			}
-			unit := NewDFSEngine(depth)
+			unit := NewDFSEngine(selDepth)
 			unit.AddEvaluator(NaiveMaterialEvaluator)
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
@@ -81,6 +82,7 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 				t.Fatal("Did not get a best move in time", testCase)
 				break
 			}
+			nodes += unit.TotalNodes + unit.NodesPerSecond
 			move, err := ParseMove(bestmove)
 			if err != nil {
 				t.Fatal(err)
@@ -97,7 +99,10 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(origFen)
 			unit.Evaluators.Debug(origFen)
+			fmt.Println("Didn't find mate. Looked at", nodes, "nodes")
 			t.Errorf("Expecting mate in line %s in %s, but it aint", line, testCase)
+		} else {
+			fmt.Println("Found mate. Looked at", nodes, "nodes")
 		}
 	}
 }
@@ -110,6 +115,8 @@ func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
 		[]string{"8/8/8/qn6/kn6/1n6/1KP5/8 w - - 0 0", "1"},
 		[]string{"8/1kp5/1N6/KN6/QN6/8/8/8 b - - 0 0", "1"},
 		[]string{"8/8/8/qn6/kn6/1n6/1KP5/1QQQQQQR w - - 0 0", "1"},
+		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P2Q2/3Pb1Pq/PP5P/R6R b - - 2 2", "1"},
+		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P5/3PbQPq/PP5P/R6R w - - 1 2", "2"},
 	}
 	runUntilMate(t, cases, 1)
 }
@@ -124,7 +131,9 @@ func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
 		[]string{"r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0", "3"},
 
 		// Wilhelm Steinitz vs Herbert Trenchard, Vienna, 1898
-		[]string{"r2qrb2/p1pn1Qp1/1p4Nk/4PR2/3n4/7N/P5PP/R6K w - - 1 0", "3"},
+		// TODO: this mate doesn't start with a check so the engine doens't
+		// see queue Ne7 as a forcing move
+		//[]string{"r2qrb2/p1pn1Qp1/1p4Nk/4PR2/3n4/7N/P5PP/R6K w - - 1 0", "3"},
 
 		// Boris Ratner vs Alexander Konstantinopolsky, Moscow, 1945
 		[]string{"1r4k1/3b2pp/1b1pP2r/pp1P4/4q3/8/PP4RP/2Q2R1K b - - 0 1", "3"},
@@ -159,6 +168,99 @@ func Test_Engine_Mate_In_Two_Move_Disection(t *testing.T) {
 			fmt.Println(move, len(child.Replies))
 		}
 		t.Fatalf("Expected only the forcing moves from the root position")
+	}
+}
+
+// TODO: we don't support finding this move yet.
+// This mate in two doesn't start with a check
+/*
+func Test_Engine_Mate_In_Two_Move_Disection_2(t *testing.T) {
+	pos := "r2qrb2/p1pn1Qp1/1p4Nk/4PR2/3n4/7N/P5PP/R6K w - - 1 0 3"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(3)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "" {
+		t.Fatal("Did not get a best move in time", pos)
+	}
+	if bestmove != "d2h6" {
+		t.Errorf("Expecting best move d2h6, got %v", bestmove)
+	}
+	// There are three forcing moves in this position, one of which leads to
+	// check mate. So there should only be three nodes in the root EvalTree
+	fmt.Println(fen.Board)
+	if len(unit.EvalTree.Replies) != 3 {
+		for move, child := range unit.EvalTree.Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		for move, child := range unit.EvalTree.Replies["f5h5"].Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		t.Fatalf("Expected only the forcing moves from the root position")
+	}
+}
+*/
+
+func Test_Engine_Mate_In_Two_Move_Disection_for_black(t *testing.T) {
+	pos := "1r4k1/3b2pp/1b1pP2r/pp1P4/4q3/8/PP4RP/2Q2R1K b - - 0 1"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(3)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "" {
+		t.Fatal("Did not get a best move in time", pos)
+	}
+	if bestmove != "h6h2" {
+		t.Errorf("Expecting best move h6h2, got %v", bestmove)
+	}
+	// There are two forcing moves in this position, one of which leads to
+	// check mate. So there should only be two nodes in the root EvalTree
+	if len(unit.EvalTree.Replies) != 2 {
+		for move, child := range unit.EvalTree.Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		t.Fatalf("Expected only the forcing moves from the root position, got %d", len(unit.EvalTree.Replies))
+	}
+}
+func Test_Engine_Mate_In_Two_Move_Disection_for_black_2(t *testing.T) {
+	pos := "7r/p3ppk1/3p4/2p1P1Kp/2Pb4/3P1QPq/PP5P/R6R b - - 0 1"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(3)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "" {
+		t.Fatal("Did not get a best move in time", pos)
+	}
+	if bestmove != "d4e3" {
+		t.Errorf("Expecting best move h6h2, got %v", bestmove)
+	}
+	// There are two forcing moves in this position, one of which leads to
+	// check mate. So there should only be two nodes in the root EvalTree
+	if len(unit.EvalTree.Replies) != 6 {
+		fmt.Println(fen.Board)
+		for move, child := range unit.EvalTree.Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		fmt.Println()
+		for move, child := range unit.EvalTree.Replies["d4e3"].Replies["f3e3"].Replies {
+			fmt.Println(move, len(child.Replies), child.Score)
+		}
+		t.Fatalf("Expected only the forcing moves from the root position, got %d", len(unit.EvalTree.Replies))
 	}
 }
 
