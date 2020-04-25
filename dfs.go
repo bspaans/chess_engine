@@ -77,11 +77,6 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			if queue.Len() > 0 {
 				b.NodesPerSecond++
 				game := queue.Remove(queue.Front()).(*Game)
-				/*
-					if len(game.Line) > 1 && game.Line[0].String() == "e5c6" {
-						fmt.Println(game.Line)
-					}
-				*/
 				if game == nil {
 					panic("game nil")
 				}
@@ -98,25 +93,13 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					//}
 				} else if len(game.Line) < b.SelDepth {
 					debug := false
-					//b.EvalTree.UpdateBestLine()
-					//depth = len(game.Line)
-					// tree is actually the parent tree
-					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
-					tree.UpdateBestLine()
-					//if tree != nil && tree.Score == -Mate {
-					// Already found mate at this depth
-					//	continue
-					//}
-					//b.EvalTree.Prune()
-
 					// Check if the score difference between this line
 					// and the parent is not too big. If it is we should
 					// consider some alternative moves.
 
-					tree = b.EvalTree.Traverse(game.Line[:len(game.Line)])
-					// TODO queue forcing lines before alternative moves
+					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)])
 
-					// TODO insert self if there's something to insert otherwise
+					// Insert self if there's something to insert otherwise
 					// we'll never look at this position again even if the alternatives
 					// we're queueing now are bad
 					frontElem := queue.Front()
@@ -145,22 +128,6 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 							//fmt.Println("Major loss", game.Line, diff)
 							if b.queueAlternativeLine(game.Parent, tree.Parent, queue) {
 							}
-							/*
-									if !b.queueAlternativeLine(game, tree, queue) && tree.Parent != nil {
-										// TODO: not b.StartingPosition obviously
-										//b.queueAlternativeLine(b.StartingPosition, tree.Parent, queue)
-									}
-
-								fmt.Println("Finding alternative move for ", game.Line, *game.Score, tree.Score, tree.Parent.Score, "blunder", diff)
-								//fmt.Println(tree.Score, tree.Score*-1, diff)
-								altGame := b.Evaluators.GetAlternativeMoveInLine(b.StartingPosition, game.Line[:len(game.Line)-1], tree.Parent)
-								if altGame != nil && !b.Seen[altGame.FENString()] {
-									b.queueLine(game, altGame, queue)
-
-								} else {
-									//fmt.Println("couldn't find better for", game.Line)
-								}
-							*/
 						}
 					}
 				} else {
@@ -183,6 +150,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				// best move leads to a worse position than what we started with.
 				if b.EvalTree.BestLine == nil || *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
 					// Queue forcing lines, than queue alternative best moves
+					//fmt.Println("queue alternative...why?")
 					hasNext := b.queueAlternativeLine(b.StartingPosition, b.EvalTree, queue)
 					if !hasNext {
 						//fmt.Println("we are losing")
@@ -220,16 +188,14 @@ func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.Lis
 	nextGames := pos.NextGames()
 	if len(nextGames) == 1 {
 		if !b.Seen[nextGames[0].FENString()] {
-			b.queueLine(pos, nextGames[0], queue)
+			b.queueLineToQuietPosition(nextGames[0], queue)
 			return true
 		}
 	}
 	for _, nextGame := range nextGames {
 		fenStr := nextGame.FENString()
 		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
-			//fmt.Println("queue forcing line", nextGame.Line)
-			// TODO generate line, but stop at quiet positions => does that mean only adding the next position?
-			//queue.PushFront(nextGame)
+			//fmt.Println("queue forcing line", nextGame.Line, len(nextGame.ValidMoves()), nextGame.InCheck())
 			b.queueLineToQuietPosition(nextGame, queue)
 			foundForcingLines = true
 		}
