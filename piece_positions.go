@@ -61,13 +61,13 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 		if move.From == E8 && move.To == G8 {
 			pieces.move(Black, Rook, H8, F8)
 		} else if move.From == E8 && move.To == C8 {
-			pieces.move(Black, Rook, A8, C8)
+			pieces.move(Black, Rook, A8, D8)
 		}
 	} else if movingPiece == King && c == White {
 		if move.From == E1 && move.To == G1 {
 			pieces.move(White, Rook, H1, F1)
 		} else if move.From == E1 && move.To == C1 {
-			pieces.move(White, Rook, A1, C1)
+			pieces.move(White, Rook, A1, D1)
 		}
 	}
 	return pieces

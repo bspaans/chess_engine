@@ -234,9 +234,12 @@ func (e Evaluators) Eval(position *Game) Score {
 }
 
 func (e Evaluators) BestMove(position *Game) (*Game, Score) {
-	nextGames := position.NextGames()
 	bestScore := LowestScore
 	var bestGame *Game
+	if position.IsFinished() {
+		return nil, LowestScore
+	}
+	nextGames := position.NextGames()
 
 	for _, f := range nextGames {
 		score := e.Eval(f)

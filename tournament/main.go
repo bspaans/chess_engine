@@ -248,6 +248,7 @@ func (t *Tournament) Start() {
 				fmt.Printf("White (%s) crashed on FEN: %s\n", game.White.Name, fen.FENString())
 				t.SetResult(game, fen, BlackWins)
 				if t.QuitOnCrash {
+					fmt.Println(t.StandingToString())
 					return
 				}
 				continue
