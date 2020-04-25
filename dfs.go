@@ -19,6 +19,7 @@ type DFSEngine struct {
 	TotalNodes     int
 	NodesPerSecond int
 	CurrentDepth   int
+	Seen           map[string]bool
 }
 
 func NewDFSEngine(depth int) *DFSEngine {
@@ -44,22 +45,17 @@ func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 }
 
 func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
-	seen := map[string]bool{}
+	b.Seen = map[string]bool{}
 	b.EvalTree = NewEvalTree(nil)
-	timer := time.NewTimer(time.Second)
-	depth := b.SelDepth + 1
 	b.NodesPerSecond = 0
 	b.TotalNodes = 0
 
+	timer := time.NewTimer(time.Second)
+	depth := b.SelDepth + 1
 	queue := list.New()
-	firstLine := b.Evaluators.BestLine(b.StartingPosition, b.SelDepth)
-	for _, game := range firstLine {
-		fenStr := game.FENString()
-		seen[fenStr] = true
-		queue.PushFront(game)
-	}
-	lastInLine := firstLine[len(firstLine)-1]
-	b.EvalTree.Insert(lastInLine.Line, *lastInLine.Score)
+
+	// Queue the first best line (TODO and all the forcing moves?)
+	b.queueBestLine(b.StartingPosition, queue)
 
 	for {
 		select {
@@ -88,19 +84,17 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					panic("score nil??")
 				}
 				b.EvalTree.Insert(game.Line, *game.Score)
-				fenStr := game.FENString()
-				seen[fenStr] = true
 
 				if len(game.Line) == 0 {
 					b.EvalTree.UpdateBestLine()
 					if b.EvalTree.Score == Mate {
-						fmt.Println("Found mate")
 						b.outputInfo(output, true)
 						return
 					}
 				} else if len(game.Line) < depth {
 					//b.EvalTree.UpdateBestLine()
 					depth = len(game.Line)
+					// tree is actually the parent tree
 					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
 					tree.UpdateBestLine()
 					if tree != nil && tree.Score == -Mate {
@@ -114,34 +108,37 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					// consider some alternative moves.
 
 					/*
-						tree is actually the parent tree
 						should compare to the score at the current depth; q: how do we know all nodes at the current depth have been processed? just by definition? only leave nodes are ever expanded => not true, but maybe it should be
 						if the difference is bigger than -2 it means this line is a blunder for this player
-						and we should have picked another move in the parent's parent
+						and we should have picked another move in the parent's parent (or in the current position?)
 						TODO: move all the eval functions into EvalTree for easier bookkeeping
 					*/
 					tree = b.EvalTree.Traverse(game.Line[:len(game.Line)])
 					if tree.Score == Mate {
 						continue
 					}
+					// TODO queue forcing lines before alternative moves
+
+					b.queueForcingLines(game, tree, queue)
+
 					if tree != nil {
 						// Positive diff means that the move is winning
 						// Negative diff means that the move is losing
 						diff := (tree.Score * -1) - tree.Parent.Score
 						if float64(diff) < -2 { // if blunder / major gain
+							/*
+								if !b.queueAlternativeLine(game, tree, queue) && tree.Parent != nil {
+									// TODO: not b.StartingPosition obviously
+									//b.queueAlternativeLine(b.StartingPosition, tree.Parent, queue)
+								}
+							*/
+
 							//fmt.Println("Finding alternative move for ", game.Line, *game.Score, tree.Score, tree.Parent.Score, "blunder", diff)
 							//fmt.Println(tree.Score, tree.Score*-1, diff)
 							if tree.Parent != nil {
 								altGame := b.Evaluators.GetAlternativeMoveInLine(b.StartingPosition, game.Line[:len(game.Line)-1], tree.Parent)
 								if altGame != nil {
-									//fmt.Println("queueing alternative move", altGame.Line)
-									queue.PushFront(game)
-									// TODO queue the whole line?
-									newLine := b.Evaluators.BestLine(altGame, b.SelDepth-len(altGame.Line))
-									for _, move := range newLine {
-										//fmt.Println("adding line", move.Line, b.SelDepth)
-										queue.PushFront(move)
-									}
+									b.queueLine(game, altGame, queue)
 
 								} else {
 									//fmt.Println("couldn't find better for", game.Line)
@@ -161,7 +158,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 							if !wasForced && !b.ShouldCheckPosition(f, *game.Score) {
 								continue
 							}
-							if !seen[f.FENString()] {
+							if !b.Seen[f.FENString()] {
 								b.Evaluators.Eval(f)
 								queue.PushFront(f)
 							}
@@ -171,18 +168,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 			} else {
 				// If we are now worse than before, try to find a better move
 				if *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
-					//fmt.Println("We are worse", *b.StartingPosition.Score, b.EvalTree.BestLine.Score)
-					nextBestGame := b.Evaluators.GetAlternativeMove(b.StartingPosition, b.EvalTree)
-					if nextBestGame == nil {
+					// Queue forcing lines, than queue alternative best moves
+					hasNext := b.queueForcingOrAlternativeLines(b.StartingPosition, b.EvalTree, queue)
+					if !hasNext {
 						b.outputInfo(output, true)
 						return
-					}
-					queue.PushFront(b.StartingPosition)
-					// TODO queue the whole line?
-					newLine := b.Evaluators.BestLine(nextBestGame, b.SelDepth-len(nextBestGame.Line))
-					for _, move := range newLine {
-						//fmt.Println("adding line", move.Line, b.SelDepth)
-						queue.PushFront(move)
 					}
 				} else {
 					//fmt.Println("We are better", *b.StartingPosition.Score, b.EvalTree.BestLine.Score)
@@ -194,6 +184,60 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 			}
 		}
+	}
+}
+
+// Queues all the forcing lines and if they've already been looked at it chooses the next best move
+func (b *DFSEngine) queueForcingOrAlternativeLines(pos *Game, tree *EvalTree, queue *list.List) bool {
+	// Queue forcing lines, then queue alternative best moves
+	if b.queueForcingLines(pos, tree, queue) {
+		return true
+	}
+	return b.queueAlternativeLine(pos, tree, queue)
+
+}
+
+func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.List) bool {
+	if pos == nil {
+		panic("uh")
+	}
+	foundForcingLines := false
+	for _, nextGame := range pos.NextGames() {
+		fenStr := nextGame.FENString()
+		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
+			b.queueLine(pos, nextGame, queue)
+			foundForcingLines = true
+		}
+	}
+	return foundForcingLines
+}
+
+func (b *DFSEngine) queueAlternativeLine(pos *Game, tree *EvalTree, queue *list.List) bool {
+	if pos == nil {
+		panic("uh")
+	}
+	// Finding alternative best moves using the evaluators
+	nextBestGame := b.Evaluators.GetAlternativeMove(pos, tree)
+	if nextBestGame == nil {
+		return false
+	}
+	b.queueLine(pos, nextBestGame, queue)
+	return true
+}
+
+func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
+	if game == nil {
+		return
+	}
+	queue.PushFront(startPos)
+	b.queueBestLine(game, queue)
+}
+func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
+	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
+	for _, move := range newLine {
+		fenStr := game.FENString()
+		b.Seen[fenStr] = true
+		queue.PushFront(move)
 	}
 }
 

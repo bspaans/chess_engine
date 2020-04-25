@@ -2,21 +2,28 @@
 
 This is a chess engine that implements the Universal Chess Interface (UCI),
 which makes it possible to use from many of your favourite chess GUIs. 
+There's also a tournament mode (see `tournament/`) that can be used to pit 
+UCI engines against each other.
 
-The purpose of this engine is mainly a learning exercise to see which 
-evaluation strategies work best, and to pit competing ideas against 
-each other in tournament mode (see `tournament/`)
+I mainly wrote this engine as a learning exercise to find out more about how
+they work and what strategies they use to evaluate positions.  This is a pure
+Go codebase without any dependencies, so if you're looking for a Go library to
+Do Chess then be my guest.
 
 ## Status
 
-* All moves are supported currently, except for the tiniest of edge-cases (see
-  below). Otherwise the full rules of chess are implemented, and you are able to
-  find all valid moves in a position.
-* The search function is a bit naive (depth first search with some shabby piece
-  selection), but for the moment this is good enough for the evaluators we
-  implement. The search depth can be set by using the `--depth` flag.
-* A few simple position evaluators are implemented. It hasn't taken a single
-  game from stockfish yet. Improving this is the major focus at the moment.
+* All moves are supported currently, except that we're currently not detecting
+  draw by repetition and draw by insufficient material. Otherwise the full
+  rules of chess are implemented, and you are able to find all valid moves in a
+  position.
+* The search function is a bit of a hot mess. It turns out that search and move
+  selection is probably way more important than being able to assess positions
+  from just looking at the pieces (ie. Eval). This area is the one I'm least
+  confident about, but the current strategy is to use a depth first search on
+  the best line, consider all forcing variations, and consider other moves only
+  when we detect a blunder. Seems to be a bit buggy at the moment though.
+* A few simple position evaluators are implemented that can look at material
+  count, space, mobility, tempo and pawn structures.
 * Tournament mode is working and we can see very naive approaches beating
   random moves. ELO rankings coming soon.
 
@@ -39,7 +46,33 @@ The first recorded engine checkmate:
  +--------------------------+
 ```
 
-### Edge Cases / Known Bugs
+Aye, pretty ridiculous.
 
-* Missing draw by repetition
-* Missing draw by insufficient material
+### Usage
+
+The program is written in Go without dependencies so the only thing you'll need
+is Go.
+
+Clone the repo and run `go build -o bs-engine cmd/main.go`, you're done. You
+can now use this engine from most chess GUI engine frontends.
+
+By default the engine doesn't load any evaluators so you'll have to 
+pass in some flags:
+
+```
+--random          Don't evaluate. Select a random move.
+--naive-material  Evaluate piece value
+--space           Evaluate space
+--tempo           Evaluate tempo
+--mobility        Evaluate valid moves
+--pawn-structure  Evaluate pawn structure
+--depth N         Limit the search depth
+```
+
+### Tournament mode
+
+You can run tournaments with other UCI enabled engines, but the program 
+doesn't have a command line interface yet so you'll have to edit 
+the options in source.
+
+`cd tournament && go run main.go`

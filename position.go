@@ -194,6 +194,18 @@ func (p Position) GetBlackPawnMoves() [][]Position {
 	return result
 }
 
+func (p Position) GetAdjacentFiles() []File {
+	f := p.GetFile()
+	result := []File{}
+	if f != 'a' {
+		result = append(result, File(byte(f)-1))
+	}
+	if f != 'h' {
+		result = append(result, File(byte(f)+1))
+	}
+	return result
+}
+
 func (p Position) GetKnightMoves() []Position {
 	return PieceMoves[WhiteKnight][p]
 }

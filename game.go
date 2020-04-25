@@ -126,6 +126,10 @@ func (f *Game) InCheck() bool {
 	return len(checks) > 0
 }
 
+func (f *Game) IsFinished() bool {
+	return f.IsMate() || f.IsDraw()
+}
+
 func (f *Game) IsMate() bool {
 	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
 	if len(checks) > 0 {
@@ -240,17 +244,22 @@ func (f *Game) ValidMoves() []*Move {
 	if f.valid != nil {
 		return *f.valid
 	}
+	result := f.GetValidMovesForColor(f.ToMove)
+	f.valid = &result
+	return result
+}
+
+func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	result := []*Move{}
 
-	checks := f.Attacks.GetChecks(f.ToMove, f.Pieces)
+	checks := f.Attacks.GetChecks(color, f.Pieces)
 	if len(checks) > 0 {
 		result := f.validMovesInCheck(checks)
 		f.valid = &result
 		return result
 	}
-
-	for _, attack := range f.Attacks.GetAttacks(f.ToMove, f.Pieces) {
-		if f.Board[attack.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(f.ToMove.Opposite(), attack.To) {
+	for _, attack := range f.Attacks.GetAttacks(color, f.Pieces) {
+		if f.Board[attack.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), attack.To) {
 			// Filtering invalid king move
 
 		} else {
@@ -258,7 +267,7 @@ func (f *Game) ValidMoves() []*Move {
 		}
 	}
 
-	for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
+	for _, pawnPos := range f.Pieces.Positions(color, Pawn) {
 		for _, line := range MoveVectors[f.Board[pawnPos]][pawnPos] {
 			for _, targetPos := range line {
 				if f.Board[targetPos] == NoPiece {
@@ -278,7 +287,7 @@ func (f *Game) ValidMoves() []*Move {
 		}
 	}
 	for _, piece := range []NormalizedPiece{Knight} {
-		for _, fromPos := range f.Pieces.Positions(f.ToMove, piece) {
+		for _, fromPos := range f.Pieces.Positions(color, piece) {
 			for _, toPos := range PieceMoves[Piece(piece)][fromPos] {
 				if f.Board[toPos] == NoPiece {
 					result = append(result, NewMove(fromPos, toPos))
@@ -288,7 +297,7 @@ func (f *Game) ValidMoves() []*Move {
 		}
 	}
 	for _, piece := range []NormalizedPiece{Bishop, Rook, Queen} {
-		for _, fromPos := range f.Pieces.Positions(f.ToMove, piece) {
+		for _, fromPos := range f.Pieces.Positions(color, piece) {
 			for _, line := range MoveVectors[Piece(piece)][fromPos] {
 				for _, toPos := range line {
 					if f.Board[toPos] == NoPiece {
@@ -302,22 +311,22 @@ func (f *Game) ValidMoves() []*Move {
 		}
 	}
 	// The king can only move to squares that are empty and/or unattacked
-	kingPos := f.Pieces.GetKingPos(f.ToMove)
+	kingPos := f.Pieces.GetKingPos(color)
 	for _, p := range kingPos.GetKingMoves() {
-		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
+		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(color.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
-		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.Attacks.DefendsSquare(f.ToMove.Opposite(), p) {
+		} else if f.Board.IsOpposingPiece(p, color) && !f.Attacks.DefendsSquare(color.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
 	// Castling
-	if f.ToMove == White && f.CastleStatuses.White != None {
+	if color == White && f.CastleStatuses.White != None {
 		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
 			result = append(result, NewMove(kingPos, C1))
 		} else if f.Board.CanCastle(f.Attacks, White, F1, G1) {
 			result = append(result, NewMove(kingPos, G1))
 		}
-	} else if f.ToMove == Black && f.CastleStatuses.Black != None {
+	} else if color == Black && f.CastleStatuses.Black != None {
 		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
 			result = append(result, NewMove(kingPos, C8))
 		} else if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
@@ -326,9 +335,7 @@ func (f *Game) ValidMoves() []*Move {
 	}
 
 	// Make sure pieces aren't pinned
-	result = f.FilterPinnedPieces(result)
-	f.valid = &result
-	return result
+	return f.FilterPinnedPieces(result)
 }
 
 func (f *Game) ApplyMove(move *Move) *Game {

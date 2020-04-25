@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -99,6 +98,7 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
+	NewEngine("bs-engine-everything", "bs-engine", []string{"--space", "--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
@@ -205,7 +205,6 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 		Result: game.Result.String(),
 	}
 	fmt.Println(chess_engine.LineToPGNWithTags(pos, fen.Line, tags))
-	os.Exit(1)
 }
 
 func (t *Tournament) StandingToString() string {
@@ -305,8 +304,11 @@ func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.Game) {
 		toPlay = "Black"
 		engineName = game.Black.Name
 	}
+	fmt.Println("Tempo:", chess_engine.TempoEvaluator(fen))
 	fmt.Println("Space:", chess_engine.SpaceEvaluator(fen))
+	fmt.Println("Mobility:", chess_engine.MobilityEvaluator(fen))
 	fmt.Println("Material:", chess_engine.NaiveMaterialEvaluator(fen))
+	fmt.Println("Pawn structure:", chess_engine.PawnStructureEvaluator(fen))
 	fmt.Println("position fen", fen.FENString())
 	fmt.Println(fen.Board)
 	fmt.Printf("%s (%s) to play.\n\n", toPlay, engineName)

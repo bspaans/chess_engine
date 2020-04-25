@@ -15,6 +15,3 @@ var LowestScore = Score(math.Inf(-1))
 func (s Score) ToCentipawn() int {
 	return int(math.Round(float64(s) * 100))
 }
-func (s Score) GameFinished() bool {
-	return s == Mate || s == OpponentMate || s == Draw
-}

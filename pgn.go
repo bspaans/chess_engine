@@ -67,9 +67,9 @@ func LineToPGN(position *Game, line []*Move) string {
 	}
 	if game.IsMate() {
 		if game.ToMove == White {
-			currentLine += " 1-0"
-		} else {
 			currentLine += " 0-1"
+		} else {
+			currentLine += " 1-0"
 		}
 	} else if game.IsDraw() {
 		currentLine += "1/2-1/2"

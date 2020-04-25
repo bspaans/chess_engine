@@ -113,7 +113,7 @@ func Test_Eval_BestLine_opening_space_evaluator(t *testing.T) {
 
 	line := unit.BestLine(position, 2)
 	if len(line) != 3 {
-		t.Fatalf("Expecting line of length 2+1, got %d", len(line))
+		t.Fatalf("Expecting line of length 2+1, got %d: %s", len(line), line[0].Board)
 	}
 	if line[0] != position {
 		t.Errorf("Expecting starting position as first element in the line")
@@ -195,5 +195,34 @@ func Test_Eval_AlternativeMove_space_evaluator_black(t *testing.T) {
 	game = unit.GetAlternativeMove(position, tree)
 	if game.Line[0].String() != "d7d5" {
 		t.Errorf("Expecting d7d5 as an alternative opening move for space evaluator, got %s", game.Line)
+	}
+}
+
+func Test_TempoEvaluator(t *testing.T) {
+	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	position, err := ParseFEN(fen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if TempoEvaluator(position) != 0.0 {
+		t.Fatal("Expecting equal tempo")
+	}
+
+	fen = "rnbqkbnr/pppppppp/8/8/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 0 1"
+	position, err = ParseFEN(fen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if TempoEvaluator(position) <= 0.0 {
+		t.Fatal("Expecting tempo for White, got", TempoEvaluator(position))
+	}
+
+	fen = "rnbqkbnr/pppppppp/8/8/8/3P5/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
+	position, err = ParseFEN(fen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if TempoEvaluator(position) >= 0.0 {
+		t.Fatal("Expecting tempo for Black, got", TempoEvaluator(position))
 	}
 }

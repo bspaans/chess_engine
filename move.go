@@ -34,7 +34,7 @@ func (m *Move) ToPromotions() []*Move {
 			color = Black
 		}
 		result := make([]*Move, 4)
-		for i, piece := range []Piece{WhiteKnight, WhiteQueen, WhiteRook, WhiteBishop} {
+		for i, piece := range []Piece{WhiteQueen, WhiteKnight, WhiteRook, WhiteBishop} {
 			result[i] = NewMove(m.From, m.To)
 			result[i].Promote = piece.SetColor(color)
 		}

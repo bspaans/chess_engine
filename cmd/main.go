@@ -18,6 +18,12 @@ func main() {
 			engine.AddEvaluator(chess_engine.NaiveMaterialEvaluator)
 		} else if arg == "--space" {
 			engine.AddEvaluator(chess_engine.SpaceEvaluator)
+		} else if arg == "--tempo" {
+			engine.AddEvaluator(chess_engine.TempoEvaluator)
+		} else if arg == "--mobility" {
+			engine.AddEvaluator(chess_engine.MobilityEvaluator)
+		} else if arg == "--pawn-structure" {
+			engine.AddEvaluator(chess_engine.PawnStructureEvaluator)
 		} else if arg == "--depth" {
 			selDepth, err := strconv.Atoi(os.Args[i+1])
 			if err != nil {
