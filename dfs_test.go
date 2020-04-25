@@ -247,8 +247,8 @@ func Test_Engine_Mate_In_Two_Move_Disection_for_black_2(t *testing.T) {
 	if bestmove != "d4e3" {
 		t.Errorf("Expecting best move h6h2, got %v", bestmove)
 	}
-	// There are two forcing moves in this position, one of which leads to
-	// check mate. So there should only be two nodes in the root EvalTree
+	// There are six forcing moves in this position, one of which leads to
+	// check mate. So there should only be six nodes in the root EvalTree
 	if len(unit.EvalTree.Replies) != 6 {
 		fmt.Println(fen.Board)
 		for move, child := range unit.EvalTree.Replies {
@@ -319,8 +319,11 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 	if unit.EvalTree.Replies["e5c6"].Score == Mate {
 		t.Errorf("Not expecting mate in e5c6")
 	}
-	if len(unit.EvalTree.Replies["e5c6"].Replies) == 1 {
-		t.Errorf("Expecting multiple replies to e5c6, because best move is bad")
+	for _, move := range unit.EvalTree.Replies {
+
+		if move.Move.String() != "f8c5" && len(move.Replies) == 1 {
+			t.Errorf("Expecting multiple replies to %s, because best move is bad", move.Move)
+		}
 	}
 }
 

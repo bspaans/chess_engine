@@ -28,6 +28,9 @@ type Game struct {
 	// The line we're currently pondering on
 	Line []*Move
 
+	// The parent Game, if any
+	Parent *Game
+
 	// Valid moves cache
 	valid *[]*Move
 
@@ -430,6 +433,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.HalfmoveClock = halfMove
 	result.Fullmove = fullMove
 	result.Line = line
+	result.Parent = f
 	return result
 }
 
