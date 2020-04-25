@@ -53,7 +53,7 @@ func getBestMove(unit *DFSEngine, timeLimit time.Duration) string {
 
 }
 
-func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove int) {
+func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duration) {
 	for _, testCase := range cases {
 		fenStr, depthStr := testCase[0], testCase[1]
 		depth, _ := strconv.Atoi(depthStr)
@@ -66,7 +66,7 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove int) {
 		moves := 0
 		line := []string{}
 
-		for !fen.IsMate() && moves < 10 {
+		for !fen.IsMate() && moves < 8 {
 
 			selDepth := 1
 			if depth > selDepth {
@@ -76,7 +76,7 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove int) {
 			unit.AddEvaluator(NaiveMaterialEvaluator)
 			unit.AddEvaluator(SpaceEvaluator)
 			unit.SetPosition(fen)
-			bestmove := getBestMove(unit, 3*time.Second)
+			bestmove := getBestMove(unit, maxSecondsPerMove*time.Second)
 			if bestmove == "" {
 				t.Fatal("Did not get a best move in time", testCase)
 				break
@@ -132,7 +132,34 @@ func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
 		// Monterinas vs Max Euwe, Amsterdam, 1927
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2Pb4/3P1QPq/PP5P/R6R b - - 0 1", "3"},
 	}
-	runUntilMate(t, cases, 2)
+	runUntilMate(t, cases, 5)
+}
+
+func Test_Engine_Mate_In_Two_Move_Disection(t *testing.T) {
+	pos := "r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PPQ2P1/R3K2R w - - 0 0 3"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(3)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	if bestmove == "" {
+		t.Fatal("Did not get a best move in time", pos)
+	}
+	if bestmove != "d2h6" {
+		t.Fatalf("Expecting best move d2h6, got %v", bestmove)
+	}
+	// There are three forcing moves in this position, one of which leads to
+	// check mate. So there should only be three nodes in the root EvalTree
+	if len(unit.EvalTree.Replies) != 3 {
+		for move, child := range unit.EvalTree.Replies {
+			fmt.Println(move, len(child.Replies))
+		}
+		t.Fatalf("Expected only the forcing moves from the root position")
+	}
 }
 
 func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {

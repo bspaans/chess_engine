@@ -54,8 +54,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	depth := b.SelDepth + 1
 	queue := list.New()
 
-	// Queue the first best line (TODO and all the forcing moves?)
-	b.queueBestLine(b.StartingPosition, queue)
+	// Queue all the forcing moves.
+	b.Evaluators.Eval(b.StartingPosition)
+	b.queueForcingLines(b.StartingPosition, b.EvalTree, queue)
+	//b.queueBestLine(b.StartingPosition, queue)
 
 	for {
 		select {
@@ -79,28 +81,26 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					panic("game nil")
 				}
 				if game.Score == nil {
-					fmt.Println(game.Line)
-					fmt.Println(game.Board)
-					panic("score nil??")
+					b.Evaluators.Eval(game)
 				}
 				b.EvalTree.Insert(game.Line, *game.Score)
 
 				if len(game.Line) == 0 {
 					b.EvalTree.UpdateBestLine()
-					if b.EvalTree.Score == Mate {
-						b.outputInfo(output, true)
-						return
-					}
+					//if b.EvalTree.Score == Mate {
+					//	b.outputInfo(output, true)
+					//	return
+					//}
 				} else if len(game.Line) < depth {
 					//b.EvalTree.UpdateBestLine()
 					depth = len(game.Line)
 					// tree is actually the parent tree
 					tree := b.EvalTree.Traverse(game.Line[:len(game.Line)-1])
 					tree.UpdateBestLine()
-					if tree != nil && tree.Score == -Mate {
-						// Already found mate at this depth
-						continue
-					}
+					//if tree != nil && tree.Score == -Mate {
+					// Already found mate at this depth
+					//	continue
+					//}
 					//b.EvalTree.Prune()
 
 					// Check if the score difference between this line
@@ -121,7 +121,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 
 					b.queueForcingLines(game, tree, queue)
 
-					if tree != nil {
+					if tree != nil && tree.Parent != nil && tree.Parent.Move != nil {
 						// Positive diff means that the move is winning
 						// Negative diff means that the move is losing
 						diff := (tree.Score * -1) - tree.Parent.Score
@@ -133,16 +133,14 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 								}
 							*/
 
-							//fmt.Println("Finding alternative move for ", game.Line, *game.Score, tree.Score, tree.Parent.Score, "blunder", diff)
+							fmt.Println("Finding alternative move for ", game.Line, *game.Score, tree.Score, tree.Parent.Score, "blunder", diff)
 							//fmt.Println(tree.Score, tree.Score*-1, diff)
-							if tree.Parent != nil {
-								altGame := b.Evaluators.GetAlternativeMoveInLine(b.StartingPosition, game.Line[:len(game.Line)-1], tree.Parent)
-								if altGame != nil {
-									b.queueLine(game, altGame, queue)
+							altGame := b.Evaluators.GetAlternativeMoveInLine(b.StartingPosition, game.Line[:len(game.Line)-1], tree.Parent)
+							if altGame != nil && !b.Seen[altGame.FENString()] {
+								b.queueLine(game, altGame, queue)
 
-								} else {
-									//fmt.Println("couldn't find better for", game.Line)
-								}
+							} else {
+								//fmt.Println("couldn't find better for", game.Line)
 							}
 						}
 					}
@@ -167,8 +165,9 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				}
 			} else {
 				// If we are now worse than before, try to find a better move
-				if *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
+				if b.EvalTree.BestLine == nil || *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
 					// Queue forcing lines, than queue alternative best moves
+					//fmt.Println("We are worse after", Line(b.EvalTree.GetBestLine().Line))
 					hasNext := b.queueForcingOrAlternativeLines(b.StartingPosition, b.EvalTree, queue)
 					if !hasNext {
 						b.outputInfo(output, true)
@@ -202,9 +201,14 @@ func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.Lis
 		panic("uh")
 	}
 	foundForcingLines := false
-	for _, nextGame := range pos.NextGames() {
+	nextGames := pos.NextGames()
+	if len(nextGames) == 1 {
+		b.queueLine(pos, nextGames[0], queue)
+		return true
+	}
+	for _, nextGame := range nextGames {
 		fenStr := nextGame.FENString()
-		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
+		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1 || pos.InCheck()) {
 			b.queueLine(pos, nextGame, queue)
 			foundForcingLines = true
 		}
@@ -229,14 +233,14 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	if game == nil {
 		return
 	}
+	b.Seen[startPos.FENString()] = true
 	queue.PushFront(startPos)
 	b.queueBestLine(game, queue)
 }
 func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
 	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
 	for _, move := range newLine {
-		fenStr := game.FENString()
-		b.Seen[fenStr] = true
+		b.Seen[game.FENString()] = true
 		queue.PushFront(move)
 	}
 }
