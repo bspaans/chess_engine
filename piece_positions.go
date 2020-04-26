@@ -1,7 +1,7 @@
 package chess_engine
 
-// PiecePositions is a three dimensional array that keeps track of attacks and
-// defences for either side. It is indexed like this: e.g.
+// PiecePositions is a three dimensional array that keeps track of piece
+// positions for either side. It is indexed like this: e.g.
 // PiecePositions[White][Pawn] for a list of white pawn positions, etc.
 type PiecePositions [][][]Position
 
@@ -30,9 +30,9 @@ func (p PiecePositions) GetKingPos(color Color) Position {
 	return p[color][King][0]
 }
 
-// This method creates a new PiecePositions representing the attacks and
-// defences after applying the given move. The arrays for unchanged pieces are
-// copied so that we don't needlessly allocate memory.
+// This method creates a new PiecePositions representing the piece positions
+// after applying the given move. The arrays for unchanged pieces are copied so
+// that we don't needlessly allocate memory.
 func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiece NormalizedPiece) PiecePositions {
 	pieces := NewPiecePositions()
 	for color, _ := range pieces {

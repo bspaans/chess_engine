@@ -187,6 +187,15 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 	return result
 }
 
+// ApplyMove returns a new Attacks structure with updated attacks and defenses. Unchanged
+// piece arrays are copied to reduce memory pressure
 func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) Attacks {
+	attacks := NewAttacks()
+	// Copy
+	for i := 0; i < 64; i++ {
+		attacks[i] = a[i]
+	}
+
+	// Remove all the old positions for piece and capturedPiece
 	return NewAttacks()
 }

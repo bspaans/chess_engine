@@ -324,6 +324,36 @@ func init() {
 		}
 		result += "}\n\n"
 
+		result += "var AttackVectors = map[Piece][][][]Position{\n"
+		for _, mover := range pawnAttacks {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatMoves(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
+			}
+			result += "\t},\n"
+		}
+		for _, mover := range singleMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatMoves(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
+			}
+			result += "\t},\n"
+		}
+		for _, mover := range multiMovers {
+			index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
+			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
+			for i := 0; i < 64; i++ {
+				moves := formatLines(moverFunc(Position(i)))
+				result += fmt.Sprintf("\t\t%s,\n", moves)
+			}
+			result += "\t},\n"
+		}
+		result += "}\n\n"
+
 		result += "var PawnAttacks = map[Color][][]Position{\n"
 		for _, mover := range pawnAttacks {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
