@@ -91,6 +91,8 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 		Rook:   "R",
 	}
 
+	// TODO: castles
+
 	result := ""
 	if movingPiece == Pawn {
 		moveStr := move.To.String()

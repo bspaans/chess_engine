@@ -215,7 +215,7 @@ func (e Evaluators) Eval(position *Game) Score {
 	if position.IsDraw() {
 		score = Draw
 	} else if position.IsMate() {
-		score = Mate
+		score = Mate // TODO add ply distance to root
 		if position.ToMove == White {
 			score = OpponentMate // because we're going to *-1 below
 		} else {

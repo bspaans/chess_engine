@@ -39,7 +39,7 @@ func (p Piece) Color() Color {
 	if 'A' <= p && p <= 'Z' {
 		return White
 	}
-	return NoColor
+	panic("Can't figure out colour of piece " + p.String())
 }
 
 func (p Piece) SetColor(c Color) Piece {

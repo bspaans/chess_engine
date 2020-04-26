@@ -1,2 +1,4 @@
 *.swp
 bs-engine
+cpu.out
+chess_engine.test

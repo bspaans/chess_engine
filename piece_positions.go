@@ -1,12 +1,14 @@
 package chess_engine
 
-type PiecePositions map[Color]map[NormalizedPiece][]Position
+// TODO: replace with lists
+// PiecePositions is indexed by colour.
+// e.g. PiecePositions[White] for the white pieces, etc.
+type PiecePositions []map[NormalizedPiece][]Position
 
 func NewPiecePositions() PiecePositions {
-	p := map[Color]map[NormalizedPiece][]Position{
-		White: map[NormalizedPiece][]Position{},
-		Black: map[NormalizedPiece][]Position{},
-	}
+	p := make([]map[NormalizedPiece][]Position, 2)
+	p[White] = map[NormalizedPiece][]Position{}
+	p[Black] = map[NormalizedPiece][]Position{}
 	for _, color := range []Color{White, Black} {
 		for _, piece := range []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King} {
 			p[color][piece] = []Position{}
@@ -34,7 +36,7 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 	for color, _ := range pieces {
 		for piece, oldPositions := range p[color] {
 			for _, pos := range oldPositions {
-				if color == c && piece == movingPiece && pos == move.From {
+				if Color(color) == c && piece == movingPiece && pos == move.From {
 					// This is the piece that is moving and we need to replace its
 					// position with the move's target.
 					// There's a special case for promotions, because in that case
@@ -45,7 +47,7 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 						normPromote := move.Promote.ToNormalizedPiece()
 						pieces[c][normPromote] = append(pieces[c][normPromote], move.To)
 					}
-				} else if color != c && piece == capturedPiece && pos == move.To {
+				} else if Color(color) != c && piece == capturedPiece && pos == move.To {
 					// Skip captured pieces
 					continue
 				} else {

@@ -1,13 +1,15 @@
 package chess_engine
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+)
 
 type Color int8
 
 const (
-	NoColor Color = iota
+	White Color = iota
 	Black
-	White
 )
 
 func (c Color) String() string {
@@ -17,7 +19,7 @@ func (c Color) String() string {
 
 		return "b"
 	}
-	return " "
+	panic("Not a valid colour: " + strconv.Itoa(int(c)))
 }
 
 func (c Color) Opposite() Color {
@@ -34,5 +36,5 @@ func ParseColor(colorStr string) (Color, error) {
 	} else if colorStr == "b" {
 		return Black, nil
 	}
-	return NoColor, errors.New("pgn: invalid color")
+	return White, errors.New("pgn: invalid color")
 }

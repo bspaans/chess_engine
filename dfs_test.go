@@ -350,7 +350,7 @@ func Test_Engine_Can_Find_Mate_In_Four(t *testing.T) {
 		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "7"},
 		[]string{"r2qr3/ppp1B2p/1b4p1/n3Q1Pk/3P2b1/2P2B2/P4P2/RN4K1 w - - 1 0", "7"},
 	}
-	runUntilMate(t, cases, 100)
+	runUntilMate(t, cases, 500)
 }
 
 func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {

@@ -53,6 +53,11 @@ func (m *Move) NormalizedVector() Vector {
 	return m.Vector().Normalize()
 }
 
+func (m *Move) IsCastles() bool {
+	return (m.From == E1 && (m.To == C1 || m.To == G1)) ||
+		(m.From == E8 && (m.To == C8 || m.To == G8))
+}
+
 func ParseMove(moveStr string) (*Move, error) {
 	if len(moveStr) != 4 && len(moveStr) != 5 {
 		return nil, fmt.Errorf("Expecting move str of length 4 or 5")

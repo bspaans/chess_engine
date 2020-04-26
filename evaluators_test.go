@@ -226,3 +226,17 @@ func Test_TempoEvaluator(t *testing.T) {
 		t.Fatal("Expecting tempo for Black, got", TempoEvaluator(position))
 	}
 }
+
+func Benchmark_Eval(t *testing.B) {
+
+	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	unit, err := ParseFEN(fen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		unit.ApplyMove(NewMove(E2, E4))
+		unit.Score = nil
+	}
+}
