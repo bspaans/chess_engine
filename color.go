@@ -12,6 +12,8 @@ const (
 	Black
 )
 
+var Colors = []Color{White, Black}
+
 func (c Color) String() string {
 	if c == White {
 		return "w"

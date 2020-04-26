@@ -26,28 +26,28 @@ func (m Move) String() string {
 	return fmt.Sprintf("%v%v%v", m.From, m.To, m.Promote)
 }
 
-func (m *Move) toPromotions() []*Move {
+func (m *Move) toPromotions(result []*Move) []*Move {
 	rank := m.To.GetRank()
 	if rank == '1' || rank == '8' {
 		color := White
 		if rank == '1' {
 			color = Black
 		}
-		result := make([]*Move, 4)
-		for i, piece := range []Piece{WhiteQueen, WhiteKnight, WhiteRook, WhiteBishop} {
-			result[i] = NewMove(m.From, m.To)
-			result[i].Promote = piece.SetColor(color)
+		for _, piece := range []Piece{WhiteQueen, WhiteKnight, WhiteRook, WhiteBishop} {
+			move := NewMove(m.From, m.To)
+			move.Promote = piece.SetColor(color)
+			result = append(result, move)
 		}
 		return result
 	}
-	return []*Move{m}
+	return append(result, m)
 }
 
-func (m *Move) HandlePromotion(piece NormalizedPiece) []*Move {
+func (m *Move) ExpandPromotions(result []*Move, piece NormalizedPiece) []*Move {
 	if piece == Pawn {
-		return m.toPromotions()
+		return m.toPromotions(result)
 	}
-	return []*Move{m}
+	return append(result, m)
 }
 
 func (m *Move) Vector() Vector {

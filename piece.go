@@ -45,6 +45,10 @@ func ParsePiece(b byte) (Piece, error) {
 	return piece, nil
 }
 
+func (p Piece) IsRayPiece() bool {
+	return p != BlackKing && p != WhiteKing && p != BlackPawn && p != WhitePawn && p != BlackKnight && p != WhiteKnight
+}
+
 func (p Piece) Color() Color {
 	if p <= BlackKing {
 		return Black
@@ -113,3 +117,14 @@ var NormalizedPieces = []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King
 var Pieces = []Piece{BlackPawn, BlackKnight, BlackBishop, BlackRook, BlackQueen, BlackKing, WhitePawn, WhiteKnight, WhiteBishop, WhiteRook, WhiteQueen, WhiteKing}
 var NumberOfNormalizedPieces = 6
 var NumberOfPieces = 12
+
+func (p NormalizedPiece) IsRayPiece() bool {
+	return p != King && p != Pawn && p != Knight
+}
+
+func (p NormalizedPiece) ToPiece(color Color) Piece {
+	if color == Black {
+		return Piece(p)
+	}
+	return Piece(p + 6)
+}

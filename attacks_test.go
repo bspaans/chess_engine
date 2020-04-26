@@ -52,28 +52,74 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 
 	board := NewBoard()
-	board[E4] = WhiteQueen
-	board[E2] = WhiteKing
+	board[E6] = WhiteQueen
+	board[E3] = WhiteKing
 	unit := NewAttacks()
 
-	unit.AddPiece(WhiteQueen, E4, board)
+	unit.AddPiece(WhiteQueen, E6, board)
+	unit.AddPiece(WhiteKing, E3, board)
 
-	positions := PieceMoves[WhiteQueen][E4]
+	positions := PieceMoves[WhiteQueen][E6]
 	for _, pos := range positions {
-		if pos == E1 {
-			if unit[pos].CountPositionsForColor(White) != 0 {
+		if pos == E1 || pos == E2 {
+			if unit[pos].CountPositionsForColor(White) > 1 {
 				t.Errorf("Expecting no attacks on %s", pos)
 			}
 			continue
 		}
-		if unit[pos].CountPositionsForColor(White) != 1 {
+		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
 		if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector")
 		}
-		if unit[pos][White][Queen][0] != E4 {
-			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
+		if unit[pos][White][Queen][0] != E6 {
+			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
+		}
+	}
+}
+
+func Test_Attacks_ApplyMove(t *testing.T) {
+
+	board := NewBoard()
+	board[E6] = WhiteQueen
+	board[E3] = WhiteKing
+	unit := NewAttacks()
+
+	unit.AddPiece(WhiteQueen, E6, board)
+	unit.AddPiece(WhiteKing, E3, board)
+	board.ApplyMove(E3, D3)
+	unit = unit.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board)
+
+	positions := PieceMoves[WhiteQueen][E6]
+	for _, pos := range positions {
+		if unit[pos].CountPositionsForColor(White) == 0 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if len(unit[pos][White][Queen]) != 1 {
+			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, unit[pos][White][Queen])
+		}
+		if unit[pos][White][Queen][0] != E6 {
+			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
+		}
+	}
+	board.ApplyMove(D3, E3)
+	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board)
+	for _, pos := range positions {
+		if pos == E1 || pos == E2 {
+			if unit[pos].CountPositionsForColor(White) > 1 {
+				t.Errorf("Expecting no attacks on %s, got %v", pos, unit[pos][White])
+			}
+			continue
+		}
+		if unit[pos].CountPositionsForColor(White) == 0 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if len(unit[pos][White][Queen]) != 1 {
+			t.Errorf("Expecting white queen in piece vector")
+		}
+		if unit[pos][White][Queen][0] != E6 {
+			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
 		}
 	}
 }

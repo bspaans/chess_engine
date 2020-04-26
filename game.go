@@ -278,9 +278,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 			for _, targetPos := range line {
 				if f.Board[targetPos] == NoPiece {
 					move := NewMove(pawnPos, targetPos)
-					for _, m := range move.HandlePromotion(Pawn) {
-						result = append(result, m)
-					}
+					result = move.ExpandPromotions(result, NormalizedPiece(Pawn))
 				} else {
 					break
 				}
@@ -408,9 +406,9 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Pieces = f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
 	if move.To == f.EnPassantVulnerable {
 		if f.ToMove == White {
-			result.Pieces.Remove(Black, Pawn, move.To-8)
+			result.Pieces.RemovePosition(BlackPawn, move.To-8)
 		} else {
-			result.Pieces.Remove(White, Pawn, move.To+8)
+			result.Pieces.RemovePosition(WhitePawn, move.To+8)
 		}
 	}
 	// TODO: implement ApplyMove in Attacks

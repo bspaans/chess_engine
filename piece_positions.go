@@ -1,5 +1,7 @@
 package chess_engine
 
+import "fmt"
+
 // PiecePositions is a three dimensional array that keeps track of piece
 // positions for either side. It is indexed like this: e.g.
 // PiecePositions[White][Pawn] for a list of white pawn positions, etc.
@@ -14,12 +16,6 @@ func NewPiecePositions() PiecePositions {
 		p[Black][piece] = []Position{}
 	}
 	return p
-}
-
-func (p PiecePositions) AddPosition(piece Piece, pos Position) {
-	pieces := p[piece.Color()]
-	normalizedPiece := piece.ToNormalizedPiece()
-	pieces[normalizedPiece] = append(pieces[normalizedPiece], pos)
 }
 
 func (p PiecePositions) Positions(c Color, piece NormalizedPiece) []Position {
@@ -38,6 +34,10 @@ func (p PiecePositions) HasPosition(color Color) bool {
 		}
 	}
 	return false
+}
+
+func (p PiecePositions) HasPiecePosition(piece Piece, pos Position) bool {
+	return len(p[piece.Color()][piece.ToNormalizedPiece()]) != 0
 }
 
 func (p PiecePositions) CountPositionsForColor(color Color) int {
@@ -107,14 +107,70 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 	return pieces
 }
 
-func (p PiecePositions) Remove(c Color, piece NormalizedPiece, removePos Position) {
+func (p PiecePositions) AddPosition(piece Piece, pos Position) {
+	pieces := p[piece.Color()]
+	normalizedPiece := piece.ToNormalizedPiece()
+	pieces[normalizedPiece] = append(pieces[normalizedPiece], pos)
+}
+func (p PiecePositions) AddPosition_Immutable(piece Piece, newPos Position) PiecePositions {
+	fmt.Println("adding", piece, newPos)
+	result := make([][][]Position, 2)
+	for _, color := range Colors {
+		if color != piece.Color() {
+			result[color] = p[color]
+			continue
+		}
+		result[color] = make([][]Position, NumberOfNormalizedPieces)
+		for p, positions := range p[color] {
+			if NormalizedPiece(p) != piece.ToNormalizedPiece() {
+				result[color][p] = positions
+				continue
+			}
+			result[color][p] = make([]Position, len(positions)+1)
+			for i, pos := range positions {
+				result[color][p][i] = pos
+			}
+			result[color][p][len(positions)] = newPos
+		}
+	}
+	return result
+}
+
+func (p PiecePositions) RemovePosition(piece Piece, removePos Position) {
 	result := []Position{}
-	for _, pos := range p[c][piece] {
+	for _, pos := range p[piece.Color()][piece.ToNormalizedPiece()] {
 		if pos != removePos {
 			result = append(result, pos)
 		}
 	}
-	p[c][piece] = result
+	p[piece.Color()][piece] = result
+}
+
+func (p PiecePositions) Remove_Immutable(piece Piece, removePos Position) PiecePositions {
+	result := make([][][]Position, 2)
+	for _, color := range Colors {
+		if color != piece.Color() {
+			result[color] = p[color]
+			continue
+		}
+		result[color] = make([][]Position, NumberOfNormalizedPieces)
+		for p, positions := range p[color] {
+			if NormalizedPiece(p) != piece.ToNormalizedPiece() {
+				result[color][p] = positions
+				continue
+			}
+			result[color][p] = make([]Position, len(positions)-1)
+			i := 0
+			for _, pos := range positions {
+				if pos == removePos {
+					continue
+				}
+				result[color][p][i] = pos
+				i++
+			}
+		}
+	}
+	return result
 }
 
 func (p PiecePositions) move(c Color, piece NormalizedPiece, from, to Position) {

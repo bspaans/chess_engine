@@ -54,13 +54,10 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 	result := []*Move{}
 	for _, positions := range pieces[color.Opposite()] {
 		for _, pos := range positions {
-			for attackingPiece, positions := range a[pos][color] {
+			for piece, positions := range a[pos][color] {
 				for _, fromPos := range positions {
 					move := NewMove(fromPos, pos)
-					// Handle attacks that come with promotion
-					for _, m := range move.HandlePromotion(NormalizedPiece(attackingPiece)) {
-						result = append(result, m)
-					}
+					result = move.ExpandPromotions(result, NormalizedPiece(piece))
 				}
 			}
 		}
@@ -74,10 +71,7 @@ func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 	for piece, positions := range a[pos][color] {
 		for _, fromPos := range positions {
 			move := NewMove(fromPos, pos)
-			// Handle attacks that come with promotion
-			for _, m := range move.HandlePromotion(NormalizedPiece(piece)) {
-				result = append(result, m)
-			}
+			result = move.ExpandPromotions(result, NormalizedPiece(piece))
 		}
 	}
 	return result
@@ -168,29 +162,131 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 // ApplyMove returns a new Attacks structure with updated attacks and defenses. Unchanged
 // piece arrays are copied to reduce memory pressure
 func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) Attacks {
-	attacks := NewAttacks()
-	// Copy
-	for i := 0; i < 64; i++ {
-		attacks[i] = a[i]
+
+	// 1. Remove all the old attacks for piece and capturedPiece
+	//
+	// Castling:
+	// We also remove the rook. TODO
+	//
+	// En passant:
+	// We also remove the captured pawn. TODO
+	//
+	// Promotions:
+	// No special case.
+	attacks := a.RemovePiece_Immutable(piece, move.From)
+	if capturedPiece != NoPiece {
+		attacks = attacks.RemovePiece_Immutable(capturedPiece, move.To)
 	}
 
-	// Remove all the old positions for piece and capturedPiece
-	attacks = attacks.RemovePiece(piece, move.From)
-	attacks = attacks.RemovePiece(capturedPiece, move.To)
+	// 2. Now that the piece has moved, the pieces that were previously blocked
+	// by it potentially get some additional attack vectors so we should update
+	// our copy. The code below gets all the pieces looking at move.From and
+	// continues their path, marking positions on the way.
+	//
+	// Castling:
+	// We don't have to do anything extra for castling, because the corners of
+	// the board are a special case from which you can never block another
+	// piece.
+	//
+	// En passant:
+	// We need to do the same for the captured pawn, because it leaves behind a hole. TODO
+	//
+	// Promotions:
+	// Promotions are also not affected.
+	//
+	for color, piecePositions := range attacks[move.From] {
+		for piece, positions := range piecePositions {
+			// Not relevant for Pawns and Knights and King
+			if !NormalizedPiece(piece).IsRayPiece() {
+				continue
+			}
+			for _, fromPos := range positions {
+				vector := NewMove(move.From, fromPos).Vector().Normalize()
+				pos := vector.FromPosition(move.From)
+				running := true
+				for pos >= 0 && pos < 64 && running {
+					if board.IsEmpty(pos) {
+						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+					} else if board.IsOpposingPiece(pos, Color(color)) {
+						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+						running = board[pos].ToNormalizedPiece() == King
+					} else {
+						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+						running = false
+					}
+					pos = vector.FromPosition(pos)
+				}
+			}
+		}
+	}
 
-	// Update vectors for all the pieces that have access to the square
-	// that the piece is moving from. TODO: special cases for castling and en-passant?
+	// 3. The piece has moved, which might block some other pieces.
+	// The code below follows the paths from the square and removes pieces that
+	// are now blocked from attacking a particular square.
+	//
+	// Castling:
+	// The only moves you can block on the back rank are from pieces that are
+	// also on the back rank, since there can't be anything between the king
+	// and the rook, that only leaves positions between the king and the other
+	// edge of the board, but the king move is already covered in the normal
+	// case so we don't have to do anything.
+	//
+	// En passant:
+	// Normal case applies.
+	//
+	// Promotions:
+	// Normal case applies.
+	for color, piecePositions := range attacks[move.To] {
+		for piece, positions := range piecePositions {
+			// Not relevant for Pawns and Knights and King
+			if !NormalizedPiece(piece).IsRayPiece() {
+				continue
+			}
+			for _, fromPos := range positions {
+				vector := NewMove(move.To, fromPos).Vector().Normalize()
+				pos := vector.FromPosition(move.To)
+				running := true
+				for pos >= 0 && pos < 64 && running {
+					if a[pos].HasPiecePosition(NormalizedPiece(piece).ToPiece(Color(color)), fromPos) {
+						attacks[pos] = attacks[pos].Remove_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+					} else {
+						running = false
+					}
+					pos = vector.FromPosition(pos)
+				}
+			}
+		}
+	}
 
-	// Update vectors for all the pieces that have access to the square
-	// that the piece is moving to. TODO: special cases for castling and en-passant?
-
-	// Add the new piece; TODO: handle promotions?
+	// 4. Add all the attacks for the new piece
+	//
+	// Castling:
+	// Also add the rook
+	//
+	// En passant:
+	// Normal case applies.
+	//
+	// Promotions:
+	// Add the new piece instead of the pawn
 	attacks.AddPiece(piece, move.To, board)
 	return attacks
 }
 
-// Removes all reference to piece's attacks and defenses. NB. Doesn't update
+// Removes all references to piece's attacks and defenses. NB. Doesn't update
 // vectors for other pieces; see ApplyMove for that.
-func (a Attacks) RemovePiece(piece Piece, pos Position) Attacks {
-	return a
+func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
+	attacks := make([]PiecePositions, 64)
+	// Copy
+	for i := 0; i < 64; i++ {
+		attacks[i] = a[i]
+	}
+	for _, line := range AttackVectors[piece][pos] {
+		for _, toPos := range line {
+			if a[toPos].HasPiecePosition(piece, pos) {
+
+				attacks[toPos] = a[toPos].Remove_Immutable(piece, pos)
+			}
+		}
+	}
+	return attacks
 }
