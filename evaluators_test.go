@@ -230,13 +230,14 @@ func Test_TempoEvaluator(t *testing.T) {
 func Benchmark_Eval(t *testing.B) {
 
 	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-	unit, err := ParseFEN(fen)
+	game, err := ParseFEN(fen)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.ResetTimer()
+	unit := Evaluators([]Evaluator{SpaceEvaluator, NaiveMaterialEvaluator, TempoEvaluator, PawnStructureEvaluator, MobilityEvaluator})
 	for i := 0; i < t.N; i++ {
-		unit.ApplyMove(NewMove(E2, E4))
-		unit.Score = nil
+		unit.Eval(game)
+		game.Score = nil
 	}
 }

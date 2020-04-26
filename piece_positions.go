@@ -30,11 +30,22 @@ func (p PiecePositions) GetKingPos(color Color) Position {
 	return p[color][King][0]
 }
 
+// This method creates a new PiecePositions representing the attacks and
+// defences after applying the given move. The arrays for unchanged pieces are
+// copied so that we don't needlessly allocate memory.
 func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiece NormalizedPiece) PiecePositions {
 	pieces := NewPiecePositions()
 	for color, _ := range pieces {
 		for pieceIx, oldPositions := range p[color] {
+
 			piece := NormalizedPiece(pieceIx)
+			if (Color(color) == c && piece != movingPiece) || (Color(color) != c && piece != capturedPiece) {
+				pieces[color][piece] = oldPositions
+				continue
+			} else {
+				pieces[color][piece] = []Position{}
+			}
+
 			for _, pos := range oldPositions {
 				if Color(color) == c && piece == movingPiece && pos == move.From {
 					// This is the piece that is moving and we need to replace its
@@ -43,9 +54,6 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 					// we need to remove the pawn instead, and add a new piece.
 					if move.Promote == NoPiece {
 						pieces[color][piece] = append(pieces[color][piece], move.To)
-					} else {
-						normPromote := move.Promote.ToNormalizedPiece()
-						pieces[c][normPromote] = append(pieces[c][normPromote], move.To)
 					}
 				} else if Color(color) != c && piece == capturedPiece && pos == move.To {
 					// Skip captured pieces
@@ -57,6 +65,12 @@ func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiec
 			}
 		}
 	}
+	// Handle promote
+	if move.Promote != NoPiece {
+		normPromote := move.Promote.ToNormalizedPiece()
+		pieces[c][normPromote] = append(pieces[c][normPromote], move.To)
+	}
+
 	// There is another special case for castling, because now we also
 	// need to move the rook's position.
 	if movingPiece == King && c == Black {
