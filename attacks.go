@@ -104,26 +104,20 @@ func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 // Adds a piece into the Attacks "database". Calculates all the attacks
 // that are possible for this piece and adds the appropriate vectors
 func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
-	if piece.ToNormalizedPiece() == Pawn {
-		for _, toPos := range PawnAttacks[piece.Color()][pos] {
-			a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-		}
-	} else {
-		for _, line := range MoveVectors[piece][pos] {
-			for _, toPos := range line {
-				if board.IsEmpty(toPos) {
-					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-				} else if board.IsOpposingPiece(toPos, piece.Color()) {
-					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-					// squares behind the king are also attacked
-					if board[toPos].ToNormalizedPiece() != King {
-						break
-					}
-				} else {
-					// Pieces defend their own pieces
-					a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+	for _, line := range AttackVectors[piece][pos] {
+		for _, toPos := range line {
+			if board.IsEmpty(toPos) {
+				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+			} else if board.IsOpposingPiece(toPos, piece.Color()) {
+				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+				// squares behind the king are also attacked
+				if board[toPos].ToNormalizedPiece() != King {
 					break
 				}
+			} else {
+				// Pieces defend their own pieces
+				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+				break
 			}
 		}
 	}
