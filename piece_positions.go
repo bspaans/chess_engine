@@ -30,6 +30,24 @@ func (p PiecePositions) GetKingPos(color Color) Position {
 	return p[color][King][0]
 }
 
+// Returns whether or not @color has any positions
+func (p PiecePositions) HasPosition(color Color) bool {
+	for _, positions := range p[color] {
+		if len(positions) != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (p PiecePositions) CountPositionsForColor(color Color) int {
+	result := 0
+	for _, positions := range p[color] {
+		result += len(positions)
+	}
+	return result
+}
+
 // This method creates a new PiecePositions representing the piece positions
 // after applying the given move. The arrays for unchanged pieces are copied so
 // that we don't needlessly allocate memory.

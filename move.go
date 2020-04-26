@@ -26,7 +26,7 @@ func (m Move) String() string {
 	return fmt.Sprintf("%v%v%v", m.From, m.To, m.Promote)
 }
 
-func (m *Move) ToPromotions() []*Move {
+func (m *Move) toPromotions() []*Move {
 	rank := m.To.GetRank()
 	if rank == '1' || rank == '8' {
 		color := White
@@ -40,7 +40,14 @@ func (m *Move) ToPromotions() []*Move {
 		}
 		return result
 	}
-	return nil
+	return []*Move{m}
+}
+
+func (m *Move) HandlePromotion(piece NormalizedPiece) []*Move {
+	if piece == Pawn {
+		return m.toPromotions()
+	}
+	return []*Move{m}
 }
 
 func (m *Move) Vector() Vector {

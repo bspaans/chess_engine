@@ -126,14 +126,14 @@ func MobilityEvaluator(f *Game) Score {
 
 func SpaceEvaluator(f *Game) Score {
 	score := 0.0
-	for pos, pieceVectors := range f.Attacks {
-		for _, pieceVector := range pieceVectors {
-			if pos < 32 && pieceVector.Piece.Color() == Black {
-				// Count black pieces in white's halve
-				score -= 0.10
-			} else if pos >= 32 && pieceVector.Piece.Color() == White {
-				// Count white pieces in black's halve
-				score += 0.10
+	for pos, piecePositions := range f.Attacks {
+		if pos < 32 {
+			for _, positions := range piecePositions[Black] {
+				score = score - (0.10 * float64(len(positions)))
+			}
+		} else if pos >= 32 {
+			for _, positions := range piecePositions[White] {
+				score = score + (0.10 * float64(len(positions)))
 			}
 		}
 	}

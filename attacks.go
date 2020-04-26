@@ -12,14 +12,16 @@ func NewPieceVector(piece Piece, pos, toPos Position) PieceVector {
 	}
 }
 
-// For each square keeps track of which pieces are
-// attacking it from where.
-type Attacks [][]PieceVector
+// Another representation of the board that keeps track of which pieces are
+// attacking (or defending) it from where.  Attacks is indexed like this: e.g.
+// Attacks[E4][White][Pawn] to get all the white pawns that control the e4
+// square.
+type Attacks []PiecePositions
 
 func NewAttacks() Attacks {
-	attacks := make([][]PieceVector, 64)
+	attacks := make([]PiecePositions, 64)
 	for i := 0; i < 64; i++ {
-		attacks[i] = []PieceVector{}
+		attacks[i] = NewPiecePositions()
 	}
 	return attacks
 }
@@ -52,22 +54,12 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 	result := []*Move{}
 	for _, positions := range pieces[color.Opposite()] {
 		for _, pos := range positions {
-			for _, pieceVector := range a[pos] {
-				if pieceVector.Color() == color {
-					fromPos := pieceVector.Vector.FromPosition(pos)
+			for attackingPiece, positions := range a[pos][color] {
+				for _, fromPos := range positions {
 					move := NewMove(fromPos, pos)
 					// Handle attacks that come with promotion
-					if pieceVector.Piece.ToNormalizedPiece() == Pawn {
-						promotions := move.ToPromotions()
-						if promotions == nil {
-							result = append(result, move)
-						} else {
-							for _, m := range promotions {
-								result = append(result, m)
-							}
-						}
-					} else {
-						result = append(result, move)
+					for _, m := range move.HandlePromotion(NormalizedPiece(attackingPiece)) {
+						result = append(result, m)
 					}
 				}
 			}
@@ -79,22 +71,12 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 // Get the attacks by @color on @square
 func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 	result := []*Move{}
-	for _, pieceVector := range a[pos] {
-		if pieceVector.Color() == color {
-			fromPos := pieceVector.Vector.FromPosition(pos)
+	for piece, positions := range a[pos][color] {
+		for _, fromPos := range positions {
 			move := NewMove(fromPos, pos)
 			// Handle attacks that come with promotion
-			if pieceVector.Piece.ToNormalizedPiece() == Pawn {
-				promotions := move.ToPromotions()
-				if promotions == nil {
-					result = append(result, move)
-				} else {
-					for _, m := range promotions {
-						result = append(result, m)
-					}
-				}
-			} else {
-				result = append(result, move)
+			for _, m := range move.HandlePromotion(NormalizedPiece(piece)) {
+				result = append(result, m)
 			}
 		}
 	}
@@ -104,19 +86,21 @@ func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 // Adds a piece into the Attacks "database". Calculates all the attacks
 // that are possible for this piece and adds the appropriate vectors
 func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
+	if piece == NoPiece {
+		return
+	}
 	for _, line := range AttackVectors[piece][pos] {
 		for _, toPos := range line {
 			if board.IsEmpty(toPos) {
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+				a[toPos].AddPosition(piece, pos)
 			} else if board.IsOpposingPiece(toPos, piece.Color()) {
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
-				// squares behind the king are also attacked
+				a[toPos].AddPosition(piece, pos)
 				if board[toPos].ToNormalizedPiece() != King {
 					break
 				}
 			} else {
 				// Pieces defend their own pieces
-				a[toPos] = append(a[toPos], NewPieceVector(piece, pos, toPos))
+				a[toPos].AddPosition(piece, pos)
 				break
 			}
 		}
@@ -125,8 +109,8 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 
 // Whether or not @color attacks the @square
 func (a Attacks) AttacksSquare(color Color, square Position) bool {
-	for _, pieceVectors := range a[square] {
-		if pieceVectors.Piece.Color() == color {
+	for _, positions := range a[square][color] {
+		if len(positions) > 0 {
 			return true
 		}
 	}
@@ -135,12 +119,11 @@ func (a Attacks) AttacksSquare(color Color, square Position) bool {
 
 // Whether or not @color attacks the @square with a ray piece
 func (a Attacks) AttacksSquareWithRayPiece(color Color, square Position) bool {
-	for _, pieceVectors := range a[square] {
-		if pieceVectors.Piece.Color() == color {
-			normPiece := pieceVectors.Piece.ToNormalizedPiece()
-			if normPiece == Pawn || normPiece == Knight {
-				continue
-			}
+	for piece, positions := range a[square][color] {
+		if NormalizedPiece(piece) == Pawn || NormalizedPiece(piece) == Knight {
+			continue
+		}
+		if len(positions) > 0 {
 			return true
 		}
 	}
@@ -162,15 +145,16 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 			} else if board.IsOpposingPiece(pos, color) {
 				break
 			} else {
-				for _, pieceVector := range a[pos] {
-					if pieceVector.Piece.Color() != color {
-						normPiece := pieceVector.Piece.ToNormalizedPiece()
-						if normPiece == Pawn || normPiece == Knight {
-							continue
-						}
-						tmpMove := NewMove(pos, kingPos)
-						if pieceVector.Vector.Normalize() == tmpMove.Vector().Normalize() {
-							result[pos] = append(result[pos], pieceVector.Vector.FromPosition(pos))
+				pieceVector := NewMove(pos, kingPos).Vector().Normalize()
+				for piece, positions := range a[pos][color.Opposite()] {
+					normPiece := NormalizedPiece(piece)
+					if normPiece == Pawn || normPiece == Knight {
+						continue
+					}
+					for _, attackerPos := range positions {
+						attackVector := NewMove(attackerPos, kingPos).Vector().Normalize()
+						if pieceVector == attackVector {
+							result[pos] = append(result[pos], attackerPos)
 						}
 					}
 				}
@@ -191,5 +175,22 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) 
 	}
 
 	// Remove all the old positions for piece and capturedPiece
-	return NewAttacks()
+	attacks = attacks.RemovePiece(piece, move.From)
+	attacks = attacks.RemovePiece(capturedPiece, move.To)
+
+	// Update vectors for all the pieces that have access to the square
+	// that the piece is moving from. TODO: special cases for castling and en-passant?
+
+	// Update vectors for all the pieces that have access to the square
+	// that the piece is moving to. TODO: special cases for castling and en-passant?
+
+	// Add the new piece; TODO: handle promotions?
+	attacks.AddPiece(piece, move.To, board)
+	return attacks
+}
+
+// Removes all reference to piece's attacks and defenses. NB. Doesn't update
+// vectors for other pieces; see ApplyMove for that.
+func (a Attacks) RemovePiece(piece Piece, pos Position) Attacks {
+	return a
 }

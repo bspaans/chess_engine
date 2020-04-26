@@ -233,6 +233,7 @@ func PositionFromFileRank(f File, r Rank) Position {
 }
 
 func init() {
+	// TODO replace maps with arrays
 	if false {
 		formatPos := func(p Position) string {
 			return strings.ToUpper(p.String())

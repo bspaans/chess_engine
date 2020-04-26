@@ -14,15 +14,14 @@ func Test_Attacks(t *testing.T) {
 
 	positions := PieceMoves[WhiteQueen][E4]
 	for _, pos := range positions {
-		if len(unit[pos]) != 1 {
-			t.Errorf("Expecting an attack on %s", pos)
+		if unit[pos].CountPositionsForColor(White) != 1 {
+			t.Errorf("Expecting an attack on %s, got %d", pos, len(unit[pos]))
 		}
-		if unit[pos][0].Piece != WhiteQueen {
+		if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector")
 		}
-		vector := NewMove(E4, pos).Vector()
-		if unit[pos][0].Vector != vector {
-			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		if unit[pos][White][Queen][0] != E4 {
+			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
 		}
 	}
 }
@@ -38,15 +37,14 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 
 	positions := PieceMoves[WhiteQueen][E4]
 	for _, pos := range positions {
-		if len(unit[pos]) != 1 {
+		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if unit[pos][0].Piece != WhiteQueen {
+		if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector")
 		}
-		vector := NewMove(E4, pos).Vector()
-		if unit[pos][0].Vector != vector {
-			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		if unit[pos][White][Queen][0] != E4 {
+			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
 		}
 	}
 }
@@ -63,20 +61,19 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 	positions := PieceMoves[WhiteQueen][E4]
 	for _, pos := range positions {
 		if pos == E1 {
-			if len(unit[pos]) != 0 {
+			if unit[pos].CountPositionsForColor(White) != 0 {
 				t.Errorf("Expecting no attacks on %s", pos)
 			}
 			continue
 		}
-		if len(unit[pos]) != 1 {
+		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if unit[pos][0].Piece != WhiteQueen {
+		if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector")
 		}
-		vector := NewMove(E4, pos).Vector()
-		if unit[pos][0].Vector != vector {
-			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		if unit[pos][White][Queen][0] != E4 {
+			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
 		}
 	}
 }
@@ -91,15 +88,14 @@ func Test_Attacks_white_pawn(t *testing.T) {
 
 	positions := PawnAttacks[White][E4]
 	for _, pos := range positions {
-		if len(unit[pos]) != 1 {
+		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if unit[pos][0].Piece != WhitePawn {
+		if len(unit[pos][White][Pawn]) != 1 {
 			t.Errorf("Expecting white pawn in piece vector")
 		}
-		vector := NewMove(E4, pos).Vector()
-		if unit[pos][0].Vector != vector {
-			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		if unit[pos][White][Pawn][0] != E4 {
+			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
 		}
 	}
 }
@@ -113,16 +109,61 @@ func Test_Attacks_black_pawn(t *testing.T) {
 
 	positions := PawnAttacks[Black][E3]
 	for _, pos := range positions {
-		if len(unit[pos]) != 1 {
+		if unit[pos].CountPositionsForColor(Black) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if unit[pos][0].Piece != BlackPawn {
-			t.Errorf("Expecting white pawn in piece vector")
+		if len(unit[pos][Black][Pawn]) != 1 {
+			t.Errorf("Expecting black pawn in piece vector")
 		}
-		vector := NewMove(E3, pos).Vector()
-		if unit[pos][0].Vector != vector {
-			t.Errorf("Expecting vector %v got %v", vector, unit[pos][0])
+		if unit[pos][Black][Pawn][0] != E3 {
+			t.Errorf("Expecting e3 got %s", unit[pos][Black][Pawn][0])
 		}
+	}
+}
+func Test_GetAttacksOnSquare(t *testing.T) {
+
+	board := NewBoard()
+	board[E5] = BlackPawn
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackPawn, E5)
+	unit := NewAttacks()
+
+	unit.AddPiece(BlackPawn, E5, board)
+	attacks := unit.GetAttacksOnSquare(Black, D4)
+
+	if unit[D4].CountPositionsForColor(Black) != 1 {
+		t.Errorf("Supposed to have an attack")
+	}
+	if len(attacks) != 1 {
+		t.Errorf("Expecting one attack, got %v", attacks)
+	}
+	if attacks[0].From != E5 {
+		t.Errorf("Expecting attack from e5, got %v", attacks)
+	}
+}
+
+func Test_GetAttacks(t *testing.T) {
+
+	board := NewBoard()
+	board[D4] = WhiteKnight
+	board[E5] = BlackPawn
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackPawn, E5)
+	pieces.AddPosition(WhiteKnight, D4)
+	unit := NewAttacks()
+
+	unit.AddPiece(BlackPawn, E5, board)
+	unit.AddPiece(WhiteKnight, D4, board)
+	attacks := unit.GetAttacks(Black, pieces)
+
+	if unit[D4].CountPositionsForColor(Black) != 1 {
+		t.Errorf("Supposed to have an attack")
+	}
+	if len(attacks) != 1 {
+		t.Errorf("Expecting one attack, got %v", attacks)
+	}
+	if attacks[0].From != E5 {
+		t.Errorf("Expecting attack from e5, got %v", attacks)
 	}
 }
 
@@ -139,6 +180,28 @@ func Test_Attacks_get_checks(t *testing.T) {
 	}
 	checks := unit.GetChecks(Black, pieces)
 	if len(checks) != 1 {
-		t.Errorf("Supposed to have a check")
+		t.Errorf("Supposed to have a check, got %v", checks)
+	}
+}
+
+func Test_Attacks_GetPinnedPieces(t *testing.T) {
+	board := NewBoard()
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackKing, E1)
+	pieces.AddPosition(BlackPawn, D2)
+	pieces.AddPosition(WhiteQueen, B4)
+
+	board[E1] = BlackKing
+	board[D2] = BlackPawn
+	board[B4] = WhiteQueen
+
+	unit := NewAttacks()
+	for _, pos := range []Position{E1, D2, B4} {
+		unit.AddPiece(board[pos], pos, board)
+	}
+
+	pinned := unit.GetPinnedPieces(board, Black, E1)
+	if len(pinned) != 1 {
+		t.Errorf("Supposed to have a pinned piece")
 	}
 }

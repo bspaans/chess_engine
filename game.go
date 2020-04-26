@@ -278,13 +278,8 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 			for _, targetPos := range line {
 				if f.Board[targetPos] == NoPiece {
 					move := NewMove(pawnPos, targetPos)
-					promotions := move.ToPromotions()
-					if promotions == nil {
-						result = append(result, move)
-					} else {
-						for _, m := range promotions {
-							result = append(result, m)
-						}
+					for _, m := range move.HandlePromotion(Pawn) {
+						result = append(result, m)
 					}
 				} else {
 					break

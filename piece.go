@@ -110,4 +110,6 @@ const (
 )
 
 var NormalizedPieces = []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King}
+var Pieces = []Piece{BlackPawn, BlackKnight, BlackBishop, BlackRook, BlackQueen, BlackKing, WhitePawn, WhiteKnight, WhiteBishop, WhiteRook, WhiteQueen, WhiteKing}
 var NumberOfNormalizedPieces = 6
+var NumberOfPieces = 12
