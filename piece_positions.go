@@ -44,7 +44,12 @@ func (p PiecePositions) Control() int {
 }
 
 func (p PiecePositions) HasPiecePosition(piece Piece, pos Position) bool {
-	return len(p[piece.Color()][piece.ToNormalizedPiece()]) != 0
+	for _, position := range p[piece.Color()][piece.ToNormalizedPiece()] {
+		if pos == position {
+			return true
+		}
+	}
+	return false
 }
 
 func (p PiecePositions) CountPositionsForColor(color Color) int {

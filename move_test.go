@@ -43,4 +43,31 @@ func Test_FollowVectorUntilEdgeOfBoard(t *testing.T) {
 	checkVector(t, 1, -1, E4, []Position{F3, G2, H1})
 	checkVector(t, 1, -1, F4, []Position{G3, H2})
 	checkVector(t, 1, -1, H4, []Position{})
+	checkVector(t, -1, 1, B2, []Position{A3})
+	checkVector(t, 1, 1, G2, []Position{H3})
+	checkVector(t, 1, 1, F6, []Position{G7, H8})
+}
+
+func checkNormalize(t *testing.T, diffFile, diffRank, eFile, eRank int8) {
+	unit := NewVector(diffFile, diffRank).Normalize()
+	if unit.DiffFile != eFile {
+		t.Errorf("Expecting %v got %v file", eFile, unit.DiffFile)
+	}
+	if unit.DiffRank != eRank {
+		t.Errorf("Expecting %v got %v rank", eRank, unit.DiffRank)
+	}
+}
+
+func Test_NormalizeVector(t *testing.T) {
+	checkNormalize(t, 1, 0, 1, 0)
+	checkNormalize(t, 0, 1, 0, 1)
+	checkNormalize(t, 4, 0, 1, 0)
+	checkNormalize(t, -4, 0, -1, 0)
+	checkNormalize(t, 0, 4, 0, 1)
+	checkNormalize(t, 0, -4, 0, -1)
+	checkNormalize(t, -4, 0, -1, 0)
+	checkNormalize(t, -4, -4, -1, -1)
+	checkNormalize(t, -4, 4, -1, 1)
+	checkNormalize(t, 4, -4, 1, -1)
+	checkNormalize(t, 4, 4, 1, 1)
 }

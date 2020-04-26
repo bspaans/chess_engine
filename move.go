@@ -178,16 +178,19 @@ func (v Vector) FollowVectorUntilEdgeOfBoard(pos Position) []Position {
 	}
 	file := (pos % 8)
 	lastPos := Position(0)
+	maxHorizontal := Position(0)
 	if v.DiffFile == -1 {
-		lastPos = pos + file*diff
+		maxHorizontal = file
 	} else {
-		lastPos = pos + (7-file)*diff
+		maxHorizontal = 7 - file
 	}
+	lastPos = pos + maxHorizontal*diff
 	if lastPos == pos {
 		return result
 	}
 	pos += diff
-	for pos >= 0 && pos < 64 {
+	for pos >= 0 && pos < 64 && maxHorizontal > 0 {
+		maxHorizontal--
 		result = append(result, pos)
 		pos += diff
 		if pos == lastPos && pos >= 0 && pos < 64 {

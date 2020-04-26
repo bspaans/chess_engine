@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -215,17 +216,22 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 			}
 			for _, fromPos := range positions {
 				vector := NewMove(move.From, fromPos).Vector().Normalize()
+				fmt.Println("Vector", move.From, fromPos, vector, vector.FollowVectorUntilEdgeOfBoard(move.From))
 				for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
 
 					if board.IsEmpty(pos) {
+						fmt.Println("[1] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 						continue
 					} else if board.IsOpposingPiece(pos, Color(color)) {
+						fmt.Println("[2] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 						if board[pos].ToNormalizedPiece() == King {
 							continue
 						}
+						break
 					}
+					fmt.Println("[3] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 					attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 					break
 				}
@@ -252,6 +258,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 							if board[pos].ToNormalizedPiece() == King {
 								continue
 							}
+							break
 						}
 						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 						break
@@ -289,8 +296,11 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 				}
 				for _, fromPos := range positions {
 					vector := NewMove(move.To, fromPos).Vector().Normalize()
+					fmt.Println("Vector", move.To, fromPos, vector)
+					fmt.Println(attacks[move.To])
 					for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
 						if attacks[pos].HasPiecePosition(NormalizedPiece(piece).ToPiece(Color(color)), fromPos) {
+							fmt.Println("Remove from ", pos)
 							attacks[pos] = attacks[pos].Remove_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
 							continue
 						}
@@ -338,6 +348,7 @@ func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
 		for _, toPos := range line {
 			if attacks[toPos].HasPiecePosition(piece, pos) {
 
+				fmt.Println("Removeing", piece, pos, "from", toPos)
 				attacks[toPos] = attacks[toPos].Remove_Immutable(piece, pos)
 			}
 		}
