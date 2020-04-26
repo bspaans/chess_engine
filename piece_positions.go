@@ -125,7 +125,7 @@ func (p PiecePositions) AddPosition(piece Piece, pos Position) {
 	pieces[normalizedPiece] = append(pieces[normalizedPiece], pos)
 }
 func (p PiecePositions) AddPosition_Immutable(piece Piece, newPos Position) PiecePositions {
-	fmt.Println("adding", piece, newPos)
+	//fmt.Println("adding", piece, newPos)
 	result := make([][][]Position, 2)
 	for _, color := range Colors {
 		if color != piece.Color() {
@@ -143,7 +143,7 @@ func (p PiecePositions) AddPosition_Immutable(piece Piece, newPos Position) Piec
 				result[color][p][i] = pos
 			}
 			result[color][p][len(positions)] = newPos
-			fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
+			//fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
 		}
 	}
 	return result
@@ -161,7 +161,7 @@ func (p PiecePositions) RemovePosition(piece Piece, removePos Position) {
 
 func (p PiecePositions) Remove_Immutable(piece Piece, removePos Position) PiecePositions {
 	result := make([][][]Position, 2)
-	fmt.Println("removing", piece, removePos)
+	//fmt.Println("removing", piece, removePos)
 	for _, color := range Colors {
 		if color != piece.Color() {
 			result[color] = p[color]
@@ -186,7 +186,7 @@ func (p PiecePositions) Remove_Immutable(piece Piece, removePos Position) PieceP
 				result[color][p][i] = pos
 				i++
 			}
-			fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
+			//fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
 		}
 	}
 	return result
