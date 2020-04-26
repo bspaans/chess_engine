@@ -131,3 +131,6 @@ func (p NormalizedPiece) ToPiece(color Color) Piece {
 	}
 	return Piece(p + 6)
 }
+func (p NormalizedPiece) String() string {
+	return Piece(p).String()
+}

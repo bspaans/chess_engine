@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -486,6 +487,8 @@ func Test_ApplyMove_game(t *testing.T) {
 				t.Fatal(err)
 			}
 			piece := unit.Board[m.From]
+			fmt.Println(unit.Board)
+			fmt.Println("applying move", m)
 			unit = unit.ApplyMove(m)
 
 			if unit.Board[m.From] != NoPiece {

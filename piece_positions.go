@@ -36,6 +36,13 @@ func (p PiecePositions) HasPosition(color Color) bool {
 	return false
 }
 
+func (p PiecePositions) Count() int {
+	return p.CountPositionsForColor(White) + p.CountPositionsForColor(Black)
+}
+func (p PiecePositions) Control() int {
+	return p.CountPositionsForColor(White) - p.CountPositionsForColor(Black)
+}
+
 func (p PiecePositions) HasPiecePosition(piece Piece, pos Position) bool {
 	return len(p[piece.Color()][piece.ToNormalizedPiece()]) != 0
 }
@@ -131,6 +138,7 @@ func (p PiecePositions) AddPosition_Immutable(piece Piece, newPos Position) Piec
 				result[color][p][i] = pos
 			}
 			result[color][p][len(positions)] = newPos
+			fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
 		}
 	}
 	return result
@@ -148,6 +156,7 @@ func (p PiecePositions) RemovePosition(piece Piece, removePos Position) {
 
 func (p PiecePositions) Remove_Immutable(piece Piece, removePos Position) PiecePositions {
 	result := make([][][]Position, 2)
+	fmt.Println("removing", piece, removePos)
 	for _, color := range Colors {
 		if color != piece.Color() {
 			result[color] = p[color]
@@ -165,9 +174,14 @@ func (p PiecePositions) Remove_Immutable(piece Piece, removePos Position) PieceP
 				if pos == removePos {
 					continue
 				}
+				if i >= len(positions)-1 {
+					fmt.Println(positions)
+					panic("Trying to remove a position that is not present")
+				}
 				result[color][p][i] = pos
 				i++
 			}
+			fmt.Println("Changed", Color(color), NormalizedPiece(p).String(), "to", result[color][p])
 		}
 	}
 	return result

@@ -84,7 +84,7 @@ func (m *Move) GetRookCastlesMove(piece Piece) *Move {
 
 // Returns the position of the captured pawn if this is an en passant capture.
 func (m *Move) GetEnPassantCapture(piece Piece, enpassantSquare Position) *Position {
-	if (piece == BlackPawn || piece == WhitePawn) && m.To == enpassantSquare {
+	if (piece == BlackPawn || piece == WhitePawn) && m.To == enpassantSquare && m.From.GetFile() != enpassantSquare.GetFile() {
 		pos := enpassantSquare - 8
 		if piece.Color() == Black {
 			pos = enpassantSquare + 8
@@ -163,4 +163,37 @@ func (v Vector) Normalize() Vector {
 
 func (v Vector) FromPosition(pos Position) Position {
 	return Position(int8(pos) + v.DiffFile + (v.DiffRank * 8))
+}
+
+func (v Vector) FollowVectorUntilEdgeOfBoard(pos Position) []Position {
+	result := []Position{}
+	diff := Position(v.DiffFile + v.DiffRank*8)
+	if v.DiffFile == 0 {
+		pos += diff
+		for pos >= 0 && pos < 64 {
+			result = append(result, pos)
+			pos += diff
+		}
+		return result
+	}
+	file := (pos % 8)
+	lastPos := Position(0)
+	if v.DiffFile == -1 {
+		lastPos = pos + file*diff
+	} else {
+		lastPos = pos + (7-file)*diff
+	}
+	if lastPos == pos {
+		return result
+	}
+	pos += diff
+	for pos >= 0 && pos < 64 {
+		result = append(result, pos)
+		pos += diff
+		if pos == lastPos && pos >= 0 && pos < 64 {
+			result = append(result, pos)
+			break
+		}
+	}
+	return result
 }

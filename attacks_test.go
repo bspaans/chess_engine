@@ -105,6 +105,9 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 	}
 	board.ApplyMove(D3, E3)
 	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board, NoPosition)
+	if len(unit[C3][White][King]) != 0 {
+		t.Errorf("Expecting old king attacks to be removed")
+	}
 	for _, pos := range positions {
 		if pos == E1 || pos == E2 {
 			if unit[pos].CountPositionsForColor(White) > 1 {

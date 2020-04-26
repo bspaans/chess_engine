@@ -269,6 +269,9 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 			// Filtering invalid king move
 
 		} else {
+			if f.Board[attack.From] == NoPiece {
+				panic("Invalid attack, no piece at " + attack.From.String())
+			}
 			result = append(result, attack)
 		}
 	}
@@ -349,6 +352,10 @@ func (f *Game) ApplyMove(move *Move) *Game {
 
 	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
 	movingPiece := board[move.To]
+	if movingPiece == NoPiece {
+		fmt.Println(f.Board)
+		panic("No piece at position " + move.From.String())
+	}
 	normalizedMovingPiece := movingPiece.ToNormalizedPiece()
 
 	if move.Promote != NoPiece {
@@ -356,20 +363,12 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	}
 
 	// Handle castles and en-passant
+	castles := move.GetRookCastlesMove(movingPiece)
+	if castles != nil {
+		board.ApplyMove(castles.From, castles.To)
+	}
 	enpassant := NoPosition
 	switch movingPiece {
-	case BlackKing:
-		if move.From == E8 && move.To == G8 {
-			board.ApplyMove(H8, F8)
-		} else if move.From == E8 && move.To == C8 {
-			board.ApplyMove(A8, D8)
-		}
-	case WhiteKing:
-		if move.From == E1 && move.To == G1 {
-			board.ApplyMove(H1, F1)
-		} else if move.From == E1 && move.To == C1 {
-			board.ApplyMove(A1, D1)
-		}
 	case WhitePawn:
 		if move.From.GetRank() == '2' && move.To.GetRank() == '4' {
 			// Mark the skipped over square as vulnerable
@@ -404,15 +403,18 @@ func (f *Game) ApplyMove(move *Move) *Game {
 
 	result.Board = board
 	result.Pieces = f.Pieces.ApplyMove(f.ToMove, move, normalizedMovingPiece, capturedPiece)
-	if move.To == f.EnPassantVulnerable {
-		if f.ToMove == White {
-			result.Pieces.RemovePosition(BlackPawn, move.To-8)
-		} else {
-			result.Pieces.RemovePosition(WhitePawn, move.To+8)
-		}
+	enpassantCapture := move.GetEnPassantCapture(movingPiece, f.EnPassantVulnerable)
+	if enpassantCapture != nil {
+		result.Pieces.RemovePosition(Pawn.ToPiece(f.ToMove.Opposite()), *enpassantCapture)
 	}
+
 	// TODO: implement ApplyMove in Attacks
-	result.Attacks = NewAttacksFromBoard(board)
+	//result.Attacks = NewAttacksFromBoard(board)
+	//fmt.Println("applying move", move)
+	//fmt.Println(f.Attacks)
+	//fmt.Println(board)
+	result.Attacks = f.Attacks.ApplyMove(move, movingPiece, f.Board[move.To], board, f.EnPassantVulnerable)
+	//fmt.Println(result.Attacks)
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {

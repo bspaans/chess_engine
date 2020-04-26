@@ -1,5 +1,9 @@
 package chess_engine
 
+import (
+	"strconv"
+)
+
 type PieceVector struct {
 	Piece
 	Vector
@@ -169,7 +173,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 	// We also remove the rook.
 	//
 	// En passant:
-	// We also remove the captured pawn. TODO
+	// We also remove the captured pawn.
 	//
 	// Promotions:
 	// No special case.
@@ -180,11 +184,11 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 	}
 	castles := move.GetRookCastlesMove(piece)
 	if castles != nil {
-		attacks = a.RemovePiece_Immutable(Rook.ToPiece(piece.Color()), castles.From)
+		attacks = attacks.RemovePiece_Immutable(Rook.ToPiece(piece.Color()), castles.From)
 	}
 	enpassant := move.GetEnPassantCapture(piece, enpassantSquare)
 	if enpassant != nil {
-		attacks = a.RemovePiece_Immutable(Pawn.ToPiece(piece.OppositeColor()), *enpassant)
+		attacks = attacks.RemovePiece_Immutable(Pawn.ToPiece(piece.OppositeColor()), *enpassant)
 	}
 
 	// 2. Now that the piece has moved, the pieces that were previously blocked
@@ -198,7 +202,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 	// piece.
 	//
 	// En passant:
-	// We need to do the same for the captured pawn, because it leaves behind a hole. TODO
+	// We need to do the same for the captured pawn, because it leaves behind a hole.
 	//
 	// Promotions:
 	// Promotions are also not affected.
@@ -211,19 +215,19 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 			}
 			for _, fromPos := range positions {
 				vector := NewMove(move.From, fromPos).Vector().Normalize()
-				pos := vector.FromPosition(move.From)
-				running := true
-				for pos >= 0 && pos < 64 && running {
+				for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
+
 					if board.IsEmpty(pos) {
 						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+						continue
 					} else if board.IsOpposingPiece(pos, Color(color)) {
 						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						running = board[pos].ToNormalizedPiece() == King
-					} else {
-						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						running = false
+						if board[pos].ToNormalizedPiece() == King {
+							continue
+						}
 					}
-					pos = vector.FromPosition(pos)
+					attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+					break
 				}
 			}
 		}
@@ -238,19 +242,20 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 				}
 				for _, fromPos := range positions {
 					vector := NewMove(*enpassant, fromPos).Vector().Normalize()
-					pos := vector.FromPosition(*enpassant)
-					running := true
-					for pos >= 0 && pos < 64 && running {
+					for _, pos := range vector.FollowVectorUntilEdgeOfBoard(*enpassant) {
+
 						if board.IsEmpty(pos) {
 							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+							continue
 						} else if board.IsOpposingPiece(pos, Color(color)) {
 							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-							running = board[pos].ToNormalizedPiece() == King
-						} else {
-							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-							running = false
+							if board[pos].ToNormalizedPiece() == King {
+								continue
+							}
 						}
-						pos = vector.FromPosition(pos)
+						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+						break
+
 					}
 				}
 			}
@@ -259,7 +264,8 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 
 	// 3. The piece has moved, which might block some other pieces.
 	// The code below follows the paths from the square and removes pieces that
-	// are now blocked from reaching it.
+	// are now blocked from reaching it. This only applies if this move wasn't a
+	// capture.
 	//
 	// Castling:
 	// Normal case applies.
@@ -274,23 +280,23 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 	//
 	// Promotions:
 	// Normal case applies.
-	for color, piecePositions := range attacks[move.To] {
-		for piece, positions := range piecePositions {
-			// Not relevant for Pawns and Knights and King
-			if !NormalizedPiece(piece).IsRayPiece() {
-				continue
-			}
-			for _, fromPos := range positions {
-				vector := NewMove(move.To, fromPos).Vector().Normalize()
-				pos := vector.FromPosition(move.To)
-				running := true
-				for pos >= 0 && pos < 64 && running {
-					if a[pos].HasPiecePosition(NormalizedPiece(piece).ToPiece(Color(color)), fromPos) {
-						attacks[pos] = attacks[pos].Remove_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-					} else {
-						running = false
+	if capturedPiece == NoPiece {
+		for color, piecePositions := range attacks[move.To] {
+			for piece, positions := range piecePositions {
+				// Not relevant for Pawns and Knights and King
+				if !NormalizedPiece(piece).IsRayPiece() {
+					continue
+				}
+				for _, fromPos := range positions {
+					vector := NewMove(move.To, fromPos).Vector().Normalize()
+					for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
+						if attacks[pos].HasPiecePosition(NormalizedPiece(piece).ToPiece(Color(color)), fromPos) {
+							attacks[pos] = attacks[pos].Remove_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+							continue
+						}
+						break
+
 					}
-					pos = vector.FromPosition(pos)
 				}
 			}
 		}
@@ -326,13 +332,33 @@ func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
 	for i := 0; i < 64; i++ {
 		attacks[i] = a[i]
 	}
+	//fmt.Println("lookup for", piece, pos)
+	//fmt.Println(Attacks(attacks))
 	for _, line := range AttackVectors[piece][pos] {
 		for _, toPos := range line {
-			if a[toPos].HasPiecePosition(piece, pos) {
+			if attacks[toPos].HasPiecePosition(piece, pos) {
 
-				attacks[toPos] = a[toPos].Remove_Immutable(piece, pos)
+				attacks[toPos] = attacks[toPos].Remove_Immutable(piece, pos)
 			}
 		}
 	}
+	//fmt.Println(Attacks(attacks))
 	return attacks
+}
+
+func (a Attacks) String() string {
+	result := "   +--------------------------------+\n"
+	for rank := 7; rank >= 0; rank-- {
+		result += " " + strconv.Itoa(rank+1) + " |"
+		for file := 0; file <= 7; file++ {
+			result += " " + strconv.Itoa(a[rank*8+file].Control()) + " |"
+		}
+		result += "\n"
+		if rank != 0 {
+			result += "   +--------------------------------+\n"
+		}
+	}
+	result += "   +--------------------------------+\n"
+	result += "     a   b   c   d   e   f   g   h\n"
+	return result
 }
