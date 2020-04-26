@@ -1,18 +1,17 @@
 package chess_engine
 
-// TODO: replace with lists
-// PiecePositions is indexed by colour.
-// e.g. PiecePositions[White] for the white pieces, etc.
-type PiecePositions []map[NormalizedPiece][]Position
+// PiecePositions is a three dimensional array that keeps track of attacks and
+// defences for either side. It is indexed like this: e.g.
+// PiecePositions[White][Pawn] for a list of white pawn positions, etc.
+type PiecePositions [][][]Position
 
 func NewPiecePositions() PiecePositions {
-	p := make([]map[NormalizedPiece][]Position, 2)
-	p[White] = map[NormalizedPiece][]Position{}
-	p[Black] = map[NormalizedPiece][]Position{}
-	for _, color := range []Color{White, Black} {
-		for _, piece := range []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King} {
-			p[color][piece] = []Position{}
-		}
+	p := make([][][]Position, 2)
+	p[White] = make([][]Position, NumberOfNormalizedPieces)
+	p[Black] = make([][]Position, NumberOfNormalizedPieces)
+	for _, piece := range NormalizedPieces {
+		p[White][piece] = []Position{}
+		p[Black][piece] = []Position{}
 	}
 	return p
 }
@@ -34,7 +33,8 @@ func (p PiecePositions) GetKingPos(color Color) Position {
 func (p PiecePositions) ApplyMove(c Color, move *Move, movingPiece, capturedPiece NormalizedPiece) PiecePositions {
 	pieces := NewPiecePositions()
 	for color, _ := range pieces {
-		for piece, oldPositions := range p[color] {
+		for pieceIx, oldPositions := range p[color] {
+			piece := NormalizedPiece(pieceIx)
 			for _, pos := range oldPositions {
 				if Color(color) == c && piece == movingPiece && pos == move.From {
 					// This is the piece that is moving and we need to replace its

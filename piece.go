@@ -1,64 +1,113 @@
 package chess_engine
 
-import "bytes"
-
-type Piece byte
-
-const (
-	NoPiece     Piece = ' '
-	BlackPawn   Piece = 'p'
-	BlackKnight Piece = 'n'
-	BlackBishop Piece = 'b'
-	BlackRook   Piece = 'r'
-	BlackQueen  Piece = 'q'
-	BlackKing   Piece = 'k'
-	WhitePawn   Piece = 'P'
-	WhiteKnight Piece = 'N'
-	WhiteBishop Piece = 'B'
-	WhiteRook   Piece = 'R'
-	WhiteQueen  Piece = 'Q'
-	WhiteKing   Piece = 'K'
+import (
+	"fmt"
+	"strconv"
 )
 
-type NormalizedPiece byte
+type Piece uint8
 
 const (
-	NoNPiece NormalizedPiece = ' '
-	Pawn     NormalizedPiece = 'p'
-	Knight   NormalizedPiece = 'n'
-	Bishop   NormalizedPiece = 'b'
-	Rook     NormalizedPiece = 'r'
-	Queen    NormalizedPiece = 'q'
-	King     NormalizedPiece = 'k'
+	BlackPawn Piece = iota
+	BlackKnight
+	BlackBishop
+	BlackRook
+	BlackQueen
+	BlackKing
+	WhitePawn
+	WhiteKnight
+	WhiteBishop
+	WhiteRook
+	WhiteQueen
+	WhiteKing
+	NoPiece
 )
+
+func ParsePiece(b byte) (Piece, error) {
+	piece, ok := map[byte]Piece{
+		' ': NoPiece,
+		'p': BlackPawn,
+		'n': BlackKnight,
+		'b': BlackBishop,
+		'r': BlackRook,
+		'q': BlackQueen,
+		'k': BlackKing,
+		'P': WhitePawn,
+		'N': WhiteKnight,
+		'B': WhiteBishop,
+		'R': WhiteRook,
+		'Q': WhiteQueen,
+		'K': WhiteKing,
+	}[b]
+	if !ok {
+		return NoPiece, fmt.Errorf("Unknown piece %s", string([]byte{b}))
+	}
+	return piece, nil
+}
 
 func (p Piece) Color() Color {
-	if 'a' <= p && p <= 'z' {
+	if p <= BlackKing {
 		return Black
 	}
-	if 'A' <= p && p <= 'Z' {
+	if p <= WhiteKing {
 		return White
 	}
 	panic("Can't figure out colour of piece " + p.String())
 }
 
 func (p Piece) SetColor(c Color) Piece {
-	pStr := []byte{byte(p)}
 	if c == Black {
-		return Piece(bytes.ToLower(pStr)[0])
+		if p.Color() == White {
+			return Piece(p - 6)
+		}
 	} else {
-		return Piece(bytes.ToUpper(pStr)[0])
+		if p.Color() == Black {
+			return Piece(p + 6)
+		}
 	}
+	return p
 }
 
 func (p Piece) String() string {
-	return string([]byte{byte(p)})
-}
-
-func (p Piece) Normalize() Piece {
-	return Piece(bytes.ToLower([]byte{byte(p)})[0])
+	piece, ok := map[Piece]string{
+		BlackPawn:   "p",
+		BlackKnight: "n",
+		BlackBishop: "b",
+		BlackRook:   "r",
+		BlackQueen:  "q",
+		BlackKing:   "k",
+		WhitePawn:   "P",
+		WhiteKnight: "N",
+		WhiteBishop: "B",
+		WhiteRook:   "R",
+		WhiteQueen:  "Q",
+		WhiteKing:   "K",
+		NoPiece:     " ",
+	}[p]
+	if !ok {
+		panic("unknown piece:" + strconv.Itoa(int(p)))
+	}
+	return piece
 }
 
 func (p Piece) ToNormalizedPiece() NormalizedPiece {
-	return NormalizedPiece(p.Normalize())
+	if p <= BlackKing {
+		return NormalizedPiece(p)
+	}
+	return NormalizedPiece(p - 6)
 }
+
+type NormalizedPiece uint8
+
+const (
+	Pawn NormalizedPiece = iota
+	Knight
+	Bishop
+	Rook
+	Queen
+	King
+	NoNPiece
+)
+
+var NormalizedPieces = []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King}
+var NumberOfNormalizedPieces = 6

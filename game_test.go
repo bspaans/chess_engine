@@ -17,10 +17,10 @@ func Test_ParseFEN(t *testing.T) {
 		t.Errorf("Expecting white to move, got %s", unit.ToMove)
 	}
 	for i := 0; i < 8; i++ {
-		if unit.Board[i+8] != 'P' {
+		if unit.Board[i+8] != WhitePawn {
 			t.Errorf("Expecting pawn at %d, got %b", i+8, unit.Board[i+8])
 		}
-		if unit.Board[i+8*6] != 'p' {
+		if unit.Board[i+8*6] != BlackPawn {
 			t.Errorf("Expecting pawn at %d, got %b", i+8*6, unit.Board[i+8*6])
 		}
 		pawns := unit.Pieces[White][Pawn]
@@ -271,7 +271,7 @@ func Test_ApplyMove_table(t *testing.T) {
 			t.Errorf("Expecting %b at %s", byte(fromPiece), move.To.String())
 		}
 
-		normFromPiece := NormalizedPiece(fromPiece.Normalize())
+		normFromPiece := fromPiece.ToNormalizedPiece()
 		found := false
 		piecePositions := newFEN.Pieces[fromPiece.Color()][normFromPiece]
 		for _, pos := range piecePositions {

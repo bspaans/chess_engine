@@ -89,7 +89,10 @@ func ParseFEN(fenstr string) (*Game, error) {
 		} else {
 			// if we have a piece
 			pos := y*8 + x
-			piece := Piece(forStr[i])
+			piece, err := ParsePiece(forStr[i])
+			if err != nil {
+				return nil, err
+			}
 			fen.Board[pos] = piece
 			fen.Pieces.AddPosition(piece, Position(pos))
 			x++
@@ -447,7 +450,7 @@ func (f *Game) FENString() string {
 				if empty != 0 {
 					forStr += strconv.Itoa(empty)
 				}
-				forStr += string([]byte{byte(f.Board[pos])})
+				forStr += f.Board[pos].String()
 				empty = 0
 			} else {
 				empty += 1

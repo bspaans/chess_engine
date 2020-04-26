@@ -72,7 +72,10 @@ func ParseMove(moveStr string) (*Move, error) {
 	}
 	promote := NoPiece
 	if len(moveStr) == 5 {
-		promote = Piece(moveStr[4])
+		promote, err = ParsePiece(moveStr[4])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse promotion move %s: %s", moveStr, err.Error())
+		}
 	}
 	return &Move{
 		From:    from,

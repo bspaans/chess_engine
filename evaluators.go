@@ -19,10 +19,12 @@ func NaiveMaterialEvaluator(f *Game) Score {
 		Rook:   5.0,
 		Queen:  9.0,
 	}
-	for piece, positions := range f.Pieces[White] {
+	for pieceIx, positions := range f.Pieces[White] {
+		piece := NormalizedPiece(pieceIx)
 		score += float64(len(positions)) * materialScore[piece]
 	}
-	for piece, positions := range f.Pieces[Black] {
+	for pieceIx, positions := range f.Pieces[Black] {
+		piece := NormalizedPiece(pieceIx)
 		score += -1 * float64(len(positions)) * materialScore[piece]
 	}
 	return Score(score)
