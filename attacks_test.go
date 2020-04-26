@@ -88,6 +88,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 
 	unit.AddPiece(WhiteQueen, E6, board)
 	unit.AddPiece(WhiteKing, E3, board)
+
 	board.ApplyMove(E3, D3)
 	unit = unit.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board, NoPosition)
 
@@ -98,8 +99,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 		}
 		if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, unit[pos][White][Queen])
-		}
-		if unit[pos][White][Queen][0] != E6 {
+		} else if unit[pos][White][Queen][0] != E6 {
 			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
 		}
 	}
@@ -114,14 +114,11 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 				t.Errorf("Expecting no attacks on %s, got %v", pos, unit[pos][White])
 			}
 			continue
-		}
-		if unit[pos].CountPositionsForColor(White) == 0 {
+		} else if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
-		}
-		if len(unit[pos][White][Queen]) != 1 {
+		} else if len(unit[pos][White][Queen]) != 1 {
 			t.Errorf("Expecting white queen in piece vector")
-		}
-		if unit[pos][White][Queen][0] != E6 {
+		} else if unit[pos][White][Queen][0] != E6 {
 			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
 		}
 	}

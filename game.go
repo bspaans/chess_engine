@@ -270,7 +270,12 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 
 		} else {
 			if f.Board[attack.From] == NoPiece {
-				panic("Invalid attack, no piece at " + attack.From.String())
+				fmt.Println(f.Parent.Board)
+				fmt.Println(f.Line)
+				fmt.Println(f.Board)
+				fmt.Println(f.Attacks)
+				fmt.Println(f.Attacks[attack.To])
+				panic("Invalid attack, no piece at " + attack.From.String() + " " + attack.String())
 			}
 			result = append(result, attack)
 		}

@@ -200,3 +200,16 @@ func (v Vector) FollowVectorUntilEdgeOfBoard(pos Position) []Position {
 	}
 	return result
 }
+
+func (v Vector) IsPointOnLine(p1, p2 Position) bool {
+	for _, pos := range v.FollowVectorUntilEdgeOfBoard(p1) {
+		if pos == p2 {
+			return true
+		}
+	}
+	return false
+}
+
+func (v Vector) Eq(v2 Vector) bool {
+	return v.DiffFile == v2.DiffFile && v.DiffRank == v2.DiffRank
+}

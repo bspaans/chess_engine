@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -143,15 +144,24 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 			} else if board.IsOpposingPiece(pos, color) {
 				break
 			} else {
+				// We have found one of our pieces within a clear line of the king.
 				pieceVector := NewMove(pos, kingPos).Vector().Normalize()
+				// Look at the pieces that are attacking the square
 				for piece, positions := range a[pos][color.Opposite()] {
 					normPiece := NormalizedPiece(piece)
-					if normPiece == Pawn || normPiece == Knight {
+					// Pawns, kings and knights can't pin other pieces
+					if !normPiece.IsRayPiece() {
 						continue
 					}
+					// Look at all the attackers and check if they share the same
+					// vector (= are they on the same line?). If so, our piece is pinned.
 					for _, attackerPos := range positions {
 						attackVector := NewMove(attackerPos, kingPos).Vector().Normalize()
-						if pieceVector == attackVector {
+						// Due to integer division rounding errors, we do need
+						// to double-check if the point is actually on the
+						// line.
+						if attackVector.Eq(pieceVector) && pieceVector.IsPointOnLine(pos, attackerPos) {
+							fmt.Println("Piece", board[pos], pos, "is pinned by", piece, attackerPos, kingPos, pieceVector)
 							result[pos] = append(result[pos], attackerPos)
 						}
 					}
