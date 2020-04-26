@@ -89,7 +89,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 	unit.AddPiece(WhiteQueen, E6, board)
 	unit.AddPiece(WhiteKing, E3, board)
 	board.ApplyMove(E3, D3)
-	unit = unit.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board)
+	unit = unit.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board, NoPosition)
 
 	positions := PieceMoves[WhiteQueen][E6]
 	for _, pos := range positions {
@@ -104,7 +104,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 		}
 	}
 	board.ApplyMove(D3, E3)
-	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board)
+	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board, NoPosition)
 	for _, pos := range positions {
 		if pos == E1 || pos == E2 {
 			if unit[pos].CountPositionsForColor(White) > 1 {

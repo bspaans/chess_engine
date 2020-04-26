@@ -161,21 +161,30 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 
 // ApplyMove returns a new Attacks structure with updated attacks and defenses. Unchanged
 // piece arrays are copied to reduce memory pressure
-func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) Attacks {
+func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, enpassantSquare Position) Attacks {
 
-	// 1. Remove all the old attacks for piece and capturedPiece
+	// 1. Remove all the old attacks by piece and capturedPiece
 	//
 	// Castling:
-	// We also remove the rook. TODO
+	// We also remove the rook.
 	//
 	// En passant:
 	// We also remove the captured pawn. TODO
 	//
 	// Promotions:
 	// No special case.
+
 	attacks := a.RemovePiece_Immutable(piece, move.From)
 	if capturedPiece != NoPiece {
 		attacks = attacks.RemovePiece_Immutable(capturedPiece, move.To)
+	}
+	castles := move.GetRookCastlesMove(piece)
+	if castles != nil {
+		attacks = a.RemovePiece_Immutable(Rook.ToPiece(piece.Color()), castles.From)
+	}
+	enpassant := move.GetEnPassantCapture(piece, enpassantSquare)
+	if enpassant != nil {
+		attacks = a.RemovePiece_Immutable(Pawn.ToPiece(piece.OppositeColor()), *enpassant)
 	}
 
 	// 2. Now that the piece has moved, the pieces that were previously blocked
@@ -220,11 +229,40 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) 
 		}
 	}
 
+	if enpassant != nil {
+		for color, piecePositions := range attacks[*enpassant] {
+			for piece, positions := range piecePositions {
+				// Not relevant for Pawns and Knights and King
+				if !NormalizedPiece(piece).IsRayPiece() {
+					continue
+				}
+				for _, fromPos := range positions {
+					vector := NewMove(*enpassant, fromPos).Vector().Normalize()
+					pos := vector.FromPosition(*enpassant)
+					running := true
+					for pos >= 0 && pos < 64 && running {
+						if board.IsEmpty(pos) {
+							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+						} else if board.IsOpposingPiece(pos, Color(color)) {
+							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+							running = board[pos].ToNormalizedPiece() == King
+						} else {
+							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
+							running = false
+						}
+						pos = vector.FromPosition(pos)
+					}
+				}
+			}
+		}
+	}
+
 	// 3. The piece has moved, which might block some other pieces.
 	// The code below follows the paths from the square and removes pieces that
-	// are now blocked from attacking a particular square.
+	// are now blocked from reaching it.
 	//
 	// Castling:
+	// Normal case applies.
 	// The only moves you can block on the back rank are from pieces that are
 	// also on the back rank, since there can't be anything between the king
 	// and the rook, that only leaves positions between the king and the other
@@ -268,7 +306,15 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board) 
 	//
 	// Promotions:
 	// Add the new piece instead of the pawn
-	attacks.AddPiece(piece, move.To, board)
+
+	if move.Promote == NoPiece {
+		attacks.AddPiece(piece, move.To, board)
+	} else {
+		attacks.AddPiece(move.Promote, move.To, board)
+	}
+	if castles != nil {
+		attacks.AddPiece(Rook.ToPiece(piece.Color()), castles.To, board)
+	}
 	return attacks
 }
 

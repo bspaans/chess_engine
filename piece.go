@@ -58,6 +58,9 @@ func (p Piece) Color() Color {
 	}
 	panic("Can't figure out colour of piece " + p.String())
 }
+func (p Piece) OppositeColor() Color {
+	return p.Color().Opposite()
+}
 
 func (p Piece) SetColor(c Color) Piece {
 	if c == Black {

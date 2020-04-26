@@ -65,6 +65,35 @@ func (m *Move) IsCastles() bool {
 		(m.From == E8 && (m.To == C8 || m.To == G8))
 }
 
+// If this is a king castling move, return the accessory rook move,
+// otherwise return nil.
+func (m *Move) GetRookCastlesMove(piece Piece) *Move {
+	if (piece == BlackKing || piece == WhiteKing) && m.IsCastles() {
+		if m.To == C1 {
+			return NewMove(A1, D1)
+		} else if m.To == G1 {
+			return NewMove(H1, F1)
+		} else if m.To == C8 {
+			return NewMove(A8, D8)
+		} else if m.To == G8 {
+			return NewMove(H8, F8)
+		}
+	}
+	return nil
+}
+
+// Returns the position of the captured pawn if this is an en passant capture.
+func (m *Move) GetEnPassantCapture(piece Piece, enpassantSquare Position) *Position {
+	if (piece == BlackPawn || piece == WhitePawn) && m.To == enpassantSquare {
+		pos := enpassantSquare - 8
+		if piece.Color() == Black {
+			pos = enpassantSquare + 8
+		}
+		return &pos
+	}
+	return nil
+}
+
 func ParseMove(moveStr string) (*Move, error) {
 	if len(moveStr) != 4 && len(moveStr) != 5 {
 		return nil, fmt.Errorf("Expecting move str of length 4 or 5")
