@@ -5,6 +5,9 @@ import "fmt"
 // PiecePositions is a three dimensional array that keeps track of piece
 // positions for either side. It is indexed like this: e.g.
 // PiecePositions[White][Pawn] for a list of white pawn positions, etc.
+//
+// TODO: could we replace []Position with a 64 bit bitmap?
+// listing positions could be annoying?
 type PiecePositions [][][]Position
 
 func NewPiecePositions() PiecePositions {
