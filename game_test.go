@@ -26,7 +26,7 @@ func Test_ParseFEN(t *testing.T) {
 		}
 		pawns := unit.Pieces[White][Pawn]
 		found := false
-		for _, p := range pawns {
+		for _, p := range pawns.ToPositions() {
 			if p == Position(int(i)+8) {
 				found = true
 			}
@@ -37,7 +37,7 @@ func Test_ParseFEN(t *testing.T) {
 
 		pawns = unit.Pieces[Black][Pawn]
 		found = false
-		for _, p := range pawns {
+		for _, p := range pawns.ToPositions() {
 			if p == Position(int(i)+8*6) {
 				found = true
 			}
@@ -275,7 +275,7 @@ func Test_ApplyMove_table(t *testing.T) {
 		normFromPiece := fromPiece.ToNormalizedPiece()
 		found := false
 		piecePositions := newFEN.Pieces[fromPiece.Color()][normFromPiece]
-		for _, pos := range piecePositions {
+		for _, pos := range piecePositions.ToPositions() {
 			if pos == move.To {
 				found = true
 			}
@@ -304,13 +304,13 @@ func Test_ApplyMove_promote(t *testing.T) {
 	if fen.Board[A7] != NoPiece {
 		t.Errorf("Expecting no piece on a7")
 	}
-	if len(fen.Pieces[White][Queen]) != 1 {
+	if fen.Pieces[White][Queen].Count() != 1 {
 		t.Errorf("Expecting a white queen on a8")
 	}
-	if fen.Pieces[White][Queen][0] != A8 {
+	if fen.Pieces[White][Queen].ToPositions()[0] != A8 {
 		t.Errorf("Expecting a white queen on a8")
 	}
-	if len(fen.Pieces[White][Pawn]) != 0 {
+	if fen.Pieces[White][Pawn].Count() != 0 {
 		t.Errorf("Expecting no pawns")
 	}
 }
@@ -329,13 +329,13 @@ func Test_ApplyMove_promote_black(t *testing.T) {
 	if fen.Board[A2] != NoPiece {
 		t.Errorf("Expecting no piece on a2")
 	}
-	if len(fen.Pieces[Black][Queen]) != 1 {
+	if fen.Pieces[Black][Queen].Count() != 1 {
 		t.Errorf("Expecting a black queen on a1")
 	}
-	if fen.Pieces[Black][Queen][0] != A1 {
+	if fen.Pieces[Black][Queen].ToPositions()[0] != A1 {
 		t.Errorf("Expecting a black queen on a1")
 	}
-	if len(fen.Pieces[Black][Pawn]) != 0 {
+	if len(fen.Pieces[Black][Pawn].ToPositions()) != 0 {
 		t.Errorf("Expecting no pawns")
 	}
 }
@@ -353,13 +353,13 @@ func Test_ApplyMove_capture(t *testing.T) {
 	if fen.Board[B6] != NoPiece {
 		t.Errorf("Expecting no piece on b6")
 	}
-	if len(fen.Pieces[White][Pawn]) != 1 {
+	if fen.Pieces[White][Pawn].Count() != 1 {
 		t.Fatalf("Expecting one white pawn ")
 	}
-	if fen.Pieces[White][Pawn][0] != A7 {
+	if fen.Pieces[White][Pawn].ToPositions()[0] != A7 {
 		t.Errorf("Expecting a white pawn on a7")
 	}
-	if len(fen.Pieces[Black][Pawn]) != 0 {
+	if len(fen.Pieces[Black][Pawn].ToPositions()) != 0 {
 		t.Errorf("Expecting no black pawns")
 	}
 }
@@ -496,7 +496,7 @@ func Test_ApplyMove_game(t *testing.T) {
 				t.Errorf("Expecting piece %s on %s, but got %s", piece, m.To, unit.Board[m.To])
 			}
 			found := false
-			for _, position := range unit.Pieces[unit.ToMove.Opposite()][piece.ToNormalizedPiece()] {
+			for _, position := range unit.Pieces[unit.ToMove.Opposite()][piece.ToNormalizedPiece()].ToPositions() {
 				if position == m.To {
 					found = true
 				}

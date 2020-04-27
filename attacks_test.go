@@ -4,6 +4,15 @@ import (
 	"testing"
 )
 
+func expectQueenFromAt(t *testing.T, unit Attacks, from, at Position) {
+	if unit[at][White][Queen].Count() != 1 {
+		t.Errorf("Expecting white queen in piece vector")
+	}
+	if unit[at][White][Queen].ToPositions()[0] != from {
+		t.Errorf("Expecting %s got %v", from, unit[at][White][Queen].ToPositions())
+	}
+}
+
 func Test_Attacks(t *testing.T) {
 
 	board := NewBoard()
@@ -17,12 +26,7 @@ func Test_Attacks(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s, got %d", pos, len(unit[pos]))
 		}
-		if len(unit[pos][White][Queen]) != 1 {
-			t.Errorf("Expecting white queen in piece vector")
-		}
-		if unit[pos][White][Queen][0] != E4 {
-			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
-		}
+		expectQueenFromAt(t, unit, E4, pos)
 	}
 }
 
@@ -40,12 +44,7 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if len(unit[pos][White][Queen]) != 1 {
-			t.Errorf("Expecting white queen in piece vector")
-		}
-		if unit[pos][White][Queen][0] != E4 {
-			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
-		}
+		expectQueenFromAt(t, unit, E4, pos)
 	}
 }
 
@@ -70,12 +69,7 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if len(unit[pos][White][Queen]) != 1 {
-			t.Errorf("Expecting white queen in piece vector")
-		}
-		if unit[pos][White][Queen][0] != E6 {
-			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
-		}
+		expectQueenFromAt(t, unit, E6, pos)
 	}
 }
 
@@ -97,15 +91,11 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if len(unit[pos][White][Queen]) != 1 {
-			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, unit[pos][White][Queen])
-		} else if unit[pos][White][Queen][0] != E6 {
-			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
-		}
+		expectQueenFromAt(t, unit, E6, pos)
 	}
 	board.ApplyMove(D3, E3)
 	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board, NoPosition)
-	if len(unit[C3][White][King]) != 0 {
+	if unit[C3][White][King].Count() != 0 {
 		t.Errorf("Expecting old king attacks to be removed")
 	}
 	for _, pos := range positions {
@@ -119,10 +109,10 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 			continue
 		} else if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
-		} else if len(unit[pos][White][Queen]) != 1 {
+		} else if unit[pos][White][Queen].Count() != 1 {
 			t.Errorf("Expecting white queen in piece vector")
-		} else if unit[pos][White][Queen][0] != E6 {
-			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
+		} else if unit[pos][White][Queen].ToPositions()[0] != E6 {
+			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen].ToPositions()[0])
 		}
 	}
 }
@@ -141,11 +131,11 @@ func Test_Attacks_ApplyMove_captures(t *testing.T) {
 
 	positions := PieceMoves[WhiteQueen][E6]
 	for _, pos := range positions {
-		if len(unit[pos][White][Queen]) != 0 {
-			t.Errorf("Expecting white position to be removed in %s, got %v", pos, unit[pos][White][Queen])
+		if unit[pos][White][Queen].Count() != 0 {
+			t.Errorf("Expecting white position to be removed in %s, got %v", pos, unit[pos][White][Queen].ToPositions())
 		}
-		if len(orig[pos][White][Queen]) == 0 {
-			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, orig[pos][White][Queen])
+		if orig[pos][White][Queen].Count() == 0 {
+			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, orig[pos][White][Queen].ToPositions())
 		}
 	}
 }
@@ -163,11 +153,11 @@ func Test_Attacks_white_pawn(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if len(unit[pos][White][Pawn]) != 1 {
+		if unit[pos][White][Pawn].Count() != 1 {
 			t.Errorf("Expecting white pawn in piece vector")
 		}
-		if unit[pos][White][Pawn][0] != E4 {
-			t.Errorf("Expecting e4 got %s", unit[pos][White][Queen][0])
+		if unit[pos][White][Pawn].ToPositions()[0] != E4 {
+			t.Errorf("Expecting e4 got %v", unit[pos][White][Pawn].ToPositions())
 		}
 	}
 }
@@ -184,11 +174,11 @@ func Test_Attacks_black_pawn(t *testing.T) {
 		if unit[pos].CountPositionsForColor(Black) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		if len(unit[pos][Black][Pawn]) != 1 {
+		if unit[pos][Black][Pawn].Count() != 1 {
 			t.Errorf("Expecting black pawn in piece vector")
 		}
-		if unit[pos][Black][Pawn][0] != E3 {
-			t.Errorf("Expecting e3 got %s", unit[pos][Black][Pawn][0])
+		if unit[pos][Black][Pawn].ToPositions()[0] != E3 {
+			t.Errorf("Expecting e3 got %v", unit[pos][Black][Pawn].ToPositions())
 		}
 	}
 }

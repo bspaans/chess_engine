@@ -21,18 +21,18 @@ func NaiveMaterialEvaluator(f *Game) Score {
 	}
 	for pieceIx, positions := range f.Pieces[White] {
 		piece := NormalizedPiece(pieceIx)
-		score += float64(len(positions)) * materialScore[piece]
+		score += float64(positions.Count()) * materialScore[piece]
 	}
 	for pieceIx, positions := range f.Pieces[Black] {
 		piece := NormalizedPiece(pieceIx)
-		score += -1 * float64(len(positions)) * materialScore[piece]
+		score += -1 * float64(positions.Count()) * materialScore[piece]
 	}
 	return Score(score)
 }
 
 func PawnStructureEvaluator(f *Game) Score {
 	score := 0.0
-	for _, pawnPos := range f.Pieces[White][Pawn] {
+	for _, pawnPos := range f.Pieces[White][Pawn].ToPositions() {
 		for p := pawnPos; p < 64; p = p + 8 {
 			if f.Board.IsEmpty(p) {
 				continue
@@ -73,7 +73,7 @@ func PawnStructureEvaluator(f *Game) Score {
 			score -= 0.5
 		}
 	}
-	for _, pawnPos := range f.Pieces[Black][Pawn] {
+	for _, pawnPos := range f.Pieces[Black][Pawn].ToPositions() {
 		for p := pawnPos; p > 0; p = p - 8 {
 			if f.Board.IsEmpty(p) {
 				continue
@@ -129,11 +129,11 @@ func SpaceEvaluator(f *Game) Score {
 	for pos, piecePositions := range f.Attacks {
 		if pos < 32 {
 			for _, positions := range piecePositions[Black] {
-				score = score - (0.10 * float64(len(positions)))
+				score = score - (0.10 * float64(positions.Count()))
 			}
 		} else if pos >= 32 {
 			for _, positions := range piecePositions[White] {
-				score = score + (0.10 * float64(len(positions)))
+				score = score + (0.10 * float64(positions.Count()))
 			}
 		}
 	}
@@ -145,13 +145,13 @@ func TempoEvaluator(f *Game) Score {
 	// TODO: check if we're out of the opening
 	minorPiecesInSamePosition := map[Color]int{}
 	for _, piece := range []NormalizedPiece{Knight, Bishop} {
-		for _, pos := range f.Pieces[White][piece] {
+		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if pos.GetRank() == '1' {
 				minorPiecesInSamePosition[White] += 1
 				score -= 0.33 // "A pawn is worth about 3 tempi"
 			}
 		}
-		for _, pos := range f.Pieces[Black][piece] {
+		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if pos.GetRank() == '8' {
 				minorPiecesInSamePosition[Black] += 1
 				score += 0.33
@@ -159,19 +159,19 @@ func TempoEvaluator(f *Game) Score {
 		}
 	}
 	for _, piece := range []NormalizedPiece{Queen} {
-		for _, pos := range f.Pieces[White][piece] {
+		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if minorPiecesInSamePosition[White] >= 2 && pos != D1 {
 				score -= 5.0 // Early queen move penalty
 			}
 		}
-		for _, pos := range f.Pieces[Black][piece] {
+		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if minorPiecesInSamePosition[Black] >= 2 && pos != D8 {
 				score += 5.0 // Early queen move penalty
 			}
 		}
 	}
 	for _, piece := range []NormalizedPiece{King} {
-		for _, pos := range f.Pieces[White][piece] {
+		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if f.CastleStatuses.White == None {
 				if pos == G1 && f.Board[H1] != WhiteRook {
 					score += 0.5 // We're castled kingside
@@ -186,7 +186,7 @@ func TempoEvaluator(f *Game) Score {
 				}
 			}
 		}
-		for _, pos := range f.Pieces[Black][piece] {
+		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if f.CastleStatuses.Black == None {
 				if pos == G8 && f.Board[H8] != BlackRook {
 					score -= 0.5 // We're castled kingside

@@ -56,13 +56,11 @@ func (a Attacks) GetChecks(color Color, pieces PiecePositions) []*Move {
 // Get all the attacks by @color. Ignores pins.
 func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 	result := []*Move{}
-	for _, positions := range pieces[color.Opposite()] {
-		for _, pos := range positions {
-			for piece, positions := range a[pos][color] {
-				for _, fromPos := range positions {
-					move := NewMove(fromPos, pos)
-					result = move.ExpandPromotions(result, NormalizedPiece(piece))
-				}
+	for _, pos := range pieces.GetAllPositionsForColor(color.Opposite()) {
+		for piece, positions := range a[pos][color] {
+			for _, fromPos := range positions.ToPositions() {
+				move := NewMove(fromPos, pos)
+				result = move.ExpandPromotions(result, NormalizedPiece(piece))
 			}
 		}
 	}
@@ -73,7 +71,7 @@ func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 func (a Attacks) GetAttacksOnSquare(color Color, pos Position) []*Move {
 	result := []*Move{}
 	for piece, positions := range a[pos][color] {
-		for _, fromPos := range positions {
+		for _, fromPos := range positions.ToPositions() {
 			move := NewMove(fromPos, pos)
 			result = move.ExpandPromotions(result, NormalizedPiece(piece))
 		}
@@ -108,20 +106,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 // Whether or not @color attacks the @square
 func (a Attacks) AttacksSquare(color Color, square Position) bool {
 	for _, positions := range a[square][color] {
-		if len(positions) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// Whether or not @color attacks the @square with a ray piece
-func (a Attacks) AttacksSquareWithRayPiece(color Color, square Position) bool {
-	for piece, positions := range a[square][color] {
-		if NormalizedPiece(piece) == Pawn || NormalizedPiece(piece) == Knight {
-			continue
-		}
-		if len(positions) > 0 {
+		if !positions.IsEmpty() {
 			return true
 		}
 	}
@@ -154,7 +139,7 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 					}
 					// Look at all the attackers and check if they share the same
 					// vector (= are they on the same line?). If so, our piece is pinned.
-					for _, attackerPos := range positions {
+					for _, attackerPos := range positions.ToPositions() {
 						attackVector := NewMove(attackerPos, kingPos).Vector().Normalize()
 						// Due to integer division rounding errors, we do need
 						// to double-check if the point is actually on the
@@ -230,7 +215,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 			if !NormalizedPiece(piece).IsRayPiece() {
 				continue
 			}
-			for _, fromPos := range positions {
+			for _, fromPos := range positions.ToPositions() {
 				vector := NewMove(move.From, fromPos).Vector().Normalize()
 				//fmt.Println("Vector", move.From, fromPos, vector, vector.FollowVectorUntilEdgeOfBoard(move.From))
 				for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
@@ -262,7 +247,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 				if !NormalizedPiece(piece).IsRayPiece() {
 					continue
 				}
-				for _, fromPos := range positions {
+				for _, fromPos := range positions.ToPositions() {
 					vector := NewMove(*enpassant, fromPos).Vector().Normalize()
 					for _, pos := range vector.FollowVectorUntilEdgeOfBoard(*enpassant) {
 
@@ -310,7 +295,7 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 				if !NormalizedPiece(piece).IsRayPiece() {
 					continue
 				}
-				for _, fromPos := range positions {
+				for _, fromPos := range positions.ToPositions() {
 					vector := NewMove(move.To, fromPos).Vector().Normalize()
 					//fmt.Println("Vector", move.To, fromPos, vector)
 					//fmt.Println(attacks[move.To])
