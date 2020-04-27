@@ -84,13 +84,13 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 	board := NewBoard()
 	board[E6] = WhiteQueen
 	board[E3] = WhiteKing
-	unit := NewAttacks()
+	orig := NewAttacks()
 
-	unit.AddPiece(WhiteQueen, E6, board)
-	unit.AddPiece(WhiteKing, E3, board)
+	orig.AddPiece(WhiteQueen, E6, board)
+	orig.AddPiece(WhiteKing, E3, board)
 
 	board.ApplyMove(E3, D3)
-	unit = unit.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board, NoPosition)
+	unit := orig.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board, NoPosition)
 
 	positions := PieceMoves[WhiteQueen][E6]
 	for _, pos := range positions {
@@ -109,6 +109,9 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 		t.Errorf("Expecting old king attacks to be removed")
 	}
 	for _, pos := range positions {
+		if len(orig[pos]) != len(unit[pos]) {
+			t.Fatalf("expecting same amount of attacks again.")
+		}
 		if pos == E1 || pos == E2 {
 			if unit[pos].CountPositionsForColor(White) > 1 {
 				t.Errorf("Expecting no attacks on %s, got %v", pos, unit[pos][White])
@@ -120,6 +123,29 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 			t.Errorf("Expecting white queen in piece vector")
 		} else if unit[pos][White][Queen][0] != E6 {
 			t.Errorf("Expecting e6 got %s", unit[pos][White][Queen][0])
+		}
+	}
+}
+func Test_Attacks_ApplyMove_captures(t *testing.T) {
+
+	board := NewBoard()
+	board[E6] = WhiteQueen
+	board[E5] = BlackKing
+	orig := NewAttacks()
+
+	orig.AddPiece(WhiteQueen, E6, board)
+	orig.AddPiece(BlackKing, E5, board)
+
+	board.ApplyMove(E5, E6)
+	unit := orig.ApplyMove(NewMove(E5, E6), BlackKing, WhiteQueen, board, NoPosition)
+
+	positions := PieceMoves[WhiteQueen][E6]
+	for _, pos := range positions {
+		if len(unit[pos][White][Queen]) != 0 {
+			t.Errorf("Expecting white position to be removed in %s, got %v", pos, unit[pos][White][Queen])
+		}
+		if len(orig[pos][White][Queen]) == 0 {
+			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, orig[pos][White][Queen])
 		}
 	}
 }

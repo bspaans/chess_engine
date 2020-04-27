@@ -420,6 +420,35 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	//fmt.Println(board)
 	result.Attacks = f.Attacks.ApplyMove(move, movingPiece, f.Board[move.To], board, f.EnPassantVulnerable)
 	//fmt.Println(result.Attacks)
+	/*
+		fanic := false
+		for i := 0; i < 64; i++ {
+			for color, piecePositions := range result.Attacks[i] {
+				for piece, positions := range piecePositions {
+					seen := map[Position]bool{}
+					for _, pos := range positions {
+						if seen[pos] {
+							fmt.Println("Already seen", NormalizedPiece(piece), Color(color), pos, "but again at", Position(i))
+							fanic = true
+						} else if board[pos] != NormalizedPiece(piece).ToPiece(Color(color)) {
+							fmt.Println("Could find", NormalizedPiece(piece), Color(color), "at", Position(pos), "but according to", Position(i), "that's where it is")
+							fanic = true
+						} else {
+							seen[pos] = true
+						}
+					}
+				}
+			}
+		}
+		if fanic {
+			fmt.Println(f.Board)
+			fmt.Println(f.Attacks)
+			fmt.Println(move)
+			fmt.Println(board)
+			fmt.Println(result.Attacks)
+			panic("Panic in the disco")
+		}
+	*/
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {

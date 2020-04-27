@@ -48,7 +48,7 @@ func (b Board) Copy() Board {
 }
 
 func (b Board) String() string {
-	result := "   +--------------------------------+\n"
+	result := "   +-------------------------------+\n"
 	characters := map[Piece]string{
 		NoPiece:     " ",
 		WhiteKing:   "♔",
@@ -71,10 +71,10 @@ func (b Board) String() string {
 		}
 		result += "\n"
 		if rank != 0 {
-			result += "   +--------------------------------+\n"
+			result += "   +-------------------------------+\n"
 		}
 	}
-	result += "   +--------------------------------+\n"
+	result += "   +-------------------------------+\n"
 	result += "     a   b   c   d   e   f   g   h\n"
 	return result
 }

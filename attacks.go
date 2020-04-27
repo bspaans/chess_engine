@@ -1,7 +1,6 @@
 package chess_engine
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -161,7 +160,7 @@ func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map
 						// to double-check if the point is actually on the
 						// line.
 						if attackVector.Eq(pieceVector) && pieceVector.IsPointOnLine(pos, attackerPos) {
-							fmt.Println("Piece", board[pos], pos, "is pinned by", piece, attackerPos, kingPos, pieceVector)
+							//fmt.Println("Piece", board[pos], pos, "is pinned by", piece, attackerPos, kingPos, pieceVector)
 							result[pos] = append(result[pos], attackerPos)
 						}
 					}
@@ -218,6 +217,14 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 	// Promotions are also not affected.
 	//
 	for color, piecePositions := range attacks[move.From] {
+		// Special case for the king, because in our implementation the opponent's
+		// pieces are already looking through the king to make sure the king can't
+		// escape into a square that would be under check.
+		if piece == WhiteKing && Color(color) == Black {
+			continue
+		} else if piece == BlackKing && Color(color) == White {
+			continue
+		}
 		for piece, positions := range piecePositions {
 			// Not relevant for Pawns and Knights and King
 			if !NormalizedPiece(piece).IsRayPiece() {
@@ -370,7 +377,7 @@ func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
 // that are possible for this piece and adds the appropriate vectors
 func (a Attacks) AddPiece_immutable(piece Piece, pos Position, board Board) Attacks {
 	attacks := make([]PiecePositions, 64)
-	if piece == NoPiece {
+	if piece == NoPiece || board[pos] != piece {
 		panic("WHAT")
 		return attacks
 	}
