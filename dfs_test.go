@@ -276,7 +276,7 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 		// Madame de Remusat vs Napoleon I, Paris, 1802
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 	}
-	runUntilMate(t, cases, 5)
+	runUntilMate(t, cases, 8)
 }
 
 func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
@@ -292,7 +292,7 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 	unit.AddEvaluator(NaiveMaterialEvaluator)
 	unit.AddEvaluator(SpaceEvaluator)
 	unit.SetPosition(fen)
-	bestmove := getBestMove(unit, 5*time.Second)
+	bestmove := getBestMove(unit, 8*time.Second)
 	if bestmove == "" {
 		t.Fatal("Did not get a best move in time", pos)
 	}
