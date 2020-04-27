@@ -1,6 +1,8 @@
 package chess_engine
 
-import "math/bits"
+import (
+	"math/bits"
+)
 
 // This bitmap keeps track of whether a position is set or not.
 // There are 64 squares so if we use a 64 bit integer we can
@@ -34,10 +36,11 @@ func (p PositionBitmap) Count() int {
 // positions from the bitmap.
 func (p PositionBitmap) ToPositions() []Position {
 	result := []Position{}
-	for i := 0; i < 64; i++ {
-		if (p>>i)&1 == 1 {
-			result = append(result, Position(i))
-		}
+	tmp := p
+	for tmp != 0 {
+		i := bits.LeadingZeros64(uint64(tmp))
+		result = append(result, Position(63-i))
+		tmp = tmp.Remove(Position(63 - i))
 	}
 	return result
 }
