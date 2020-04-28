@@ -83,6 +83,9 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				if game.Score == nil {
 					b.Evaluators.Eval(game)
 				}
+				if *game.Score == Mate {
+					*game.Score = *game.Score - Score(float64(len(game.Line)))
+				}
 				b.EvalTree.Insert(game.Line, *game.Score)
 
 				if len(game.Line) == 0 {
@@ -92,6 +95,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 					//	return
 					//}
 				} else if len(game.Line) < b.SelDepth {
+					// If we already found Mate at this depth we can skip
+					// this whole tree
+					if b.EvalTree.Score.IsMateInNOrBetter(len(game.Line)) {
+						continue
+					}
 					debug := false
 					// Check if the score difference between this line
 					// and the parent is not too big. If it is we should
@@ -133,14 +141,14 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				} else {
 
 					// We are at search depth and we should only
-					// queue the best move in this line
+					// queue the best move in this line. Wouldn't it just keep queueing?
 
 					//depth = len(game.Line)
 
 					if *game.Score != Mate && len(game.Line) < b.SelDepth {
 						nextGame, _ := b.Evaluators.BestMove(game)
 						if nextGame != nil {
-							queue.PushFront(nextGame)
+							//queue.PushFront(nextGame)
 						}
 					}
 				}

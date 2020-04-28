@@ -15,3 +15,12 @@ var LowestScore = Score(math.Inf(-1))
 func (s Score) ToCentipawn() int {
 	return int(math.Round(float64(s) * 100))
 }
+
+func (s Score) IsMateIn(n int) bool {
+	return Mate-Score(float64(n)) == s
+}
+
+func (s Score) IsMateInNOrBetter(n int) bool {
+	lowerBound := Mate - Score(n)
+	return s >= lowerBound
+}

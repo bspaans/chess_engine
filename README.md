@@ -62,6 +62,8 @@ From a week later:
 1. g4 e5 2. f3 Qh4#  0-1
 ```
 
+gg yo.
+
 ### Usage
 
 The program is written in Go without dependencies so the only thing you'll need

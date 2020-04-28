@@ -304,7 +304,7 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 		t.Errorf("Expecting best move f8c5, got %v", bestmove)
 	}
 	// There are eleven forcing moves in this position, one of which leads to
-	// check mate. So there should only be at most eleven nodes in the root EvalTree
+	// check mate. So there should only be eleven nodes in the root EvalTree
 	if len(unit.EvalTree.Replies) != 11 {
 		fmt.Println(fen.Board)
 		fmt.Println(fen.Attacks)
@@ -320,8 +320,8 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 	if unit.EvalTree.MaxDepth() != 6 {
 		t.Fatalf("Expecting tree with max depth 6, got %d", unit.EvalTree.MaxDepth())
 	}
-	if unit.EvalTree.Replies["f8c5"].Score != Mate {
-		t.Errorf("Expecting mate in f8c5, got %f", unit.EvalTree.Replies["f8c5"].Score)
+	if !unit.EvalTree.Replies["f8c5"].Score.IsMateIn(5) {
+		t.Errorf("Expecting mate in 5 for f8c5, got %f", unit.EvalTree.Replies["f8c5"].Score)
 	}
 	for _, move := range unit.EvalTree.Replies {
 
