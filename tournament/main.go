@@ -340,6 +340,6 @@ func main() {
 	tournament := NewTournament(Engines, 1)
 	tournament.OutputBoard = true
 	tournament.QuitOnCrash = true
-	tournament.TextToSpeechAnnouncements = true
+	tournament.TextToSpeechAnnouncements = false
 	tournament.Start()
 }
