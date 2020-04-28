@@ -5,22 +5,13 @@ import (
 	"strconv"
 )
 
-type PieceVector struct {
-	Piece
-	Vector
-}
-
-func NewPieceVector(piece Piece, pos, toPos Position) PieceVector {
-	return PieceVector{
-		Piece:  piece,
-		Vector: NewMove(pos, toPos).Vector(),
-	}
-}
-
 // Another representation of the board that keeps track of which pieces are
 // attacking (or defending) it from where.  Attacks is indexed like this: e.g.
 // Attacks[E4][White][Pawn] to get all the white pawns that control the e4
 // square.
+//
+// TODO: Attacks is a bad name for this structure, which is more about square
+// control.
 type Attacks []PiecePositions
 
 func NewAttacks() Attacks {

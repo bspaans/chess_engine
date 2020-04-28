@@ -2,7 +2,6 @@ package chess_engine
 
 import (
 	"fmt"
-	"strconv"
 )
 
 type Piece uint8
@@ -22,6 +21,22 @@ const (
 	WhiteKing
 	NoPiece
 )
+
+var PieceStrings = []string{
+	"p",
+	"n",
+	"b",
+	"r",
+	"q",
+	"k",
+	"P",
+	"N",
+	"B",
+	"R",
+	"Q",
+	"K",
+	" ",
+}
 
 func ParsePiece(b byte) (Piece, error) {
 	piece, ok := map[byte]Piece{
@@ -76,25 +91,7 @@ func (p Piece) SetColor(c Color) Piece {
 }
 
 func (p Piece) String() string {
-	piece, ok := map[Piece]string{
-		BlackPawn:   "p",
-		BlackKnight: "n",
-		BlackBishop: "b",
-		BlackRook:   "r",
-		BlackQueen:  "q",
-		BlackKing:   "k",
-		WhitePawn:   "P",
-		WhiteKnight: "N",
-		WhiteBishop: "B",
-		WhiteRook:   "R",
-		WhiteQueen:  "Q",
-		WhiteKing:   "K",
-		NoPiece:     " ",
-	}[p]
-	if !ok {
-		panic("unknown piece:" + strconv.Itoa(int(p)))
-	}
-	return piece
+	return PieceStrings[p]
 }
 
 func (p Piece) ToNormalizedPiece() NormalizedPiece {
