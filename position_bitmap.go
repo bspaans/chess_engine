@@ -13,6 +13,7 @@ func (p PositionBitmap) Add(pos Position) PositionBitmap {
 	return p | (1 << pos)
 }
 func (p PositionBitmap) Remove(pos Position) PositionBitmap {
+	// TODO: shouldn't xor?
 	return p ^ (1 << pos)
 }
 func (p PositionBitmap) ApplyMove(m *Move) PositionBitmap {

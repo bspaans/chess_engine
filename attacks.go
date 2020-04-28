@@ -1,6 +1,7 @@
 package chess_engine
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -363,7 +364,9 @@ func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
 func (a Attacks) AddPiece_immutable(piece Piece, pos Position, board Board) Attacks {
 	attacks := make([]PiecePositions, 64)
 	if piece == NoPiece || board[pos] != piece {
-		panic("WHAT")
+		fmt.Println(board)
+		fmt.Println(piece, pos)
+		panic("Trying to move piece that isn't there")
 		return attacks
 	}
 	// Copy

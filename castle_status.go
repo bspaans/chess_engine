@@ -38,6 +38,13 @@ func (cs CastleStatus) String(c Color) string {
 	return ""
 }
 
+func (cs CastleStatus) CanCastleQueenside() bool {
+	return cs == Queenside || cs == Both
+}
+func (cs CastleStatus) CanCastleKingside() bool {
+	return cs == Kingside || cs == Both
+}
+
 func (cs CastleStatus) Remove(remove CastleStatus) CastleStatus {
 	if remove == Kingside {
 		if cs == Both {
@@ -88,6 +95,20 @@ func NewCastleStatuses(white, black CastleStatus) CastleStatuses {
 
 func NewCastleStatusesFromString(str string) CastleStatuses {
 	return NewCastleStatuses(None, None).Parse(str)
+}
+
+func (cs CastleStatuses) CanCastleQueenside(color Color) bool {
+	if color == White {
+		return cs.White.CanCastleQueenside()
+	}
+	return cs.Black.CanCastleQueenside()
+}
+
+func (cs CastleStatuses) CanCastleKingside(color Color) bool {
+	if color == White {
+		return cs.White.CanCastleKingside()
+	}
+	return cs.Black.CanCastleKingside()
 }
 
 func (cs CastleStatuses) Parse(castleStr string) CastleStatuses {

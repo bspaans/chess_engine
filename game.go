@@ -327,16 +327,20 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 		}
 	}
 	// Castling
-	if color == White && f.CastleStatuses.White != None {
+	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
 		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
 			result = append(result, NewMove(kingPos, C1))
-		} else if f.Board.CanCastle(f.Attacks, White, F1, G1) {
-			result = append(result, NewMove(kingPos, G1))
 		}
-	} else if color == Black && f.CastleStatuses.Black != None {
+	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
+		if f.Board.CanCastle(f.Attacks, White, F1, G1) {
+			result = append(result, NewMove(kingPos, C1))
+		}
+	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
 		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
 			result = append(result, NewMove(kingPos, C8))
-		} else if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
+		}
+	} else if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
+		if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
 			result = append(result, NewMove(kingPos, G8))
 		}
 	}
@@ -354,6 +358,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	line[len(f.Line)] = move
 
 	board := f.Board.Copy()
+	fmt.Println(board)
 
 	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
 	movingPiece := board[move.To]
@@ -370,6 +375,11 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	// Handle castles and en-passant
 	castles := move.GetRookCastlesMove(movingPiece)
 	if castles != nil {
+		if board[castles.From].ToNormalizedPiece() != Rook {
+			fmt.Println(f.CastleStatuses.String())
+			fmt.Println(board)
+			panic("Illegal castles, no rook found")
+		}
 		board.ApplyMove(castles.From, castles.To)
 	}
 	enpassant := NoPosition
@@ -426,7 +436,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 			for color, piecePositions := range result.Attacks[i] {
 				for piece, positions := range piecePositions {
 					seen := map[Position]bool{}
-					for _, pos := range positions {
+					for _, pos := range positions.ToPositions() {
 						if seen[pos] {
 							fmt.Println("Already seen", NormalizedPiece(piece), Color(color), pos, "but again at", Position(i))
 							fanic = true
