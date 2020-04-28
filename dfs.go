@@ -88,7 +88,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				}
 				b.EvalTree.Insert(game.Line, *game.Score)
 
-				if len(game.Line) == 0 {
+				if len(game.Line) == 0 || len(game.Line) == b.SelDepth {
 					b.EvalTree.UpdateBestLine()
 					//if b.EvalTree.Score == Mate {
 					//	b.outputInfo(output, true)
@@ -136,19 +136,6 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 							//fmt.Println("Major loss", game.Line, diff)
 							if b.queueAlternativeLine(game.Parent, tree.Parent, queue) {
 							}
-						}
-					}
-				} else {
-
-					// We are at search depth and we should only
-					// queue the best move in this line. Wouldn't it just keep queueing?
-
-					//depth = len(game.Line)
-
-					if *game.Score != Mate && len(game.Line) < b.SelDepth {
-						nextGame, _ := b.Evaluators.BestMove(game)
-						if nextGame != nil {
-							//queue.PushFront(nextGame)
 						}
 					}
 				}
@@ -228,6 +215,9 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	if game == nil {
 		return
 	}
+	if b.EvalTree.IsMateInNOrBetter(len(game.Line)) {
+		return
+	}
 	fenStr := startPos.FENString()
 	if !b.Seen[fenStr] {
 		queue.PushFront(startPos)
@@ -245,8 +235,10 @@ func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
 func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
 	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
 	for _, move := range newLine {
-		b.Seen[game.FENString()] = true
-		queue.PushFront(move)
+		if !b.EvalTree.IsMateInNOrBetter(len(move.Line)) {
+			b.Seen[game.FENString()] = true
+			queue.PushFront(move)
+		}
 	}
 	/*
 		for e := queue.Front(); e != nil; e = e.Next() {
