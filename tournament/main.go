@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -161,10 +162,11 @@ func GenerateGames(engines []*Engine, rounds int) []*Game {
 }
 
 type Tournament struct {
-	Games       []*Game
-	Standing    map[*Engine]float64
-	OutputBoard bool
-	QuitOnCrash bool
+	Games                     []*Game
+	Standing                  map[*Engine]float64
+	OutputBoard               bool
+	QuitOnCrash               bool
+	TextToSpeechAnnouncements bool
 }
 
 func NewTournament(engines []*Engine, rounds int) *Tournament {
@@ -180,9 +182,11 @@ func NewTournament(engines []*Engine, rounds int) *Tournament {
 }
 
 func (t *Tournament) TextToSpeech(msg string) {
-	cmd := exec.Command("spd-say", msg)
-	cmd.Run()
-	time.Sleep(3 * time.Second)
+	if t.TextToSpeechAnnouncements {
+		cmd := exec.Command("spd-say", msg)
+		cmd.Run()
+		time.Sleep(3 * time.Second)
+	}
 }
 
 func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameResult) {
@@ -217,7 +221,16 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 		Black:  game.Black.Name,
 		Result: game.Result.String(),
 	}
-	fmt.Println(chess_engine.LineToPGNWithTags(pos, fen.Line, tags))
+	pgn := chess_engine.LineToPGNWithTags(pos, fen.Line, tags)
+	fmt.Println(pgn)
+	f, err := os.OpenFile("tournament.pgn", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(pgn + "\n"); err != nil {
+		panic(err)
+	}
 }
 
 func (t *Tournament) StandingToString() string {
@@ -327,5 +340,6 @@ func main() {
 	tournament := NewTournament(Engines, 1)
 	tournament.OutputBoard = true
 	tournament.QuitOnCrash = true
+	tournament.TextToSpeechAnnouncements = true
 	tournament.Start()
 }

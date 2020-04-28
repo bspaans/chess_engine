@@ -78,7 +78,8 @@ func LineToPGN(position *Game, line []*Move) string {
 }
 
 func MoveToAlgebraicMove(position *Game, move *Move) string {
-	movingPiece := position.Board[move.From].ToNormalizedPiece()
+	movingPiece := position.Board[move.From]
+	normPiece := movingPiece.ToNormalizedPiece()
 	capture := ""
 	if position.Board[move.To] != NoPiece {
 		capture = "x"
@@ -94,7 +95,7 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 	// TODO: castles
 
 	result := ""
-	if movingPiece == Pawn {
+	if normPiece == Pawn {
 		moveStr := move.To.String()
 		if move.Promote != NoPiece {
 			moveStr += pieceMap[move.Promote.ToNormalizedPiece()]
@@ -103,6 +104,13 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 			result = moveStr
 		} else {
 			result = string([]byte{byte(move.From.GetFile())}) + "x" + moveStr
+		}
+	} else if normPiece == King && move.GetRookCastlesMove(movingPiece) != nil {
+		rook := move.GetRookCastlesMove(movingPiece)
+		if rook.To.GetFile() == '6' {
+			result += "O-O"
+		} else {
+			result += "O-O-O"
 		}
 	} else {
 		others := []Position{}
@@ -116,7 +124,7 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 			}
 
 		}
-		result = pieceMap[movingPiece]
+		result = pieceMap[normPiece]
 		if len(others) == 0 {
 			result += capture + move.To.String()
 		} else if !fileTheSame {
