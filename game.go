@@ -19,6 +19,9 @@ type Game struct {
 	// is already part of the map.
 	Pieces PiecePositions
 
+	// The valid moves for every piece on the board
+	validMoves ValidMoves
+
 	ToMove              Color
 	CastleStatuses      CastleStatuses
 	EnPassantVulnerable Position
@@ -99,6 +102,7 @@ func ParseFEN(fenstr string) (*Game, error) {
 		}
 	}
 	fen.Attacks = NewAttacksFromBoard(fen.Board)
+	fen.validMoves = NewValidMovesFromBoard(fen.Board)
 	return &fen, nil
 }
 
@@ -293,17 +297,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 			}
 		}
 	}
-	for _, piece := range []NormalizedPiece{Knight} {
-		for _, fromPos := range f.Pieces.Positions(color, piece) {
-			for _, toPos := range PieceMoves[Piece(piece)][fromPos] {
-				if f.Board[toPos] == NoPiece {
-					result = append(result, NewMove(fromPos, toPos))
-				}
-			}
-
-		}
-	}
-	for _, piece := range []NormalizedPiece{Bishop, Rook, Queen} {
+	for _, piece := range []NormalizedPiece{Knight, Bishop, Rook, Queen} {
 		for _, fromPos := range f.Pieces.Positions(color, piece) {
 			for _, line := range MoveVectors[Piece(piece)][fromPos] {
 				for _, toPos := range line {
@@ -460,6 +454,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 			panic("Panic in the disco")
 		}
 	*/
+	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {

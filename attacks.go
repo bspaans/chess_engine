@@ -79,20 +79,24 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	}
 	for _, line := range AttackVectors[piece][pos] {
 		for _, toPos := range line {
-			if board.IsEmpty(toPos) {
-				a[toPos].AddPosition(piece, pos)
-			} else if board.IsOpposingPiece(toPos, piece.Color()) {
-				a[toPos].AddPosition(piece, pos)
-				if board[toPos].ToNormalizedPiece() != King {
-					break
-				}
-			} else {
-				// Pieces defend their own pieces
-				a[toPos].AddPosition(piece, pos)
+			a[toPos].AddPosition(piece, pos)
+			if !a.shouldContinue(board, toPos, piece.Color()) {
 				break
 			}
 		}
 	}
+}
+
+func (a Attacks) shouldContinue(board Board, pos Position, color Color) bool {
+	if board.IsEmpty(pos) {
+		return true
+	} else if board.IsOpposingPiece(pos, color) {
+		if board[pos].ToNormalizedPiece() != King {
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 // Whether or not @color attacks the @square
@@ -209,24 +213,12 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 			}
 			for _, fromPos := range positions.ToPositions() {
 				vector := NewMove(move.From, fromPos).Vector().Normalize()
-				//fmt.Println("Vector", move.From, fromPos, vector, vector.FollowVectorUntilEdgeOfBoard(move.From))
 				for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
-
-					if board.IsEmpty(pos) {
-						//fmt.Println("[1] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						continue
-					} else if board.IsOpposingPiece(pos, Color(color)) {
-						//fmt.Println("[2] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						if board[pos].ToNormalizedPiece() == King {
-							continue
-						}
+					extendPiece := NormalizedPiece(piece).ToPiece(Color(color))
+					attacks[pos] = attacks[pos].AddPosition_Immutable(extendPiece, fromPos)
+					if !a.shouldContinue(board, pos, Color(color)) {
 						break
 					}
-					//fmt.Println("[3] Adding to", pos, NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-					attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-					break
 				}
 			}
 		}
@@ -242,20 +234,11 @@ func (a Attacks) ApplyMove(move *Move, piece, capturedPiece Piece, board Board, 
 				for _, fromPos := range positions.ToPositions() {
 					vector := NewMove(*enpassant, fromPos).Vector().Normalize()
 					for _, pos := range vector.FollowVectorUntilEdgeOfBoard(*enpassant) {
-
-						if board.IsEmpty(pos) {
-							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-							continue
-						} else if board.IsOpposingPiece(pos, Color(color)) {
-							attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-							if board[pos].ToNormalizedPiece() == King {
-								continue
-							}
+						extendPiece := NormalizedPiece(piece).ToPiece(Color(color))
+						attacks[pos] = attacks[pos].AddPosition_Immutable(extendPiece, fromPos)
+						if !a.shouldContinue(board, pos, Color(color)) {
 							break
 						}
-						attacks[pos] = attacks[pos].AddPosition_Immutable(NormalizedPiece(piece).ToPiece(Color(color)), fromPos)
-						break
-
 					}
 				}
 			}
@@ -358,24 +341,13 @@ func (a Attacks) AddPiece_immutable(piece Piece, pos Position, board Board) Atta
 		fmt.Println(board)
 		fmt.Println(piece, pos)
 		panic("Trying to move piece that isn't there")
-		return attacks
 	}
 	// Copy
-	for i := 0; i < 64; i++ {
-		attacks[i] = a[i]
-	}
+	copy(attacks, a)
 	for _, line := range AttackVectors[piece][pos] {
 		for _, toPos := range line {
-			if board.IsEmpty(toPos) {
-				attacks[toPos] = a[toPos].AddPosition_Immutable(piece, pos)
-			} else if board.IsOpposingPiece(toPos, piece.Color()) {
-				attacks[toPos] = a[toPos].AddPosition_Immutable(piece, pos)
-				if board[toPos].ToNormalizedPiece() != King {
-					break
-				}
-			} else {
-				// Pieces defend their own pieces
-				attacks[toPos] = a[toPos].AddPosition_Immutable(piece, pos)
+			attacks[toPos] = a[toPos].AddPosition_Immutable(piece, pos)
+			if !a.shouldContinue(board, toPos, piece.Color()) {
 				break
 			}
 		}

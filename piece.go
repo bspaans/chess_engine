@@ -22,6 +22,41 @@ const (
 	NoPiece
 )
 
+var NumberOfPieces = 12
+
+var Pieces = []Piece{
+	BlackPawn,
+	BlackKnight,
+	BlackBishop,
+	BlackRook,
+	BlackQueen,
+	BlackKing,
+	WhitePawn,
+	WhiteKnight,
+	WhiteBishop,
+	WhiteRook,
+	WhiteQueen,
+	WhiteKing,
+}
+
+var BlackPieces = []Piece{
+	BlackPawn,
+	BlackKnight,
+	BlackBishop,
+	BlackRook,
+	BlackQueen,
+	BlackKing,
+}
+
+var WhitePieces = []Piece{
+	WhitePawn,
+	WhiteKnight,
+	WhiteBishop,
+	WhiteRook,
+	WhiteQueen,
+	WhiteKing,
+}
+
 var PieceStrings = []string{
 	"p",
 	"n",
@@ -101,33 +136,13 @@ func (p Piece) ToNormalizedPiece() NormalizedPiece {
 	return NormalizedPiece(p - 6)
 }
 
-type NormalizedPiece uint8
-
-const (
-	Pawn NormalizedPiece = iota
-	Knight
-	Bishop
-	Rook
-	Queen
-	King
-	NoNPiece
-)
-
-var NormalizedPieces = []NormalizedPiece{Pawn, Knight, Bishop, Rook, Queen, King}
-var Pieces = []Piece{BlackPawn, BlackKnight, BlackBishop, BlackRook, BlackQueen, BlackKing, WhitePawn, WhiteKnight, WhiteBishop, WhiteRook, WhiteQueen, WhiteKing}
-var NumberOfNormalizedPieces = 6
-var NumberOfPieces = 12
-
-func (p NormalizedPiece) IsRayPiece() bool {
-	return p == Bishop || p == Rook || p == Queen
-}
-
-func (p NormalizedPiece) ToPiece(color Color) Piece {
-	if color == Black {
-		return Piece(p)
+func (p Piece) CanReach(from, to Position) bool {
+	// TODO: can we do something faster?
+	// have tables as bitmaps?
+	for _, pos := range PieceMoves[p][from] {
+		if pos == to {
+			return true
+		}
 	}
-	return Piece(p + 6)
-}
-func (p NormalizedPiece) String() string {
-	return Piece(p).String()
+	return false
 }

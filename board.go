@@ -41,9 +41,7 @@ func (b Board) ApplyMove(from, to Position) Piece {
 
 func (b Board) Copy() Board {
 	result := make([]Piece, 64)
-	for i := 0; i < 64; i++ {
-		result[i] = b[i]
-	}
+	copy(result, b)
 	return result
 }
 
