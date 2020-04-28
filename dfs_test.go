@@ -53,13 +53,13 @@ func getBestMove(unit *DFSEngine, timeLimit time.Duration) string {
 
 }
 
-func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duration) {
+func runUntilMate(cases [][]string, maxSecondsPerMove time.Duration) error {
 	for _, testCase := range cases {
 		fenStr, depthStr := testCase[0], testCase[1]
 		depth, _ := strconv.Atoi(depthStr)
 		fen, err := ParseFEN(fenStr)
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
 		origFen := fen
 
@@ -79,13 +79,12 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 			unit.SetPosition(fen)
 			bestmove := getBestMove(unit, maxSecondsPerMove*time.Second)
 			if bestmove == "" {
-				t.Fatal("Did not get a best move in time", testCase)
-				break
+				return fmt.Errorf("Did not get a best move in time %v", testCase)
 			}
 			nodes += unit.TotalNodes + unit.NodesPerSecond
 			move, err := ParseMove(bestmove)
 			if err != nil {
-				t.Fatal(err)
+				return err
 			}
 
 			fen = fen.ApplyMove(move)
@@ -100,11 +99,12 @@ func runUntilMate(t *testing.T, cases [][]string, maxSecondsPerMove time.Duratio
 			unit.SetPosition(origFen)
 			unit.Evaluators.Debug(origFen)
 			fmt.Println("Didn't find mate. Looked at", nodes, "nodes")
-			t.Errorf("Expecting mate in line %s in %s, but it aint", line, testCase)
+			return fmt.Errorf("Expecting mate in line %s in %s, but it aint", line, testCase)
 		} else {
 			fmt.Println("Found mate. Looked at", nodes, "nodes")
 		}
 	}
+	return nil
 }
 
 func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
@@ -115,7 +115,9 @@ func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P2Q2/3Pb1Pq/PP5P/R6R b - - 2 2", "1"},
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P5/3PbQPq/PP5P/R6R w - - 1 2", "2"},
 	}
-	runUntilMate(t, cases, 1)
+	if err := runUntilMate(cases, 1); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
@@ -135,7 +137,9 @@ func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
 		// Monterinas vs Max Euwe, Amsterdam, 1927
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2Pb4/3P1QPq/PP5P/R6R b - - 0 1", "3"},
 	}
-	runUntilMate(t, cases, 5)
+	if err := runUntilMate(cases, 1); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func Test_Engine_Mate_In_Two_Move_Disection(t *testing.T) {
@@ -276,7 +280,9 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 		// Madame de Remusat vs Napoleon I, Paris, 1802
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 	}
-	runUntilMate(t, cases, 8)
+	if err := runUntilMate(cases, 8); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
@@ -351,7 +357,9 @@ func Test_Engine_Can_Find_Mate_In_Four(t *testing.T) {
 		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "7"},
 		[]string{"r2qr3/ppp1B2p/1b4p1/n3Q1Pk/3P2b1/2P2B2/P4P2/RN4K1 w - - 1 0", "7"},
 	}
-	runUntilMate(t, cases, 500)
+	if err := runUntilMate(cases, 500); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
@@ -429,5 +437,30 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	}
 	if unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score < 0 {
 		t.Errorf("Not expecting a negative score in reply h7g6, got %f", unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score)
+	}
+}
+
+func Benchmark_MateInTwo(t *testing.B) {
+	cases := [][]string{
+		[]string{"r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PPQ2P1/R3K2R w - - 0 0", "3"},
+		// Henry Buckle vs NN, London, 1840
+		[]string{"r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0", "3"},
+
+		// Wilhelm Steinitz vs Herbert Trenchard, Vienna, 1898
+		// TODO: this mate doesn't start with a check so the engine doens't
+		// see queue Ne7 as a forcing move
+		//[]string{"r2qrb2/p1pn1Qp1/1p4Nk/4PR2/3n4/7N/P5PP/R6K w - - 1 0", "3"},
+
+		// Boris Ratner vs Alexander Konstantinopolsky, Moscow, 1945
+		[]string{"1r4k1/3b2pp/1b1pP2r/pp1P4/4q3/8/PP4RP/2Q2R1K b - - 0 1", "3"},
+
+		// Monterinas vs Max Euwe, Amsterdam, 1927
+		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2Pb4/3P1QPq/PP5P/R6R b - - 0 1", "3"},
+	}
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		if err := runUntilMate(cases, 5); err != nil {
+			panic(err)
+		}
 	}
 }
