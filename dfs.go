@@ -203,7 +203,8 @@ func (b *DFSEngine) queueAlternativeLine(pos *Game, tree *EvalTree, queue *list.
 		panic("uh")
 	}
 	// Finding alternative best moves using the evaluators
-	nextBestGame := b.Evaluators.GetAlternativeMove(pos, b.Seen)
+	nextBestGame, nodes := b.Evaluators.GetAlternativeMove(pos, b.Seen)
+	b.NodesPerSecond += nodes
 	if nextBestGame == nil {
 		return false
 	}
@@ -226,14 +227,16 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	b.queueBestLine(game, queue)
 }
 func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
-	newLine := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line))
+	newLine, nodes := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line))
+	b.NodesPerSecond += nodes
 	for _, move := range newLine {
 		b.Seen[game.FENString()] = true
 		queue.PushFront(move)
 	}
 }
 func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
-	newLine := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
+	newLine, nodes := b.Evaluators.BestLine(game, b.SelDepth-len(game.Line))
+	b.NodesPerSecond += nodes
 	for _, move := range newLine {
 		if !b.EvalTree.IsMateInNOrBetter(len(move.Line)) {
 			b.Seen[game.FENString()] = true
@@ -263,7 +266,11 @@ func (b *DFSEngine) outputInfo(output chan string, sendBestMove bool) {
 }
 
 func (b *DFSEngine) ShouldCheckPosition(position *Game, bestScore Score) bool {
-	if b.Evaluators.Eval(position)-bestScore > 2.0 {
+	eval, new := b.Evaluators.Eval(position)
+	if new {
+		b.NodesPerSecond++
+	}
+	if eval-bestScore > 2.0 {
 		return true
 	}
 	valid := position.ValidMoves()

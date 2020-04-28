@@ -209,9 +209,9 @@ func RandomEvaluator(f *Game) Score {
 	return Score(rand.NormFloat64())
 }
 
-func (e Evaluators) Eval(position *Game) Score {
+func (e Evaluators) Eval(position *Game) (Score, bool) {
 	if position.Score != nil {
-		return *position.Score
+		return *position.Score, false
 	}
 	score := Score(0.0)
 	if position.IsDraw() {
@@ -232,107 +232,132 @@ func (e Evaluators) Eval(position *Game) Score {
 		score = score * -1
 	}
 	position.Score = &score
-	return score
+	return score, true
 }
 
-func (e Evaluators) BestMove(position *Game) (*Game, Score) {
+func (e Evaluators) BestMove(position *Game) (*Game, Score, int) {
 	bestScore := LowestScore
 	var bestGame *Game
 	if position.IsFinished() {
-		return nil, LowestScore
+		return nil, LowestScore, 0
 	}
 	nextGames := position.NextGames()
+	nodes := 0
 
 	for _, f := range nextGames {
-		score := e.Eval(f)
+		score, new := e.Eval(f)
+		if new {
+			nodes++
+		}
 		if score > bestScore {
 			bestScore = score
 			bestGame = f
 		}
 	}
-	return bestGame, bestScore
+	return bestGame, bestScore, nodes
 }
 
-func (e Evaluators) BestLine(position *Game, depth int) []*Game {
+func (e Evaluators) BestLine(position *Game, depth int) ([]*Game, int) {
 	e.Eval(position)
 	line := []*Game{position}
 	game := position
 	if game.Score != nil && game.IsFinished() {
-		return line
+		return line, 0
 	}
+	nodes := 0
 	for d := 0; d < depth; d++ {
-		g, _ := e.BestMove(game)
+		g, _, nodesSeen := e.BestMove(game)
+		nodes += nodesSeen
 		if g == nil {
 			panic("Nil next game, but game is not finished")
 		}
 		game = g
 		line = append(line, game)
 		if game.IsFinished() {
-			return line
+			return line, nodes
 		}
 	}
-	return line
+	return line, nodes
 }
 
 func (e Evaluators) Debug(position *Game) {
-	boardScore := e.Eval(position)
+	boardScore, _ := e.Eval(position)
 	fmt.Println(position.Board)
 	fmt.Println("Board evaluation:", boardScore)
 	for _, f := range position.NextGames() {
-		score := e.Eval(f)
+		score, _ := e.Eval(f)
 		fmt.Println(f.Line[0], score*-1)
 	}
 }
 
-func (e Evaluators) GetAlternativeMove(position *Game, seen map[string]bool) *Game {
+func (e Evaluators) GetAlternativeMove(position *Game, seen map[string]bool) (*Game, int) {
 	nextBest := LowestScore
+	nodes := 0
 	var nextBestGame *Game
 	for _, game := range position.NextGames() {
 		if _, ok := seen[game.FENString()]; !ok {
-			score := e.Eval(game)
+			score, new := e.Eval(game)
+			if new {
+				nodes++
+			}
 			if score > nextBest {
 				nextBest = score
 				nextBestGame = game
 			}
 		}
 	}
-	return nextBestGame
+	return nextBestGame, nodes
 }
 
-func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, seen map[string]bool) *Game {
+func (e Evaluators) GetAlternativeMoveInLine(position *Game, line []*Move, seen map[string]bool) (*Game, int) {
 	for _, m := range line {
 		position = position.ApplyMove(m)
 	}
 	return e.GetAlternativeMove(position, seen)
 }
 
-func (e Evaluators) GetLineToQuietPosition(position *Game, depth int) []*Game {
+func (e Evaluators) GetLineToQuietPosition(position *Game, depth int) ([]*Game, int) {
 	e.Eval(position)
 	line := []*Game{position}
 	game := position
+	nodes := 0
 	if game.Score != nil && game.IsFinished() {
-		return line
+		return line, nodes
 	}
 	for d := 0; d < depth; d++ {
-		g, _ := e.BestMove(game)
+		g, _, nodesSeen := e.BestMove(game)
+		nodes += nodesSeen
 		if g == nil {
 			panic("Nil next game, but game is not finished")
 		}
 		game = g
 		line = append(line, game)
-		if game.IsFinished() || e.IsQuietPosition(game) {
-			return line
+		if game.IsFinished() {
+			return line, nodes
+		}
+		isQuiet, nodesSeen := e.IsQuietPosition(game)
+		nodes += nodesSeen
+		if isQuiet {
+			return line, nodes
 		}
 	}
-	return line
+	return line, nodes
 }
 
-func (e Evaluators) IsQuietPosition(position *Game) bool {
-	score := e.Eval(position)
+func (e Evaluators) IsQuietPosition(position *Game) (bool, int) {
+	nodes := 0
+	score, new := e.Eval(position)
+	if new {
+		nodes++
+	}
 	for _, nextMove := range position.NextGames() {
-		if e.Eval(nextMove)-score > 0.5 {
-			return false
+		eval, new := e.Eval(nextMove)
+		if new {
+			nodes++
+		}
+		if eval-score > 0.5 {
+			return false, nodes
 		}
 	}
-	return true
+	return true, nodes
 }

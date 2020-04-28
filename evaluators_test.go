@@ -18,7 +18,8 @@ func Test_Eval_mate_white(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if unit.Eval(position) != Mate {
+		score, _ := unit.Eval(position)
+		if score != Mate {
 			t.Errorf("Expecting mate")
 		}
 	}
@@ -36,7 +37,8 @@ func Test_Eval_mate_black(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if unit.Eval(position) != Mate {
+		score, _ := unit.Eval(position)
+		if score != Mate {
 			t.Errorf("Expecting mate")
 		}
 	}
@@ -63,7 +65,7 @@ func Test_Eval_BestMove_white(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		nextGame, score := unit.BestMove(position)
+		nextGame, score, _ := unit.BestMove(position)
 		if !nextGame.IsMate() || score != Mate {
 			t.Errorf("Expecting mate after best move")
 		}
@@ -81,7 +83,7 @@ func Test_Eval_BestMove_black(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		nextGame, score := unit.BestMove(position)
+		nextGame, score, _ := unit.BestMove(position)
 		if !nextGame.IsMate() && score != OpponentMate {
 			t.Errorf("Expecting mate after best move")
 		}
@@ -96,7 +98,7 @@ func Test_Eval_BestMove_space_evaluator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	game, _ := unit.BestMove(position)
+	game, _, _ := unit.BestMove(position)
 	if game.Line[0].String() != "e2e4" {
 		t.Errorf("Expecting e2e4 as opening move for space evaluator, got %s", game.Line)
 	}
@@ -111,7 +113,7 @@ func Test_Eval_BestLine_opening_space_evaluator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := unit.BestLine(position, 2)
+	line, _ := unit.BestLine(position, 2)
 	if len(line) != 3 {
 		t.Fatalf("Expecting line of length 2+1, got %d: %s", len(line), line[0].Board)
 	}
@@ -135,7 +137,7 @@ func Test_Eval_BestLine_space_and_material_evaluator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	line := unit.BestLine(position, 2)
+	line, _ := unit.BestLine(position, 2)
 	if len(line) != 3 {
 		t.Fatalf("Expecting line of length 2+1, got %d", len(line))
 	}
@@ -161,14 +163,14 @@ func Test_Eval_AlternativeMove_space_evaluator(t *testing.T) {
 	fenMap := map[string]bool{}
 	fenMap[fen] = true
 
-	game := unit.GetAlternativeMove(position, fenMap)
+	game, _ := unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "e2e4" {
 		t.Errorf("Expecting e2e4 as opening move for space evaluator, got %s", game.Line)
 	}
 
 	fenMap[game.FENString()] = true
 
-	game = unit.GetAlternativeMove(position, fenMap)
+	game, _ = unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "d2d4" {
 		t.Errorf("Expecting d2d4 as an alternative opening move for space evaluator, got %s", game.Line)
 	}
@@ -185,14 +187,14 @@ func Test_Eval_AlternativeMove_space_evaluator_black(t *testing.T) {
 	fenMap := map[string]bool{}
 	fenMap[fen] = true
 
-	game := unit.GetAlternativeMove(position, fenMap)
+	game, _ := unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "e7e5" {
 		t.Errorf("Expecting e7e5 as opening move for space evaluator, got %s", game.Line)
 	}
 
 	fenMap[game.FENString()] = true
 
-	game = unit.GetAlternativeMove(position, fenMap)
+	game, _ = unit.GetAlternativeMove(position, fenMap)
 	if game.Line[0].String() != "d7d5" {
 		t.Errorf("Expecting d7d5 as an alternative opening move for space evaluator, got %s", game.Line)
 	}
