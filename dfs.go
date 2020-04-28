@@ -75,7 +75,6 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				return
 			}
 			if queue.Len() > 0 {
-				b.NodesPerSecond++
 				game := queue.Remove(queue.Front()).(*Game)
 				if game == nil {
 					panic("game nil")
