@@ -179,6 +179,12 @@ func NewTournament(engines []*Engine, rounds int) *Tournament {
 	}
 }
 
+func (t *Tournament) TextToSpeech(msg string) {
+	cmd := exec.Command("spd-say", msg)
+	cmd.Run()
+	time.Sleep(3 * time.Second)
+}
+
 func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameResult) {
 	game.Result = result
 	if result == Draw {
@@ -190,6 +196,13 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 		t.Standing[game.Black] += 1.0
 	}
 	fmt.Println(game.ResultAnnouncement())
+	if game.Result == WhiteWins {
+		t.TextToSpeech("White wins. Congratulations " + game.White.Name)
+	} else if game.Result == BlackWins {
+		t.TextToSpeech("Black wins. Congratulations " + game.Black.Name)
+	} else {
+		t.TextToSpeech("Call Picasso, because it's a draw")
+	}
 	fenStr := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	pos, err := chess_engine.ParseFEN(fenStr)
 	if err != nil {
@@ -241,6 +254,7 @@ func (t *Tournament) Start() {
 		}
 
 		fmt.Printf("Starting game %d/%d: %s v. %s\n", i+1, len(t.Games), game.White.Name, game.Black.Name)
+		t.TextToSpeech("Starting " + game.White.Name + " versus " + game.Black.Name)
 
 		for game.Result == Unfinished {
 			move := game.White.Play(fen)

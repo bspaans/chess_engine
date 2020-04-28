@@ -326,6 +326,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
+
 	// Castling
 	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
 		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
@@ -333,7 +334,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 		}
 	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
 		if f.Board.CanCastle(f.Attacks, White, F1, G1) {
-			result = append(result, NewMove(kingPos, C1))
+			result = append(result, NewMove(kingPos, G1))
 		}
 	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
 		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
@@ -358,7 +359,6 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	line[len(f.Line)] = move
 
 	board := f.Board.Copy()
-	fmt.Println(board)
 
 	capturedPiece := board.ApplyMove(move.From, move.To).ToNormalizedPiece()
 	movingPiece := board[move.To]
@@ -378,6 +378,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 		if board[castles.From].ToNormalizedPiece() != Rook {
 			fmt.Println(f.CastleStatuses.String())
 			fmt.Println(board)
+			fmt.Println(move)
 			panic("Illegal castles, no rook found")
 		}
 		board.ApplyMove(castles.From, castles.To)
