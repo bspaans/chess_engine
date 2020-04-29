@@ -53,7 +53,7 @@ func getBestMove(unit *DFSEngine, timeLimit time.Duration) string {
 
 }
 
-func runUntilMate(cases [][]string, maxSecondsPerMove time.Duration) error {
+func runUntilMate(cases [][]string, maxSecondsPerMove time.Duration, announceResult bool) error {
 	for _, testCase := range cases {
 		fenStr, depthStr := testCase[0], testCase[1]
 		depth, _ := strconv.Atoi(depthStr)
@@ -101,7 +101,9 @@ func runUntilMate(cases [][]string, maxSecondsPerMove time.Duration) error {
 			fmt.Println("Didn't find mate. Looked at", nodes, "nodes")
 			return fmt.Errorf("Expecting mate in line %s in %s, but it aint", line, testCase)
 		} else {
-			fmt.Println("Found mate. Looked at", nodes, "nodes")
+			if announceResult {
+				fmt.Println("Found mate. Looked at", nodes, "nodes")
+			}
 		}
 	}
 	return nil
@@ -115,7 +117,7 @@ func Test_Engine_Can_Find_Mate_In_One(t *testing.T) {
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P2Q2/3Pb1Pq/PP5P/R6R b - - 2 2", "1"},
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2P5/3PbQPq/PP5P/R6R w - - 1 2", "2"},
 	}
-	if err := runUntilMate(cases, 1); err != nil {
+	if err := runUntilMate(cases, 1, true); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -137,7 +139,7 @@ func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
 		// Monterinas vs Max Euwe, Amsterdam, 1927
 		[]string{"7r/p3ppk1/3p4/2p1P1Kp/2Pb4/3P1QPq/PP5P/R6R b - - 0 1", "3"},
 	}
-	if err := runUntilMate(cases, 1); err != nil {
+	if err := runUntilMate(cases, 1, true); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -280,7 +282,7 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 		// Madame de Remusat vs Napoleon I, Paris, 1802
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
 	}
-	if err := runUntilMate(cases, 8); err != nil {
+	if err := runUntilMate(cases, 8, true); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -357,7 +359,7 @@ func Test_Engine_Can_Find_Mate_In_Four(t *testing.T) {
 		//[]string{"r1bqr3/ppp1B1kp/1b4p1/n2B4/3PQ1P1/2P5/P4P2/RN4K1 w - - 1 0", "7"},
 		[]string{"r2qr3/ppp1B2p/1b4p1/n3Q1Pk/3P2b1/2P2B2/P4P2/RN4K1 w - - 1 0", "7"},
 	}
-	if err := runUntilMate(cases, 500); err != nil {
+	if err := runUntilMate(cases, 500, true); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -459,7 +461,7 @@ func Benchmark_MateInTwo(t *testing.B) {
 	}
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
-		if err := runUntilMate(cases, 5); err != nil {
+		if err := runUntilMate(cases, 5, false); err != nil {
 			panic(err)
 		}
 	}

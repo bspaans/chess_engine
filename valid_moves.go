@@ -1,7 +1,5 @@
 package chess_engine
 
-import "fmt"
-
 // ValidMoves is an array of Piece->PositionBitmap, tracking
 // the valid positions for every piece.
 type ValidMoves []PositionBitmap
@@ -26,7 +24,7 @@ func (v ValidMoves) AddPiece(piece Piece, pos Position, board Board) {
 		return
 	}
 	isPawn := piece.ToNormalizedPiece() == Pawn
-	for _, line := range MoveVectors[piece][pos] {
+	for _, line := range pos.GetMoveVectors(piece) {
 		for _, toPos := range line {
 			if board.IsEmpty(toPos) {
 				v[piece] = v[piece].Add(toPos)
@@ -58,7 +56,6 @@ func (v ValidMoves) Copy() ValidMoves {
 
 func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPassantVulnerable Position, knownPieces PiecePositions) ValidMoves {
 
-	fmt.Println("loking at move", move, v[WhitePawn].ToPositions())
 	// Copy current validmoves
 	result := v.Copy()
 
@@ -84,9 +81,8 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			result[movingPiece] = result[movingPiece].Remove(pos)
 		}
 	}
-	fmt.Println("@@ loking at move", move, result[WhitePawn].ToPositions())
 	// extend pieces that were previously blocked
-	for _, line := range MoveVectors[WhiteQueen][move.From] {
+	for _, line := range move.From.GetQueenMoves() {
 		pieceOnLine := NoPosition
 		for _, targetPos := range line {
 			if board[targetPos] == NoPiece {
@@ -105,7 +101,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 						result[extendingPiece] = result[extendingPiece].Add(move.From)
 					}
 				} else {
-					for _, line := range MoveVectors[extendingPiece][pieceOnLine] {
+					for _, line := range pieceOnLine.GetMoveVectors(extendingPiece) {
 						for _, pos := range line {
 							if board.IsEmpty(pos) {
 								result[extendingPiece] = result[extendingPiece].Add(pos)
@@ -133,9 +129,8 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			}
 		}
 	}
-	fmt.Println("## loking at move", move, result[WhitePawn].ToPositions())
 	// extend knights
-	for _, line := range MoveVectors[WhiteKnight][move.From] {
+	for _, line := range move.From.GetMoveVectors(WhiteKnight) {
 		for _, pos := range line {
 			if board[pos].ToNormalizedPiece() == Knight {
 				result[board[pos]] = result[board[pos]].Add(move.From)
@@ -143,7 +138,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		}
 	}
 	// stop pieces that are now blocked
-	for _, line := range MoveVectors[WhiteQueen][move.To] {
+	for _, line := range move.To.GetQueenMoves() {
 		pieceOnLine := NoPosition
 		for _, targetPos := range line {
 			if board[targetPos] == NoPiece {
@@ -167,23 +162,45 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 					}
 				} else {
 					// is it a pawn attack or a move?
-					fmt.Println(result[WhitePawn].ToPositions())
-					fmt.Println("looking at pawn", pieceOnLine)
 					if pieceOnLine.IsPawnAttack(move.To, blockingPiece.Color()) {
-						fmt.Println("that's an attack baby")
 						result[blockingPiece] = result[blockingPiece].Add(move.To)
 					} else if blockingPiece.CanReach(pieceOnLine, move.To) {
-						fmt.Println("removing", move.To)
-						// TODO: don't remove if there's another pawn attacking this square
-						result[blockingPiece] = result[blockingPiece].Remove(move.To)
+						// Don't remove if there's another pawn attacking this square
+						foundAttack := false
+						for _, pawnPos := range knownPieces[blockingPiece.Color()][blockingPiece.ToNormalizedPiece()].ToPositions() {
+							if pawnPos.IsPawnAttack(move.To, blockingPiece.Color()) {
+								foundAttack = true
+							}
+						}
+						if !foundAttack {
+							result[blockingPiece] = result[blockingPiece].Remove(move.To)
+						}
+						if !move.To.IsPawnOpeningJump(blockingPiece.Color()) {
+							// need to remove e.g. e4 if e3 is now blocked
+							if pieceOnLine.CanPawnOpeningJump(blockingPiece.Color()) {
+								// remove if e4 is not under attack by another pawn
+								foundAttack := false
+								targetPos := pieceOnLine.GetPawnOpeningJump(blockingPiece.Color())
+								for _, pawnPos := range knownPieces[blockingPiece.Color()][blockingPiece.ToNormalizedPiece()].ToPositions() {
+									if pawnPos.IsPawnAttack(targetPos, blockingPiece.Color()) {
+										foundAttack = true
+									}
+								}
+								if !foundAttack {
+									result[blockingPiece] = result[blockingPiece].Remove(targetPos)
+								}
+							}
+						}
 					}
 				}
+				continue
+			}
+			if !blockingPiece.CanReach(pieceOnLine, move.To) {
 				continue
 			}
 			if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
 				result[blockingPiece] = result[blockingPiece].Add(move.To)
 			} else {
-				fmt.Println("REMOV", blockingPiece)
 				result[blockingPiece] = result[blockingPiece].Remove(move.To)
 			}
 			vector := NewMove(move.To, pieceOnLine).Vector().Normalize()
@@ -197,7 +214,6 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 					// Corner case: if piece is the same piece as blockingPiece
 					// we need to undo our removes...
 					if blockingPiece == board[pos] {
-						fmt.Println("rolling back", blockingPiece, pos)
 						vector = vector.Invert()
 						for _, rollbackPos := range vector.FollowVectorUntilEdgeOfBoard(pos) {
 							if rollbackPos == pieceOnLine {
@@ -211,11 +227,19 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			}
 		}
 	}
+	// extend knights
+	for _, line := range move.To.GetMoveVectors(WhiteKnight) {
+		for _, pos := range line {
+			if board[pos] == Knight.ToPiece(movingPiece.OppositeColor()) {
+				result[board[pos]] = result[board[pos]].Add(move.To)
+			} else if board[pos] == Knight.ToPiece(movingPiece.Color()) {
+				result[board[pos]] = result[board[pos]].Remove(move.To)
+			}
+		}
+	}
 
-	fmt.Println("^^^^^^^^^^ loking at move", move, result[WhitePawn].ToPositions())
 	// add the piece on its new position
 	result.AddPiece(movingPiece, move.To, board)
-	fmt.Println("done", result[WhitePawn].ToPositions())
 	return result
 }
 
@@ -225,7 +249,6 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 	if color == White {
 		pieces = WhitePieces
 	}
-	fmt.Println(v[WhitePawn].ToPositions())
 	for _, piece := range pieces {
 		positions := v[piece].ToPositions()
 		for _, pos := range positions {
@@ -238,7 +261,7 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 							}
 						}
 					}
-					if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) {
+					if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) && board.HasClearLineTo(moveFrom, pos) {
 						result = append(result, NewMove(moveFrom, pos))
 					}
 				} else if piece.CanReach(moveFrom, pos) {

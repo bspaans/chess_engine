@@ -202,7 +202,7 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 			// need to have a separate check to see if a pawn move
 			// would block the check
 			for _, pawnPos := range f.Pieces.Positions(f.ToMove, Pawn) {
-				for _, lines := range MoveVectors[WhitePawn.SetColor(f.ToMove)][pawnPos] {
+				for _, lines := range pawnPos.GetMoveVectors(Pawn.ToPiece(f.ToMove)) {
 					for _, toPos := range lines {
 						if f.Board.IsEmpty(toPos) {
 							if toPos == pos {
@@ -333,7 +333,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	}
 
 	for _, pawnPos := range f.Pieces.Positions(color, Pawn) {
-		for _, line := range MoveVectors[f.Board[pawnPos]][pawnPos] {
+		for _, line := range pawnPos.GetMoveVectors(f.Board[pawnPos]) {
 			for _, targetPos := range line {
 				if f.Board[targetPos] == NoPiece {
 					move := NewMove(pawnPos, targetPos)
@@ -346,7 +346,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	}
 	for _, piece := range []NormalizedPiece{Knight, Bishop, Rook, Queen} {
 		for _, fromPos := range f.Pieces.Positions(color, piece) {
-			for _, line := range MoveVectors[Piece(piece)][fromPos] {
+			for _, line := range fromPos.GetMoveVectors(Piece(piece)) {
 				for _, toPos := range line {
 					if f.Board[toPos] == NoPiece {
 						result = append(result, NewMove(fromPos, toPos))
@@ -495,7 +495,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 			panic("Panic in the disco")
 		}
 	*/
-	//result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
+	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
 
 	fullMove := f.Fullmove
 	if f.ToMove == Black {
@@ -514,44 +514,42 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Line = line
 	result.Parent = f
 
-	/*
-		vv := result.NewValidMoves()
-		gg := result.ValidMoves()
-		corrupt := false
-		for _, move := range gg {
-			found := false
-			for _, suggested := range vv {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Missing move", move, "after", result.Line)
+	vv := result.NewValidMoves()
+	gg := result.ValidMoves()
+	corrupt := false
+	for _, move := range gg {
+		found := false
+		for _, suggested := range vv {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
 			}
 		}
-		for _, move := range vv {
-			found := false
-			for _, suggested := range gg {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Suggesting illegal move", move, "after", result.Line)
+		if !found {
+			corrupt = true
+			fmt.Println("Missing move", move, "after", result.Line)
+		}
+	}
+	for _, move := range vv {
+		found := false
+		for _, suggested := range gg {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
 			}
 		}
-		if corrupt {
-			fmt.Println(board)
-			fmt.Println(vv)
-			fmt.Println(gg)
-			fmt.Println(len(vv), len(gg))
-			panic("yo")
-		} else {
-			//fmt.Println("all good", move)
+		if !found {
+			corrupt = true
+			fmt.Println("Suggesting illegal move", move, "after", result.Line)
 		}
-	*/
+	}
+	if corrupt {
+		fmt.Println(board)
+		fmt.Println(vv)
+		fmt.Println(gg)
+		fmt.Println(len(vv), len(gg))
+		panic("yo")
+	} else {
+		//fmt.Println("all good", move)
+	}
 
 	return result
 }

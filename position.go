@@ -209,17 +209,20 @@ func (p Position) GetAdjacentFiles() []File {
 func (p Position) GetPieceMoves(piece Piece) []Position {
 	return PieceMoves[int(piece)*64+int(p)]
 }
+func (p Position) GetMoveVectors(piece Piece) [][]Position {
+	return MoveVectors[int(piece)*64+int(p)]
+}
 
 func (p Position) GetKnightMoves() []Position {
 	return p.GetPieceMoves(WhiteKnight)
 }
 
 func (p Position) GetLines() [][]Position {
-	return MoveVectors[WhiteRook][p]
+	return p.GetMoveVectors(WhiteRook)
 }
 
 func (p Position) GetDiagonals() [][]Position {
-	return MoveVectors[WhiteBishop][p]
+	return p.GetMoveVectors(WhiteBishop)
 }
 
 func (p Position) GetKingMoves() []Position {
@@ -227,15 +230,39 @@ func (p Position) GetKingMoves() []Position {
 }
 
 func (p Position) GetQueenMoves() [][]Position {
-	return MoveVectors[WhiteQueen][p]
+	return p.GetMoveVectors(WhiteQueen)
 }
 
 func (p Position) IsPawnAttack(p2 Position, color Color) bool {
-	diff := p2 - p
-	if color == Black {
-		diff *= -1
+	// TODO: should be faster with bitmap tables
+	for _, line := range AttackVectors[Pawn.ToPiece(color)][p] {
+		for _, pos := range line {
+			if pos == p2 {
+				return true
+			}
+		}
 	}
-	return diff == 7 || diff == 9
+	return false
+}
+
+func (p Position) IsPawnOpeningJump(color Color) bool {
+	if color == Black {
+		return p.GetRank() == '5'
+	}
+	return p.GetRank() == '4'
+}
+
+func (p Position) CanPawnOpeningJump(color Color) bool {
+	if color == Black {
+		return p.GetRank() == '7'
+	}
+	return p.GetRank() == '2'
+}
+func (p Position) GetPawnOpeningJump(color Color) Position {
+	if color == Black {
+		return p - 16
+	}
+	return p + 16
 }
 
 func PositionFromFileRank(f File, r Rank) Position {
@@ -288,6 +315,13 @@ func init() {
 			}
 			return result
 		}
+		expand := func(positions []Position) [][]Position {
+			result := [][]Position{}
+			for _, p := range positions {
+				result = append(result, []Position{p})
+			}
+			return result
+		}
 		getPositions := func(p Piece, pos Position) []Position {
 			if p.ToNormalizedPiece() == King {
 				return pos.GetKingMoves()
@@ -307,35 +341,43 @@ func init() {
 				return flatten(pos.GetQueenMoves())
 			}
 			panic("adsa")
-
 		}
-
-		result += "var MoveVectors = map[Piece][][][]Position{\n"
-		for _, mover := range singleMovers {
-			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
-			result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
-			for i := 0; i < 64; i++ {
-				moves := moverFunc(Position(i))
-				result += "\t\t[][]Position{\n"
-				for _, m := range moves {
-					result += fmt.Sprintf("\t\t\t%s,\n", formatMoves([]Position{m}))
+		getLines := func(p Piece, pos Position) [][]Position {
+			if p.ToNormalizedPiece() == King {
+				return expand(pos.GetKingMoves())
+			} else if p.ToNormalizedPiece() == Knight {
+				return expand(pos.GetKnightMoves())
+			} else if p.ToNormalizedPiece() == Pawn {
+				if p.Color() == White {
+					return pos.GetWhitePawnMoves()
+				} else {
+					return pos.GetBlackPawnMoves()
 				}
-				result += "\t\t},\n"
+			} else if p.ToNormalizedPiece() == Rook {
+				return (pos.GetLines())
+			} else if p.ToNormalizedPiece() == Bishop {
+				return (pos.GetDiagonals())
+			} else if p.ToNormalizedPiece() == Queen {
+				return (pos.GetQueenMoves())
 			}
-			result += "\t},\n"
+			panic("adsa")
 		}
-		for _, mover := range multiMovers {
-			index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
-			result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
+
+		result += "var MoveVectors = [][][]Position{\n"
+		for _, piece := range Pieces {
+			result += "\t// " + piece.String() + "\n"
 			for i := 0; i < 64; i++ {
-				lines := moverFunc(Position(i))
-				result += "\t\t[][]Position{\n"
+				lines := getLines(piece, Position(i))
+				if len(lines) == 0 || (len(lines) == 1 && len(lines[0]) == 0) {
+					result += "\t[][]Position{},\n"
+					continue
+				}
+				result += "\t[][]Position{\n"
 				for _, moves := range lines {
-					result += fmt.Sprintf("\t\t\t%s,\n", formatMoves(moves))
+					result += "\t\t" + formatMoves(moves) + ",\n"
 				}
-				result += "\t\t},\n"
+				result += "\t},\n"
 			}
-			result += "\t},\n"
 		}
 		result += "}\n\n"
 
