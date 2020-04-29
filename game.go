@@ -249,6 +249,10 @@ func (f *Game) FilterPinnedPieces(result []*Move) []*Move {
 	}
 	return filteredResult
 }
+func (f *Game) NewValidMoves() []*Move {
+	result := f.NewGetValidMovesForColor(f.ToMove)
+	return result
+}
 
 func (f *Game) ValidMoves() []*Move {
 	if f.valid != nil {
@@ -257,6 +261,49 @@ func (f *Game) ValidMoves() []*Move {
 	result := f.GetValidMovesForColor(f.ToMove)
 	f.valid = &result
 	return result
+}
+
+func (f *Game) NewGetValidMovesForColor(color Color) []*Move {
+
+	checks := f.Attacks.GetChecks(color, f.Pieces)
+	if len(checks) > 0 {
+		result := f.validMovesInCheck(checks)
+		f.valid = &result
+		return result
+	}
+	result := []*Move{}
+
+	for _, move := range f.validMoves.ToMoves(color, f.Pieces, f.Board) {
+		// The king can only move to squares that are empty and/or unattacked
+		if f.Board[move.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), move.To) {
+			// Filtering invalid king move
+		} else {
+			result = append(result, move)
+		}
+	}
+
+	// Castling
+	kingPos := f.Pieces.GetKingPos(color)
+	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
+		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
+			result = append(result, NewMove(kingPos, C1))
+		}
+	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
+		if f.Board.CanCastle(f.Attacks, White, F1, G1) {
+			result = append(result, NewMove(kingPos, G1))
+		}
+	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
+		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
+			result = append(result, NewMove(kingPos, C8))
+		}
+	} else if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
+		if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
+			result = append(result, NewMove(kingPos, G8))
+		}
+	}
+
+	// Make sure pieces aren't pinned
+	return f.FilterPinnedPieces(result)
 }
 
 func (f *Game) GetValidMovesForColor(color Color) []*Move {
@@ -472,6 +519,44 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Fullmove = fullMove
 	result.Line = line
 	result.Parent = f
+
+	vv := result.NewValidMoves()
+	gg := result.ValidMoves()
+	corrupt := false
+	for _, move := range gg {
+		found := false
+		for _, suggested := range vv {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
+			}
+		}
+		if !found {
+			corrupt = true
+			fmt.Println("Missing move", move, "after", result.Line)
+		}
+	}
+	for _, move := range vv {
+		found := false
+		for _, suggested := range gg {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
+			}
+		}
+		if !found {
+			corrupt = true
+			fmt.Println("Suggesting illegal move", move, "after", result.Line)
+		}
+	}
+	if corrupt {
+		fmt.Println(board)
+		fmt.Println(vv)
+		fmt.Println(gg)
+		fmt.Println(len(vv), len(gg))
+		panic("yo")
+	} else {
+		fmt.Println("all good", move)
+	}
+
 	return result
 }
 

@@ -1,6 +1,8 @@
 package chess_engine
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type Board []Piece
 
@@ -43,6 +45,20 @@ func (b Board) Copy() Board {
 	result := make([]Piece, 64)
 	copy(result, b)
 	return result
+}
+
+func (b Board) HasClearLineTo(from, to Position) bool {
+	vector := NewMove(from, to).Vector().Normalize()
+	for _, pos := range vector.FollowVectorUntilEdgeOfBoard(to) {
+		if pos == from {
+			return true
+		} else if b[pos] == NoPiece {
+			continue
+		} else {
+			return false
+		}
+	}
+	return true
 }
 
 func (b Board) String() string {
