@@ -226,6 +226,14 @@ func (p Position) GetQueenMoves() [][]Position {
 	return MoveVectors[WhiteQueen][p]
 }
 
+func (p Position) IsPawnAttack(p2 Position, color Color) bool {
+	diff := p2 - p
+	if color == Black {
+		diff *= -1
+	}
+	return diff == 7 || diff == 9
+}
+
 func PositionFromFileRank(f File, r Rank) Position {
 	rank := int(r - '1')
 	file := int(f - 'a')
