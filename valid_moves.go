@@ -58,6 +58,7 @@ func (v ValidMoves) Copy() ValidMoves {
 
 func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPassantVulnerable Position, knownPieces PiecePositions) ValidMoves {
 
+	fmt.Println("loking at move", move, v[WhitePawn].ToPositions())
 	// Copy current validmoves
 	result := v.Copy()
 
@@ -67,14 +68,23 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		// position then remove it.
 		found := false
 		for _, moveFrom := range knownPieces[movingPiece.Color()][movingPiece.ToNormalizedPiece()].ToPositions() {
-			if movingPiece.CanReach(moveFrom, pos) {
-				found = true
+			if movingPiece.ToNormalizedPiece() != Pawn {
+				if movingPiece.CanReach(moveFrom, pos) {
+					found = true
+				}
+			} else {
+				if moveFrom.IsPawnAttack(pos, movingPiece.Color()) {
+					found = true
+				} else if movingPiece.CanReach(moveFrom, pos) {
+					found = true
+				}
 			}
 		}
 		if !found {
 			result[movingPiece] = result[movingPiece].Remove(pos)
 		}
 	}
+	fmt.Println("@@ loking at move", move, result[WhitePawn].ToPositions())
 	// extend pieces that were previously blocked
 	for _, line := range MoveVectors[WhiteQueen][move.From] {
 		pieceOnLine := NoPosition
@@ -90,8 +100,20 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		if pieceOnLine != NoPosition {
 			extendingPiece := board[pieceOnLine]
 			if !extendingPiece.ToNormalizedPiece().IsRayPiece() {
-				if extendingPiece.CanReach(pieceOnLine, move.From) {
-					result[extendingPiece] = result[extendingPiece].Add(move.From)
+				if extendingPiece.ToNormalizedPiece() != Pawn {
+					if extendingPiece.CanReach(pieceOnLine, move.From) {
+						result[extendingPiece] = result[extendingPiece].Add(move.From)
+					}
+				} else {
+					for _, line := range MoveVectors[extendingPiece][pieceOnLine] {
+						for _, pos := range line {
+							if board.IsEmpty(pos) {
+								result[extendingPiece] = result[extendingPiece].Add(pos)
+							} else {
+								break
+							}
+						}
+					}
 				}
 				continue
 			}
@@ -101,10 +123,8 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			vector := NewMove(move.From, pieceOnLine).Vector().Normalize()
 			for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
 				if board.IsEmpty(pos) {
-					fmt.Println("Adding because empty", pos, "for piece", extendingPiece, "on", pieceOnLine)
 					result[extendingPiece] = result[extendingPiece].Add(pos)
 				} else if board.IsOpposingPiece(pos, extendingPiece.Color()) { // TODO not true for pawns
-					fmt.Println("Adding because empty", pos, "for piece", extendingPiece, "on", pieceOnLine)
 					result[extendingPiece] = result[extendingPiece].Add(pos)
 					break
 				} else {
@@ -113,6 +133,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			}
 		}
 	}
+	fmt.Println("## loking at move", move, result[WhitePawn].ToPositions())
 	// extend knights
 	for _, line := range MoveVectors[WhiteKnight][move.From] {
 		for _, pos := range line {
@@ -134,7 +155,6 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		}
 		if pieceOnLine != NoPosition {
 			blockingPiece := board[pieceOnLine]
-			fmt.Println("found piece", blockingPiece, "on", pieceOnLine, "from", move.To)
 			if !blockingPiece.ToNormalizedPiece().IsRayPiece() {
 				// TODO: handle pawns
 				if blockingPiece.ToNormalizedPiece() != Pawn {
@@ -146,11 +166,15 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 						}
 					}
 				} else {
-					fmt.Println("handling pawn on", pieceOnLine)
 					// is it a pawn attack or a move?
+					fmt.Println(result[WhitePawn].ToPositions())
+					fmt.Println("looking at pawn", pieceOnLine)
 					if pieceOnLine.IsPawnAttack(move.To, blockingPiece.Color()) {
+						fmt.Println("that's an attack baby")
 						result[blockingPiece] = result[blockingPiece].Add(move.To)
 					} else if blockingPiece.CanReach(pieceOnLine, move.To) {
+						fmt.Println("removing", move.To)
+						// TODO: don't remove if there's another pawn attacking this square
 						result[blockingPiece] = result[blockingPiece].Remove(move.To)
 					}
 				}
@@ -159,23 +183,28 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
 				result[blockingPiece] = result[blockingPiece].Add(move.To)
 			} else {
+				fmt.Println("REMOV", blockingPiece)
 				result[blockingPiece] = result[blockingPiece].Remove(move.To)
 			}
 			vector := NewMove(move.To, pieceOnLine).Vector().Normalize()
 			for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
-				fmt.Println("processing move", move)
-				fmt.Println(vector, pieceOnLine, move.To, pos)
 				if board.IsEmpty(pos) {
-					fmt.Println("Removing because empty", pos, "for piece", blockingPiece, "on", pieceOnLine)
 					result[blockingPiece] = result[blockingPiece].Remove(pos)
-				} else if board.IsOpposingPiece(pos, blockingPiece.Color()) { // TODO not true for pawns
-					fmt.Println("Removing because opponent", pos, "for piece", blockingPiece, "on", pieceOnLine)
+				} else if board.IsOpposingPiece(pos, blockingPiece.Color()) {
 					result[blockingPiece] = result[blockingPiece].Remove(pos)
 					break
 				} else {
+					// Corner case: if piece is the same piece as blockingPiece
+					// we need to undo our removes...
 					if blockingPiece == board[pos] {
-						fmt.Println("we need to roll back")
-						// TODO: if piece is the same piece as blockingPiece we need to undo our removes...
+						fmt.Println("rolling back", blockingPiece, pos)
+						vector = vector.Invert()
+						for _, rollbackPos := range vector.FollowVectorUntilEdgeOfBoard(pos) {
+							if rollbackPos == pieceOnLine {
+								break
+							}
+							result[blockingPiece] = result[blockingPiece].Add(rollbackPos)
+						}
 					}
 					break
 				}
@@ -183,8 +212,10 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		}
 	}
 
+	fmt.Println("^^^^^^^^^^ loking at move", move, result[WhitePawn].ToPositions())
 	// add the piece on its new position
 	result.AddPiece(movingPiece, move.To, board)
+	fmt.Println("done", result[WhitePawn].ToPositions())
 	return result
 }
 
@@ -194,26 +225,29 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 	if color == White {
 		pieces = WhitePieces
 	}
-	fmt.Println(v[WhiteQueen].ToPositions())
+	fmt.Println(v[WhitePawn].ToPositions())
 	for _, piece := range pieces {
 		positions := v[piece].ToPositions()
 		for _, pos := range positions {
 			for _, moveFrom := range knownPieces[color][piece.ToNormalizedPiece()].ToPositions() {
-				if piece.CanReach(moveFrom, pos) {
-					if piece.ToNormalizedPiece() == Knight {
-						result = append(result, NewMove(moveFrom, pos))
-					} else if (board.IsEmpty(pos) || board.IsOpposingPiece(pos, color)) && board.HasClearLineTo(moveFrom, pos) {
-						result = append(result, NewMove(moveFrom, pos))
-					} else {
-						//fmt.Println("skipping piece", piece, "on", moveFrom, pos, board.HasClearLineTo(moveFrom, pos))
-					}
-				} else if piece == WhitePawn || piece == BlackPawn {
+				if piece == WhitePawn || piece == BlackPawn {
 					for _, line := range AttackVectors[piece][moveFrom] {
 						for _, attack := range line {
 							if attack == pos && board.IsOpposingPiece(pos, color) {
 								result = append(result, NewMove(moveFrom, pos))
 							}
 						}
+					}
+					if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) {
+						result = append(result, NewMove(moveFrom, pos))
+					}
+				} else if piece.CanReach(moveFrom, pos) {
+					if piece.ToNormalizedPiece() == Knight {
+						result = append(result, NewMove(moveFrom, pos))
+					} else if (board.IsEmpty(pos) || board.IsOpposingPiece(pos, color)) && board.HasClearLineTo(moveFrom, pos) {
+						result = append(result, NewMove(moveFrom, pos))
+					} else {
+						//fmt.Println("skipping piece", piece, "on", moveFrom, pos, board.HasClearLineTo(moveFrom, pos))
 					}
 				}
 			}

@@ -3,6 +3,7 @@ package chess_engine
 import (
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 )
 
@@ -242,7 +243,7 @@ func PositionFromFileRank(f File, r Rank) Position {
 
 func init() {
 	// TODO replace maps with arrays
-	if false {
+	if true {
 		formatPos := func(p Position) string {
 			return strings.ToUpper(p.String())
 		}
@@ -283,6 +284,36 @@ func init() {
 		pawnAttacks := [][]interface{}{
 			[]interface{}{"White", func(p Position) []Position { return p.GetWhitePawnAttacks() }},
 			[]interface{}{"Black", func(p Position) []Position { return p.GetBlackPawnAttacks() }},
+		}
+		flatten := func(positions [][]Position) []Position {
+			result := []Position{}
+			for _, line := range positions {
+				for _, pos := range line {
+					result = append(result, pos)
+				}
+			}
+			return result
+		}
+		getPositions := func(p Piece, pos Position) []Position {
+			if p.ToNormalizedPiece() == King {
+				return pos.GetKingMoves()
+			} else if p.ToNormalizedPiece() == Knight {
+				return pos.GetKnightMoves()
+			} else if p.ToNormalizedPiece() == Pawn {
+				if p.Color() == White {
+					return flatten(pos.GetWhitePawnMoves())
+				} else {
+					return flatten(pos.GetBlackPawnMoves())
+				}
+			} else if p.ToNormalizedPiece() == Rook {
+				return flatten(pos.GetLines())
+			} else if p.ToNormalizedPiece() == Bishop {
+				return flatten(pos.GetDiagonals())
+			} else if p.ToNormalizedPiece() == Queen {
+				return flatten(pos.GetQueenMoves())
+			}
+			panic("adsa")
+
 		}
 		for _, mover := range singleMovers {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
@@ -387,6 +418,19 @@ func init() {
 				result += fmt.Sprintf("\t\t%s,\n", moves)
 			}
 			result += "\t},\n"
+		}
+		result += "}\n\n"
+
+		result += "var MoveBitmaps = []PositionBitmap{"
+		for _, piece := range Pieces {
+			result += "\t// " + piece.String() + "\n"
+			for i := 0; i < 64; i++ {
+				bitmap := PositionBitmap(0)
+				for _, pos := range getPositions(piece, Position(i)) {
+					bitmap = bitmap.Add(pos)
+				}
+				result += "\t" + strconv.FormatUint(uint64(bitmap), 10) + ",\n"
+			}
 		}
 		result += "}\n\n"
 		fmt.Println(result)
