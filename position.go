@@ -3,7 +3,6 @@ package chess_engine
 import (
 	"fmt"
 	"io/ioutil"
-	"strconv"
 	"strings"
 )
 
@@ -183,13 +182,13 @@ func (p Position) GetBlackPawnAttacks() []Position {
 	return positions
 }
 func (p Position) GetWhitePawnMoves() [][]Position {
-	pieceMoves := PieceMoves[WhitePawn][p]
+	pieceMoves := p.GetPieceMoves(WhitePawn)
 	result := [][]Position{}
 	result = append(result, pieceMoves)
 	return result
 }
 func (p Position) GetBlackPawnMoves() [][]Position {
-	pieceMoves := PieceMoves[BlackPawn][p]
+	pieceMoves := p.GetPieceMoves(BlackPawn)
 	result := [][]Position{}
 	result = append(result, pieceMoves)
 	return result
@@ -207,8 +206,12 @@ func (p Position) GetAdjacentFiles() []File {
 	return result
 }
 
+func (p Position) GetPieceMoves(piece Piece) []Position {
+	return PieceMoves[int(piece)*64+int(p)]
+}
+
 func (p Position) GetKnightMoves() []Position {
-	return PieceMoves[WhiteKnight][p]
+	return p.GetPieceMoves(WhiteKnight)
 }
 
 func (p Position) GetLines() [][]Position {
@@ -220,7 +223,7 @@ func (p Position) GetDiagonals() [][]Position {
 }
 
 func (p Position) GetKingMoves() []Position {
-	return PieceMoves[WhiteKing][p]
+	return p.GetPieceMoves(WhiteKing)
 }
 
 func (p Position) GetQueenMoves() [][]Position {
@@ -243,7 +246,7 @@ func PositionFromFileRank(f File, r Rank) Position {
 
 func init() {
 	// TODO replace maps with arrays
-	if true {
+	if false {
 		formatPos := func(p Position) string {
 			return strings.ToUpper(p.String())
 		}
@@ -255,16 +258,7 @@ func init() {
 			}
 			return "[]Position{" + strings.Join(result, ", ") + "}"
 		}
-		formatLines := func(lines [][]Position) string {
-			result := []string{}
-			for _, moves := range lines {
-				for _, m := range moves {
-					result = append(result, formatPos(m))
-				}
-			}
-			return "[]Position{" + strings.Join(result, ", ") + "}"
-		}
-		result := "package chess_engine\n\nvar PieceMoves = map[Piece][][]Position{\n"
+		result := "package chess_engine\n\n"
 		singleMovers := [][]interface{}{
 			[]interface{}{"WhiteKing", func(p Position) []Position { return p.GetKingMoves() }},
 			[]interface{}{"BlackKing", func(p Position) []Position { return p.GetKingMoves() }},
@@ -315,25 +309,6 @@ func init() {
 			panic("adsa")
 
 		}
-		for _, mover := range singleMovers {
-			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
-			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
-			for i := 0; i < 64; i++ {
-				moves := formatMoves(moverFunc(Position(i)))
-				result += fmt.Sprintf("\t\t%s,\n", moves)
-			}
-			result += "\t},\n"
-		}
-		for _, mover := range multiMovers {
-			index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
-			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
-			for i := 0; i < 64; i++ {
-				moves := formatLines(moverFunc(Position(i)))
-				result += fmt.Sprintf("\t\t%s,\n", moves)
-			}
-			result += "\t},\n"
-		}
-		result += "}\n\n"
 
 		result += "var MoveVectors = map[Piece][][][]Position{\n"
 		for _, mover := range singleMovers {
@@ -421,15 +396,13 @@ func init() {
 		}
 		result += "}\n\n"
 
-		result += "var MoveBitmaps = []PositionBitmap{"
+		result += "var PieceMoves = [][]Position{"
 		for _, piece := range Pieces {
 			result += "\t// " + piece.String() + "\n"
 			for i := 0; i < 64; i++ {
-				bitmap := PositionBitmap(0)
-				for _, pos := range getPositions(piece, Position(i)) {
-					bitmap = bitmap.Add(pos)
-				}
-				result += "\t" + strconv.FormatUint(uint64(bitmap), 10) + ",\n"
+				result += "\t"
+				result += formatMoves(getPositions(piece, Position(i)))
+				result += ",\n"
 			}
 		}
 		result += "}\n\n"

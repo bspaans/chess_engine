@@ -21,7 +21,7 @@ func Test_Attacks(t *testing.T) {
 
 	unit.AddPiece(WhiteQueen, E4, board)
 
-	positions := PieceMoves[WhiteQueen][E4]
+	positions := E4.GetPieceMoves(WhiteQueen)
 	for _, pos := range positions {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s, got %d", pos, len(unit[pos]))
@@ -39,7 +39,7 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 
 	unit.AddPiece(WhiteQueen, E4, board)
 
-	positions := PieceMoves[WhiteQueen][E4]
+	positions := E4.GetPieceMoves(WhiteQueen)
 	for _, pos := range positions {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
@@ -58,7 +58,7 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 	unit.AddPiece(WhiteQueen, E6, board)
 	unit.AddPiece(WhiteKing, E3, board)
 
-	positions := PieceMoves[WhiteQueen][E6]
+	positions := E6.GetPieceMoves(WhiteQueen)
 	for _, pos := range positions {
 		if pos == E1 || pos == E2 {
 			if unit[pos].CountPositionsForColor(White) > 1 {
@@ -86,7 +86,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 	board.ApplyMove(E3, D3)
 	unit := orig.ApplyMove(NewMove(E3, D3), WhiteKing, NoPiece, board, NoPosition)
 
-	positions := PieceMoves[WhiteQueen][E6]
+	positions := E6.GetPieceMoves(WhiteQueen)
 	for _, pos := range positions {
 		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
@@ -129,7 +129,7 @@ func Test_Attacks_ApplyMove_captures(t *testing.T) {
 	board.ApplyMove(E5, E6)
 	unit := orig.ApplyMove(NewMove(E5, E6), BlackKing, WhiteQueen, board, NoPosition)
 
-	positions := PieceMoves[WhiteQueen][E6]
+	positions := E6.GetPieceMoves(WhiteQueen)
 	for _, pos := range positions {
 		if unit[pos][White][Queen].Count() != 0 {
 			t.Errorf("Expecting white position to be removed in %s, got %v", pos, unit[pos][White][Queen].ToPositions())

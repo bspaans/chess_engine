@@ -139,7 +139,8 @@ func (p Piece) ToNormalizedPiece() NormalizedPiece {
 func (p Piece) CanReach(from, to Position) bool {
 	// TODO: can we do something faster?
 	// have tables as bitmaps?
-	for _, pos := range PieceMoves[p][from] {
+	// return MoveBitmaps[int(p) + from].IsSet(to)
+	for _, pos := range from.GetPieceMoves(p) {
 		if pos == to {
 			return true
 		}
