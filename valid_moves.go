@@ -239,7 +239,11 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 	}
 
 	// add the piece on its new position
-	result.AddPiece(movingPiece, move.To, board)
+	if move.Promote == NoPiece {
+		result.AddPiece(movingPiece, move.To, board)
+	} else {
+		result.AddPiece(move.Promote, move.To, board)
+	}
 	return result
 }
 

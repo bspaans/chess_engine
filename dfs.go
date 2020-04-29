@@ -55,7 +55,10 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	queue := list.New()
 
 	// Queue all the forcing moves.
-	b.Evaluators.Eval(b.StartingPosition)
+	_, new := b.Evaluators.Eval(b.StartingPosition)
+	if new {
+		b.NodesPerSecond++
+	}
 	b.queueForcingLines(b.StartingPosition, b.EvalTree, queue)
 	//b.queueBestLine(b.StartingPosition, queue)
 

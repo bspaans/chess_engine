@@ -117,18 +117,14 @@ func (cs CastleStatuses) Parse(castleStr string) CastleStatuses {
 }
 
 func (cs CastleStatuses) ApplyMove(move *Move, movingPiece Piece) CastleStatuses {
-	if movingPiece == BlackRook {
-		if move.From == A8 {
-			return NewCastleStatuses(cs.White, cs.Black.Remove(Queenside))
-		} else if move.From == H8 {
-			return NewCastleStatuses(cs.White, cs.Black.Remove(Kingside))
-		}
-	} else if movingPiece == WhiteRook {
-		if move.From == A1 {
-			return NewCastleStatuses(cs.White.Remove(Queenside), cs.Black)
-		} else if move.From == H1 {
-			return NewCastleStatuses(cs.White.Remove(Kingside), cs.Black)
-		}
+	if movingPiece == BlackRook && move.From == A8 {
+		return NewCastleStatuses(cs.White, cs.Black.Remove(Queenside))
+	} else if movingPiece == BlackRook && move.From == H8 {
+		return NewCastleStatuses(cs.White, cs.Black.Remove(Kingside))
+	} else if movingPiece == WhiteRook && move.From == A1 {
+		return NewCastleStatuses(cs.White.Remove(Queenside), cs.Black)
+	} else if movingPiece == WhiteRook && move.From == H1 {
+		return NewCastleStatuses(cs.White.Remove(Kingside), cs.Black)
 	} else if movingPiece == BlackKing {
 		return NewCastleStatuses(cs.White, None)
 	} else if movingPiece == WhiteKing {

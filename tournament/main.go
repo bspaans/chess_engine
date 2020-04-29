@@ -99,6 +99,8 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
+	NewEngine("bs-engine-tempo", "bs-engine", []string{"--tempo"}),
+	NewEngine("bs-engine-tempo-mobility", "bs-engine", []string{"--tempo", "--mobility"}),
 	NewEngine("bs-engine-everything", "bs-engine", []string{"--space", "--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
@@ -340,6 +342,6 @@ func main() {
 	tournament := NewTournament(Engines, 1)
 	tournament.OutputBoard = true
 	tournament.QuitOnCrash = true
-	tournament.TextToSpeechAnnouncements = false
+	tournament.TextToSpeechAnnouncements = true
 	tournament.Start()
 }
