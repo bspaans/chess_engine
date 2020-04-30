@@ -148,7 +148,7 @@ func Test_Attacks_white_pawn(t *testing.T) {
 
 	unit.AddPiece(WhitePawn, E4, board)
 
-	positions := PawnAttacks[White][E4]
+	positions := E4.GetPawnAttacks(White)
 	for _, pos := range positions {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
@@ -169,7 +169,7 @@ func Test_Attacks_black_pawn(t *testing.T) {
 
 	unit.AddPiece(BlackPawn, E3, board)
 
-	positions := PawnAttacks[Black][E3]
+	positions := E3.GetPawnAttacks(Black)
 	for _, pos := range positions {
 		if unit[pos].CountPositionsForColor(Black) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)

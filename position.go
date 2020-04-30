@@ -216,6 +216,9 @@ func (p Position) GetMoveVectors(piece Piece) [][]Position {
 func (p Position) GetAttackVectors(piece Piece) [][]Position {
 	return AttackVectors[int(piece)*64+int(p)]
 }
+func (p Position) GetPawnAttacks(color Color) []Position {
+	return PawnAttacksBitmap[int(color.Opposite())*64+int(p)].ToPositions()
+}
 
 func (p Position) GetKnightMoves() []Position {
 	return p.GetPieceMoves(WhiteKnight)
@@ -268,8 +271,7 @@ func PositionFromFileRank(f File, r Rank) Position {
 }
 
 func init() {
-	// TODO replace maps with arrays
-	if true {
+	if false {
 		formatPos := func(p Position) string {
 			return strings.ToUpper(p.String())
 		}
@@ -282,10 +284,6 @@ func init() {
 			return "[]Position{" + strings.Join(result, ", ") + "}"
 		}
 		result := "package chess_engine\n\n"
-		pawnAttacks := [][]interface{}{
-			[]interface{}{"White", func(p Position) []Position { return p.GetWhitePawnAttacks() }},
-			[]interface{}{"Black", func(p Position) []Position { return p.GetBlackPawnAttacks() }},
-		}
 		flatten := func(positions [][]Position) []Position {
 			result := []Position{}
 			for _, line := range positions {
@@ -396,18 +394,6 @@ func init() {
 				}
 				result += "\t},\n"
 			}
-		}
-		result += "}\n\n"
-
-		result += "var PawnAttacks = map[Color][][]Position{\n"
-		for _, mover := range pawnAttacks {
-			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
-			result += fmt.Sprintf("\t%s: [][]Position{\n", index)
-			for i := 0; i < 64; i++ {
-				moves := formatMoves(moverFunc(Position(i)))
-				result += fmt.Sprintf("\t\t%s,\n", moves)
-			}
-			result += "\t},\n"
 		}
 		result += "}\n\n"
 

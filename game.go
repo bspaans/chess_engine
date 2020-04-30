@@ -435,7 +435,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 			// Mark the skipped over square as vulnerable
 			enpassantSquare := move.To - 8
 			// Is en passant actually possible?
-			for _, pos := range PawnAttacks[White][enpassantSquare] {
+			for _, pos := range enpassantSquare.GetPawnAttacks(White) {
 				// TODO: check if pawn is pinned
 				if board[pos] == BlackPawn {
 					enpassant = enpassantSquare
@@ -450,7 +450,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 			// Mark the skipped over square as vulnerable
 			enpassantSquare := move.From - 8
 			// Is en passant actually possible?
-			for _, pos := range PawnAttacks[Black][enpassantSquare] {
+			for _, pos := range enpassantSquare.GetPawnAttacks(Black) {
 				// TODO: check if pawn is pinned
 				if board[pos] == WhitePawn {
 					enpassant = enpassantSquare
