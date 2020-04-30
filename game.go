@@ -518,42 +518,44 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Parent = f
 
 	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
-	vv := result.ValidMoves()
-	gg := result.OldValidMoves()
-	corrupt := false
-	for _, move := range gg {
-		found := false
-		for _, suggested := range vv {
-			if suggested.From == move.From && suggested.To == move.To {
-				found = true
+	/*
+		vv := result.ValidMoves()
+		gg := result.OldValidMoves()
+		corrupt := false
+		for _, move := range gg {
+			found := false
+			for _, suggested := range vv {
+				if suggested.From == move.From && suggested.To == move.To {
+					found = true
+				}
+			}
+			if !found {
+				corrupt = true
+				fmt.Println("Missing move", move, "after", result.Line)
 			}
 		}
-		if !found {
-			corrupt = true
-			fmt.Println("Missing move", move, "after", result.Line)
-		}
-	}
-	for _, move := range vv {
-		found := false
-		for _, suggested := range gg {
-			if suggested.From == move.From && suggested.To == move.To {
-				found = true
+		for _, move := range vv {
+			found := false
+			for _, suggested := range gg {
+				if suggested.From == move.From && suggested.To == move.To {
+					found = true
+				}
+			}
+			if !found {
+				corrupt = true
+				fmt.Println("Suggesting illegal move", move, "after", result.Line)
 			}
 		}
-		if !found {
-			corrupt = true
-			fmt.Println("Suggesting illegal move", move, "after", result.Line)
+		if corrupt {
+			fmt.Println(board)
+			fmt.Println(vv)
+			fmt.Println(gg)
+			fmt.Println(len(vv), len(gg))
+			panic("yo")
+		} else {
+			//fmt.Println("all good", move)
 		}
-	}
-	if corrupt {
-		fmt.Println(board)
-		fmt.Println(vv)
-		fmt.Println(gg)
-		fmt.Println(len(vv), len(gg))
-		panic("yo")
-	} else {
-		//fmt.Println("all good", move)
-	}
+	*/
 
 	return result
 }

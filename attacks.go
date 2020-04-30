@@ -77,7 +77,7 @@ func (a Attacks) AddPiece(piece Piece, pos Position, board Board) {
 	if piece == NoPiece {
 		return
 	}
-	for _, line := range AttackVectors[piece][pos] {
+	for _, line := range pos.GetAttackVectors(piece) {
 		for _, toPos := range line {
 			a[toPos].AddPosition(piece, pos)
 			if !a.shouldContinue(board, toPos, piece.Color()) {
@@ -320,7 +320,7 @@ func (a Attacks) RemovePiece_Immutable(piece Piece, pos Position) Attacks {
 	}
 	//fmt.Println("lookup for", piece, pos)
 	//fmt.Println(Attacks(attacks))
-	for _, line := range AttackVectors[piece][pos] {
+	for _, line := range pos.GetAttackVectors(piece) {
 		for _, toPos := range line {
 			if attacks[toPos].HasPiecePosition(piece, pos) {
 
@@ -344,7 +344,7 @@ func (a Attacks) AddPiece_immutable(piece Piece, pos Position, board Board) Atta
 	}
 	// Copy
 	copy(attacks, a)
-	for _, line := range AttackVectors[piece][pos] {
+	for _, line := range pos.GetAttackVectors(piece) {
 		for _, toPos := range line {
 			attacks[toPos] = a[toPos].AddPosition_Immutable(piece, pos)
 			if !a.shouldContinue(board, toPos, piece.Color()) {

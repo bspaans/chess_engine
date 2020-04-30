@@ -38,7 +38,7 @@ func (v ValidMoves) AddPiece(piece Piece, pos Position, board Board) {
 	}
 	// Add pawn attacks
 	if isPawn {
-		for _, line := range AttackVectors[piece][pos] {
+		for _, line := range pos.GetAttackVectors(piece) {
 			for _, toPos := range line {
 				if board.IsOpposingPiece(toPos, piece.Color()) {
 					v[piece] = v[piece].Add(toPos)
@@ -250,7 +250,7 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 		for _, pos := range positions {
 			for _, moveFrom := range knownPieces[color][piece.ToNormalizedPiece()].ToPositions() {
 				if piece == WhitePawn || piece == BlackPawn {
-					for _, line := range AttackVectors[piece][moveFrom] {
+					for _, line := range moveFrom.GetAttackVectors(piece) {
 						for _, attack := range line {
 							if attack == pos && board.IsOpposingPiece(pos, color) {
 								move := NewMove(moveFrom, pos)
