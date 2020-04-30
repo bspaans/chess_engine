@@ -206,22 +206,14 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 			vector := NewMove(move.To, pieceOnLine).Vector().Normalize()
 			for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
 				if board.IsEmpty(pos) {
-					result[blockingPiece] = result[blockingPiece].Remove(pos)
+					// Remove only if square is not controlled by different piece of the same kind
+					if knownPieces.PieceSquareControl(blockingPiece, pos, board) == 0 {
+						result[blockingPiece] = result[blockingPiece].Remove(pos)
+					}
 				} else if board.IsOpposingPiece(pos, blockingPiece.Color()) {
 					result[blockingPiece] = result[blockingPiece].Remove(pos)
 					break
 				} else {
-					// Corner case: if piece is the same piece as blockingPiece
-					// we need to undo our removes...
-					if blockingPiece == board[pos] {
-						vector = vector.Invert()
-						for _, rollbackPos := range vector.FollowVectorUntilEdgeOfBoard(pos) {
-							if rollbackPos == pieceOnLine {
-								break
-							}
-							result[blockingPiece] = result[blockingPiece].Add(rollbackPos)
-						}
-					}
 					break
 				}
 			}
@@ -261,12 +253,14 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 					for _, line := range AttackVectors[piece][moveFrom] {
 						for _, attack := range line {
 							if attack == pos && board.IsOpposingPiece(pos, color) {
-								result = append(result, NewMove(moveFrom, pos))
+								move := NewMove(moveFrom, pos)
+								result = move.ExpandPromotions(result, Pawn)
 							}
 						}
 					}
 					if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) && board.HasClearLineTo(moveFrom, pos) {
-						result = append(result, NewMove(moveFrom, pos))
+						move := NewMove(moveFrom, pos)
+						result = move.ExpandPromotions(result, Pawn)
 					}
 				} else if piece.CanReach(moveFrom, pos) {
 					if piece.ToNormalizedPiece() == Knight {

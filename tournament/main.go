@@ -359,7 +359,6 @@ func (t *Tournament) Start() {
 			}
 		}
 	}
-	fmt.Println(t.StandingToString())
 }
 
 func (t *Tournament) OutputStatus(game *Game, fen *chess_engine.Game) {

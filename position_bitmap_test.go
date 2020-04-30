@@ -1,7 +1,6 @@
 package chess_engine
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -12,13 +11,9 @@ func Test_PositionBitmap(t *testing.T) {
 		t.Errorf("Expecting empty unit")
 	}
 
-	fmt.Printf("%b\n", unit)
 	unit = unit.Add(E4)
-	fmt.Printf("%b\n", unit)
 	unit = unit.Add(A1)
-	fmt.Printf("%b\n", unit)
 	unit = unit.Add(H8)
-	fmt.Printf("%b\n", unit)
 
 	positions := []Position{E4, A1, H8}
 	for _, pos := range positions {

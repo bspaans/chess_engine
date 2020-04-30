@@ -51,6 +51,15 @@ func (p PiecePositions) Count() int {
 func (p PiecePositions) Control() int {
 	return p.CountPositionsForColor(White) - p.CountPositionsForColor(Black)
 }
+func (p PiecePositions) PieceSquareControl(piece Piece, pos Position, board Board) int {
+	control := 0
+	for _, position := range p[piece.Color()][piece.ToNormalizedPiece()].ToPositions() {
+		if board.HasClearLineTo(position, pos) {
+			control++
+		}
+	}
+	return control
+}
 
 func (p PiecePositions) HasPiecePosition(piece Piece, pos Position) bool {
 	return p[piece.Color()][piece.ToNormalizedPiece()].IsSet(pos)
