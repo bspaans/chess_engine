@@ -174,9 +174,9 @@ func TempoEvaluator(f *Game) Score {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if f.CastleStatuses.White == None {
 				if pos == G1 && f.Board[H1] != WhiteRook {
-					score += 0.5 // We're castled kingside
+					score += 2.5 // We're castled kingside
 				} else if pos == C1 && f.Board[A1] != WhiteRook && f.Board[A2] != WhiteRook {
-					score += 0.5 // We're castled queenside
+					score += 2.5 // We're castled queenside
 				} else if minorPiecesInSamePosition[White] >= 2 && pos != E1 {
 					score -= 15.0 // Early king move penalty
 				}
@@ -189,9 +189,9 @@ func TempoEvaluator(f *Game) Score {
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if f.CastleStatuses.Black == None {
 				if pos == G8 && f.Board[H8] != BlackRook {
-					score -= 0.5 // We're castled kingside
+					score -= 2.5 // We're castled kingside
 				} else if pos == C8 && f.Board[A8] != BlackRook && f.Board[B8] != BlackRook {
-					score -= 0.5 // We're castled queenside
+					score -= 2.5 // We're castled queenside
 				} else if minorPiecesInSamePosition[Black] >= 2 && pos != E8 {
 					score += 15.0 // Early king move penalty
 				}

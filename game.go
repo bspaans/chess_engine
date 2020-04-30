@@ -258,16 +258,7 @@ func (f *Game) ValidMoves() []*Move {
 	return result
 }
 
-func (f *Game) OldValidMoves() []*Move {
-	if f.valid != nil {
-		return *f.valid
-	}
-	result := f.OldGetValidMovesForColor(f.ToMove)
-	f.valid = &result
-	return result
-}
-
-func (f *Game) GetValidMovesForColor(color Color) []*Move {
+func (f *Game) NewGetValidMovesForColor(color Color) []*Move {
 
 	checks := f.Attacks.GetChecks(color, f.Pieces)
 	if len(checks) > 0 {
@@ -310,7 +301,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	return f.FilterPinnedPieces(result)
 }
 
-func (f *Game) OldGetValidMovesForColor(color Color) []*Move {
+func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	result := []*Move{}
 
 	checks := f.Attacks.GetChecks(color, f.Pieces)
@@ -517,7 +508,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Line = line
 	result.Parent = f
 
-	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
+	//result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
 	/*
 		vv := result.ValidMoves()
 		gg := result.OldValidMoves()
