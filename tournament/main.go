@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"sort"
@@ -16,6 +17,7 @@ type Engine struct {
 	Name    string
 	Path    string
 	Args    []string
+	Rating  float64
 	started bool
 	cmd     *exec.Cmd
 	stdout  *bufio.Reader
@@ -24,9 +26,10 @@ type Engine struct {
 
 func NewEngine(name, path string, args []string) *Engine {
 	return &Engine{
-		Name: name,
-		Path: path,
-		Args: args,
+		Name:   name,
+		Path:   path,
+		Args:   args,
+		Rating: 1000.0,
 	}
 }
 
@@ -69,6 +72,33 @@ func (e *Engine) Play(fen *chess_engine.Game) *chess_engine.Move {
 	e.Send("position fen " + str)
 	e.Send("go depth 2")
 	return e.ReadUntilBestMove(fen)
+}
+
+func (e *Engine) UpdateRating(result GameResult, opponentRating float64, white bool) {
+	qa := math.Pow(10, e.Rating/400)
+	qb := math.Pow(10, opponentRating/400)
+	ea := qa / (qa + qb)
+	kFactor := 32.0
+	newRating := e.Rating
+	if white {
+		if result == WhiteWins {
+			newRating = e.Rating + kFactor*(1.0-ea)
+		} else if result == BlackWins {
+			newRating = e.Rating + kFactor*(0.0-ea)
+		} else {
+			newRating = e.Rating + kFactor*(0.5-ea)
+		}
+	} else {
+		if result == WhiteWins {
+			newRating = e.Rating + kFactor*(0.0-ea)
+		} else if result == BlackWins {
+			newRating = e.Rating + kFactor*(1.0-ea)
+		} else {
+			newRating = e.Rating + kFactor*(0.5-ea)
+		}
+	}
+	fmt.Println("Updated", e.Name, "rating from", e.Rating, "to", newRating)
+	e.Rating = newRating
 }
 
 func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
@@ -214,6 +244,10 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 	if err != nil {
 		panic(err)
 	}
+
+	game.White.UpdateRating(result, game.Black.Rating, true)
+	game.Black.UpdateRating(result, game.White.Rating, false)
+
 	tags := chess_engine.PGNTags{
 		Event:  "bs-engine tournament",
 		Site:   "Camberwell",
@@ -233,6 +267,7 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 	if _, err := f.WriteString(pgn + "\n"); err != nil {
 		panic(err)
 	}
+	fmt.Println(t.StandingToString())
 }
 
 func (t *Tournament) StandingToString() string {
@@ -245,7 +280,7 @@ func (t *Tournament) StandingToString() string {
 		return t.Standing[engines[i]] > t.Standing[engines[j]]
 	})
 	for place, engine := range engines {
-		result += fmt.Sprintf("%02d. %-40s %.1f\n", place+1, engine.Name, t.Standing[engine])
+		result += fmt.Sprintf("%02d. %-40s %4.0f %.1f\n", place+1, engine.Name, engine.Rating, t.Standing[engine])
 	}
 	return result
 }
@@ -342,6 +377,6 @@ func main() {
 	tournament := NewTournament(Engines, 1)
 	tournament.OutputBoard = true
 	tournament.QuitOnCrash = true
-	tournament.TextToSpeechAnnouncements = true
+	tournament.TextToSpeechAnnouncements = false
 	tournament.Start()
 }
