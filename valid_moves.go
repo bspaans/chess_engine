@@ -64,7 +64,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 		// if there are no other pieces of the same kind looking at this
 		// position then remove it.
 		found := false
-		for _, moveFrom := range knownPieces[movingPiece.Color()][movingPiece.ToNormalizedPiece()].ToPositions() {
+		for _, moveFrom := range knownPieces.PiecePositions(movingPiece) {
 			if movingPiece.ToNormalizedPiece() != Pawn {
 				if movingPiece.CanReach(moveFrom, pos) {
 					found = true
@@ -167,7 +167,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 					} else if blockingPiece.CanReach(pieceOnLine, move.To) {
 						// Don't remove if there's another pawn attacking this square
 						foundAttack := false
-						for _, pawnPos := range knownPieces[blockingPiece.Color()][blockingPiece.ToNormalizedPiece()].ToPositions() {
+						for _, pawnPos := range knownPieces.PiecePositions(blockingPiece) {
 							if pawnPos.IsPawnAttack(move.To, blockingPiece.Color()) {
 								foundAttack = true
 							}
@@ -181,7 +181,7 @@ func (v ValidMoves) ApplyMove(move *Move, movingPiece Piece, board Board, enPass
 								// remove if e4 is not under attack by another pawn
 								foundAttack := false
 								targetPos := pieceOnLine.GetPawnOpeningJump(blockingPiece.Color())
-								for _, pawnPos := range knownPieces[blockingPiece.Color()][blockingPiece.ToNormalizedPiece()].ToPositions() {
+								for _, pawnPos := range knownPieces.PiecePositions(blockingPiece) {
 									if pawnPos.IsPawnAttack(targetPos, blockingPiece.Color()) {
 										foundAttack = true
 									}
@@ -248,17 +248,12 @@ func (v ValidMoves) ToMoves(color Color, knownPieces PiecePositions, board Board
 	for _, piece := range pieces {
 		positions := v[piece].ToPositions()
 		for _, pos := range positions {
-			for _, moveFrom := range knownPieces[color][piece.ToNormalizedPiece()].ToPositions() {
+			for _, moveFrom := range knownPieces.PiecePositions(piece) {
 				if piece == WhitePawn || piece == BlackPawn {
-					for _, line := range moveFrom.GetAttackVectors(piece) {
-						for _, attack := range line {
-							if attack == pos && board.IsOpposingPiece(pos, color) {
-								move := NewMove(moveFrom, pos)
-								result = move.ExpandPromotions(result, Pawn)
-							}
-						}
-					}
-					if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) && board.HasClearLineTo(moveFrom, pos) {
+					if moveFrom.IsPawnAttack(pos, color) && board.IsOpposingPiece(pos, color) {
+						move := NewMove(moveFrom, pos)
+						result = move.ExpandPromotions(result, Pawn)
+					} else if piece.CanReach(moveFrom, pos) && board.IsEmpty(pos) && board.HasClearLineTo(moveFrom, pos) {
 						move := NewMove(moveFrom, pos)
 						result = move.ExpandPromotions(result, Pawn)
 					}

@@ -27,6 +27,10 @@ func (p PiecePositions) GetAllPositionsForColor(c Color) []Position {
 	return result
 }
 
+func (p PiecePositions) PiecePositions(piece Piece) []Position {
+	return p.Positions(piece.Color(), piece.ToNormalizedPiece())
+}
+
 func (p PiecePositions) Positions(c Color, piece NormalizedPiece) []Position {
 	return p[c][piece].ToPositions()
 }

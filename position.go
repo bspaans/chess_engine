@@ -238,15 +238,7 @@ func (p Position) GetQueenMoves() [][]Position {
 }
 
 func (p Position) IsPawnAttack(p2 Position, color Color) bool {
-	// TODO: should be faster with bitmap tables
-	for _, line := range p.GetAttackVectors(Pawn.ToPiece(color)) {
-		for _, pos := range line {
-			if pos == p2 {
-				return true
-			}
-		}
-	}
-	return false
+	return PawnAttacksBitmap[int(color.Opposite())*64+int(p)].IsSet(p2)
 }
 
 func (p Position) IsPawnOpeningJump(color Color) bool {
@@ -277,7 +269,7 @@ func PositionFromFileRank(f File, r Rank) Position {
 
 func init() {
 	// TODO replace maps with arrays
-	if false {
+	if true {
 		formatPos := func(p Position) string {
 			return strings.ToUpper(p.String())
 		}
@@ -407,53 +399,6 @@ func init() {
 		}
 		result += "}\n\n"
 
-		/*
-			result += "var AttackVectors = map[Piece][][][]Position{\n"
-			for _, mover := range pawnAttacks {
-				index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
-				result += fmt.Sprintf("\t%sPawn: [][][]Position{\n", index)
-				for i := 0; i < 64; i++ {
-					lines := moverFunc(Position(i))
-					result += "\t\t[][]Position{\n"
-					for _, moves := range lines {
-						result += fmt.Sprintf("\t\t\t%s,\n", formatMoves([]Position{moves}))
-					}
-					result += "\t\t},\n"
-				}
-				result += "\t},\n"
-			}
-			for _, mover := range singleMovers {
-				index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
-				result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
-				for i := 0; i < 64; i++ {
-					moves := moverFunc(Position(i))
-					result += "\t\t[][]Position{\n"
-					for _, m := range moves {
-						result += fmt.Sprintf("\t\t\t%s,\n", formatMoves([]Position{m}))
-					}
-					result += "\t\t},\n"
-				}
-				result += "\t},\n"
-			}
-			for _, mover := range multiMovers {
-				index, moverFunc := mover[0].(string), mover[1].(func(p Position) [][]Position)
-				if index == "WhitePawn" || index == "BlackPawn" {
-					continue
-				}
-				result += fmt.Sprintf("\t%s: [][][]Position{\n", index)
-				for i := 0; i < 64; i++ {
-					lines := moverFunc(Position(i))
-					result += "\t\t[][]Position{\n"
-					for _, moves := range lines {
-						result += fmt.Sprintf("\t\t\t%s,\n", formatMoves(moves))
-					}
-					result += "\t\t},\n"
-				}
-				result += "\t},\n"
-			}
-			result += "}\n\n"
-		*/
-
 		result += "var PawnAttacks = map[Color][][]Position{\n"
 		for _, mover := range pawnAttacks {
 			index, moverFunc := mover[0].(string), mover[1].(func(p Position) []Position)
@@ -484,6 +429,23 @@ func init() {
 				bitmap := PositionBitmap(0)
 				for _, pos := range getPositions(piece, Position(i)) {
 					bitmap = bitmap.Add(pos)
+				}
+				result += "\t"
+				result += strconv.FormatUint(uint64(bitmap), 10)
+				result += ",\n"
+			}
+		}
+		result += "}\n\n"
+
+		result += "var PawnAttacksBitmap = []PositionBitmap{"
+		for _, piece := range []Piece{BlackPawn, WhitePawn} {
+			result += "\t// " + piece.String() + "\n"
+			for i := 0; i < 64; i++ {
+				bitmap := PositionBitmap(0)
+				for _, line := range getAttacks(piece, Position(i)) {
+					for _, pos := range line {
+						bitmap = bitmap.Add(pos)
+					}
 				}
 				result += "\t"
 				result += strconv.FormatUint(uint64(bitmap), 10)
