@@ -378,6 +378,8 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 	unit.AddEvaluator(NaiveMaterialEvaluator)
 	unit.SetPosition(fen)
 	bestmove := getBestMove(unit, 25*time.Second)
+	currentEval, _ := unit.Evaluators.Eval(fen)
+	currentEval *= -1
 	if bestmove == "h5h6" {
 		unit.Evaluators.Debug(fen)
 		t.Errorf("Expecting a better move than h5h6")
@@ -400,8 +402,8 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 	}
 	for move, reply := range unit.EvalTree.Replies {
 		if move != bestmove {
-			if reply.Score > 0 {
-				t.Errorf("positve")
+			if reply.Score > currentEval {
+				t.Errorf("Move %s is not bestmove %s but has a score %f higher than start position eval: %f", move, bestmove, reply.Score, currentEval)
 			}
 		}
 	}
@@ -439,6 +441,76 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	}
 	if unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score < 0 {
 		t.Errorf("Not expecting a negative score in reply h7g6, got %f", unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score)
+	}
+}
+
+func Test_Engine_Should_find_better_move_if_forcing_lines_dont_work_out(t *testing.T) {
+	// Here the queen can take with check, but she can be captured straight
+	// away, so this line should be avoided.
+	pos := "3kb3/4p3/3p4/8/5Q2/8/1PPP4/2KR4 w - - 0 1"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(2)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.SetPosition(fen)
+	currentEval, _ := unit.Evaluators.Eval(fen)
+	currentEval *= -1
+	bestmove := getBestMove(unit, 3*time.Second)
+	badMove := "f4d6"
+	refutation := "e7d6"
+	if bestmove == badMove {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than %s", badMove)
+	}
+	if len(unit.EvalTree.Replies) == 1 {
+		t.Errorf("Expecting more replies, because first move is bad")
+	}
+	if unit.EvalTree.Replies[badMove].Score > currentEval {
+		for move, child := range unit.EvalTree.Replies[badMove].Replies {
+			fmt.Println(move, len(child.Replies), child.Score)
+		}
+		t.Errorf("Not expecting a worse score in reply than %f, got %f", currentEval, unit.EvalTree.Replies[badMove].Score)
+	}
+	if unit.EvalTree.Replies[badMove].Replies[refutation].Score > currentEval {
+		t.Errorf("Not expecting a score > starting position (%f); in reply %s, got %f", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
+	}
+}
+
+func Test_Engine_Should_find_better_move_if_forcing_lines_dont_work_out_black(t *testing.T) {
+	// Here the queen can take with check, but she can be captured straight
+	// away, so this line should be avoided.
+	pos := "4k3/3ppp2/8/2q5/8/4P3/3P4/3BK3 b - - 0 1"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(2)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.SetPosition(fen)
+	currentEval, _ := unit.Evaluators.Eval(fen)
+	currentEval *= -1
+	bestmove := getBestMove(unit, 3*time.Second)
+	badMove := "c5e3"
+	refutation := "d2e3"
+	if bestmove == badMove {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a better move than %s", badMove)
+	}
+	if len(unit.EvalTree.Replies) == 1 {
+		t.Errorf("Expecting more replies, because first move is bad")
+	}
+	if unit.EvalTree.Replies[badMove].Score > currentEval {
+		for move, child := range unit.EvalTree.Replies[badMove].Replies {
+			fmt.Println(move, len(child.Replies), child.Score)
+		}
+		t.Errorf("Not expecting a worse score in reply than %f, got %f", currentEval, unit.EvalTree.Replies[badMove].Score)
+	}
+	if unit.EvalTree.Replies[badMove].Replies[refutation].Score > currentEval {
+		t.Errorf("Not expecting a score > starting position (%f); in reply %s, got %f", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
 	}
 }
 

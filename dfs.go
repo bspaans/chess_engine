@@ -145,7 +145,8 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				// The queue is empty so there are no more moves to look at.
 				// However we can queue more moves if it turns out our current
 				// best move leads to a worse position than what we started with.
-				if b.EvalTree.BestLine == nil || *b.StartingPosition.Score > b.EvalTree.BestLine.Score {
+				firstScore := *b.StartingPosition.Score * -1
+				if b.EvalTree.BestLine == nil || firstScore > b.EvalTree.BestLine.Score {
 					// Queue forcing lines, than queue alternative best moves
 					//fmt.Println("queue alternative...why?")
 					hasNext := b.queueAlternativeLine(b.StartingPosition, b.EvalTree, queue)
