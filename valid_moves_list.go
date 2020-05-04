@@ -251,6 +251,7 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	result := v.Copy()
 
 	// remove the piece from validmoves
+	// TODO handle en passant
 	result[move.From] = 0
 	result[move.To] = 0
 	result.extendPreviouslyBlockedPieces(move, board)
@@ -262,6 +263,7 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	} else {
 		result.AddPiece(move.Promote, move.To, board)
 	}
+	// TODO handle castling
 	return result
 }
 
