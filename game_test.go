@@ -513,6 +513,7 @@ func Test_ApplyMove_game(t *testing.T) {
 	}
 }
 
+/*
 func Benchmark_ApplyMove(t *testing.B) {
 	unit, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 	if err != nil {
@@ -523,3 +524,4 @@ func Benchmark_ApplyMove(t *testing.B) {
 		unit.ApplyMove(NewMove(E2, E4))
 	}
 }
+*/

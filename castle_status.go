@@ -142,12 +142,10 @@ func (cs CastleStatuses) ApplyMove(move *Move, movingPiece Piece) CastleStatuses
 }
 
 func (cs CastleStatuses) String() string {
-	castleStatus := cs.White.String(White) + cs.Black.String(Black)
-	if castleStatus == "--" {
-		castleStatus = "-"
+	if cs.White == None {
+		return cs.Black.String(Black)
+	} else if cs.Black == None {
+		return cs.White.String(White)
 	}
-	if castleStatus != "-" && strings.Contains(castleStatus, "-") {
-		castleStatus = strings.Trim(castleStatus, "-")
-	}
-	return castleStatus
+	return cs.White.String(White) + cs.Black.String(Black)
 }

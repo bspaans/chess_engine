@@ -106,7 +106,7 @@ func (p Piece) Color() Color {
 	if p <= WhiteKing {
 		return White
 	}
-	panic("Can't figure out colour of piece " + p.String())
+	return NoColor
 }
 func (p Piece) OppositeColor() Color {
 	return p.Color().Opposite()

@@ -20,7 +20,7 @@ type Game struct {
 	Pieces PiecePositions
 
 	// The valid moves for every piece on the board
-	validMoves ValidMoves
+	validMoves ValidMovesList
 
 	ToMove              Color
 	CastleStatuses      CastleStatuses
@@ -102,7 +102,7 @@ func ParseFEN(fenstr string) (*Game, error) {
 		}
 	}
 	fen.Attacks = NewAttacksFromBoard(fen.Board)
-	fen.validMoves = NewValidMovesFromBoard(fen.Board)
+	fen.validMoves = NewValidMovesListFromBoard(fen.Board)
 	return &fen, nil
 }
 
@@ -257,6 +257,10 @@ func (f *Game) ValidMoves() []*Move {
 	f.valid = &result
 	return result
 }
+func (f *Game) NewValidMoves() []*Move {
+	result := f.NewGetValidMovesForColor(f.ToMove)
+	return result
+}
 
 func (f *Game) NewGetValidMovesForColor(color Color) []*Move {
 
@@ -268,7 +272,7 @@ func (f *Game) NewGetValidMovesForColor(color Color) []*Move {
 	}
 	result := []*Move{}
 
-	for _, move := range f.validMoves.ToMoves(color, f.Pieces, f.Board) {
+	for _, move := range f.validMoves.ToMoves(color, f.Pieces) {
 		// The king can only move to squares that are empty and/or unattacked
 		if f.Board[move.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), move.To) {
 			// Filtering invalid king move
@@ -508,45 +512,43 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Line = line
 	result.Parent = f
 
-	//result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
-	/*
-		vv := result.ValidMoves()
-		gg := result.OldValidMoves()
-		corrupt := false
-		for _, move := range gg {
-			found := false
-			for _, suggested := range vv {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Missing move", move, "after", result.Line)
+	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
+	vv := result.NewValidMoves()
+	gg := result.ValidMoves()
+	corrupt := false
+	for _, move := range gg {
+		found := false
+		for _, suggested := range vv {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
 			}
 		}
-		for _, move := range vv {
-			found := false
-			for _, suggested := range gg {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Suggesting illegal move", move, "after", result.Line)
+		if !found {
+			corrupt = true
+			fmt.Println("Missing move", move, "after", result.Line)
+		}
+	}
+	for _, move := range vv {
+		found := false
+		for _, suggested := range gg {
+			if suggested.From == move.From && suggested.To == move.To {
+				found = true
 			}
 		}
-		if corrupt {
-			fmt.Println(board)
-			fmt.Println(vv)
-			fmt.Println(gg)
-			fmt.Println(len(vv), len(gg))
-			panic("yo")
-		} else {
-			//fmt.Println("all good", move)
+		if !found {
+			corrupt = true
+			fmt.Println("Suggesting illegal move", move, "after", result.Line)
 		}
-	*/
+	}
+	if corrupt {
+		fmt.Println(board)
+		fmt.Println(vv)
+		fmt.Println(gg)
+		fmt.Println(len(vv), len(gg))
+		panic("yo")
+	} else {
+		//fmt.Println("all good", move)
+	}
 
 	return result
 }

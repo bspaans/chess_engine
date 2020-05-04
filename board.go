@@ -17,9 +17,26 @@ func NewBoard() Board {
 func (b Board) IsEmpty(pos Position) bool {
 	return b[pos] == NoPiece
 }
+func (b Board) IsColor(pos Position, color Color) bool {
+	return b[pos].Color() == color
+}
+func (b Board) IsOppositeColor(pos Position, color Color) bool {
+	return b[pos].Color() == color.Opposite()
+}
 
 func (b Board) IsOpposingPiece(pos Position, c Color) bool {
 	return b[pos] != NoPiece && b[pos].Color() != c
+}
+
+func (b Board) FindPieceOnLine(line []Position) Position {
+	for _, pos := range line {
+		if b[pos] == NoPiece {
+			continue
+		} else {
+			return pos
+		}
+	}
+	return NoPosition
 }
 
 func (b Board) CanCastle(a Attacks, color Color, from, to Position) bool {
