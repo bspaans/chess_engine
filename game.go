@@ -273,7 +273,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	}
 	result := []*Move{}
 
-	for _, move := range f.validMoves.ToMoves(color, f.Pieces) {
+	for _, move := range f.validMoves.ToMoves(color, f.Pieces, f.Board) {
 		// The king can only move to squares that are empty and/or unattacked
 		if f.Board[move.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), move.To) {
 			// Filtering invalid king move

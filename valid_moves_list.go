@@ -1,89 +1,9 @@
 package chess_engine
 
-type ValidMovesList []MoveList
-
-type MoveList []*Move
-
-func NewMoveList() MoveList {
-	return []*Move{}
-}
-
-func (m MoveList) Copy() MoveList {
-	result := make([]*Move, len(m))
-	copy(result, m)
-	return result
-}
-
-func (m MoveList) Has(move *Move) bool {
-	for _, existing := range m {
-		if *existing == *move {
-			return true
-		}
-	}
-	return false
-}
-
-func (m MoveList) Add_Mutable(move *Move) MoveList {
-	if m.Has(move) {
-		return m
-	}
-	return append(m, move)
-}
-
-func (m MoveList) Add_Immutable(move *Move) MoveList {
-	if m.Has(move) {
-		return m
-	}
-	result := m.Copy()
-	return append(result, move)
-}
-
-func (m MoveList) AddAll_Immutable(moves []*Move) MoveList {
-	result := m.Copy()
-	for _, move := range moves {
-		if move == nil {
-			return result
-		}
-		result = append(result, move)
-	}
-	return result
-}
-
-func (m MoveList) RemoveAll_Immutable(moves []*Move) MoveList {
-	result := []*Move{}
-	for _, move := range m {
-		if move == nil {
-			return result
-		}
-		found := false
-		for _, remove := range moves {
-			if remove == nil {
-				break
-			}
-			if *remove == *move {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, move)
-		}
-	}
-	return result
-}
-
-func (m MoveList) Remove(destination Position) MoveList {
-	result := []*Move{}
-	for _, existing := range m {
-		if existing.To != destination {
-			result = append(result, existing)
-		}
-	}
-	return result
-}
+type ValidMovesList []PositionBitmap
 
 func NewValidMovesList() ValidMovesList {
-	v := make([]MoveList, 64)
+	v := make([]PositionBitmap, 64)
 	return ValidMovesList(v)
 }
 
@@ -105,12 +25,9 @@ func (v ValidMovesList) AddPiece(piece Piece, pos Position, board Board) {
 	for _, line := range pos.GetMoveVectors(piece) {
 		for _, toPos := range line {
 			if board.IsEmpty(toPos) {
-				move := NewMove(pos, toPos)
-				for _, possiblePromotion := range move.ToPromotions(piece) {
-					v[pos] = v[pos].Add_Immutable(possiblePromotion)
-				}
+				v[pos] = v[pos].Add(toPos)
 			} else if board.IsOpposingPiece(toPos, piece.Color()) && !isPawn {
-				v[pos] = v[pos].Add_Immutable(NewMove(pos, toPos))
+				v[pos] = v[pos].Add(toPos)
 				break
 			} else {
 				break
@@ -122,10 +39,7 @@ func (v ValidMovesList) AddPiece(piece Piece, pos Position, board Board) {
 		for _, line := range pos.GetAttackVectors(piece) {
 			for _, toPos := range line {
 				if board.IsOpposingPiece(toPos, piece.Color()) {
-					move := NewMove(pos, toPos)
-					for _, possiblePromotion := range move.ToPromotions(piece) {
-						v[pos] = v[pos].Add_Immutable(possiblePromotion)
-					}
+					v[pos] = v[pos].Add(toPos)
 				}
 			}
 		}
@@ -137,23 +51,24 @@ func (v ValidMovesList) GetChecks(color Color, knownPieces PiecePositions) []*Mo
 	// TODO we could cache this
 	result := []*Move{}
 	kingPos := knownPieces.GetKingPos(color)
-	for _, position := range knownPieces.GetAllPositionsForColor(color.Opposite()) {
-		for _, move := range v[position] {
-			if move.To == kingPos {
-				result = append(result, move)
+	for _, fromPos := range knownPieces.GetAllPositionsForColor(color.Opposite()) {
+		for _, toPos := range v[fromPos].ToPositions() {
+			if toPos == kingPos {
+				result = append(result, NewMove(fromPos, toPos))
 			}
 		}
 	}
 	return result
 }
 
-func (v ValidMovesList) ToMoves(color Color, knownPieces PiecePositions) []*Move {
+func (v ValidMovesList) ToMoves(color Color, knownPieces PiecePositions, board Board) []*Move {
 	// TODO: we could track the number of valid moves so that we can allocate
 	// an array of the right size.
 	result := []*Move{}
-	for _, position := range knownPieces.GetAllPositionsForColor(color) {
-		for _, move := range v[position] {
-			result = append(result, move)
+	for _, fromPos := range knownPieces.GetAllPositionsForColor(color) {
+		for _, toPos := range v[fromPos].ToPositions() {
+			move := NewMove(fromPos, toPos)
+			result = move.ExpandPromotions(result, board[fromPos].ToNormalizedPiece())
 		}
 	}
 	return result
@@ -191,7 +106,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 					for _, line := range pieceOnLine.GetMoveVectors(extendingPiece) {
 						for _, pos := range line {
 							if board.IsEmpty(pos) {
-								v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, pos))
+								v[pieceOnLine] = v[pieceOnLine].Add(pos)
 							} else {
 								break
 							}
@@ -214,8 +129,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 				// If the king can reach the move.From square, add it as a
 				// valid move.
 				if extendingPiece.CanReach(pieceOnLine, move.From) {
-					v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, move.From))
-
+					v[pieceOnLine] = v[pieceOnLine].Add(move.From)
 				}
 
 			default:
@@ -230,7 +144,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 					continue
 				}
 
-				v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, move.From))
+				v[pieceOnLine] = v[pieceOnLine].Add(move.From)
 				vector := NewMove(move.From, pieceOnLine).Vector().Normalize()
 				line := vector.FollowVectorUntilEdgeOfBoard(move.From)
 				v.addLineUntilBlockingPiece(pieceOnLine, line, board, extendingPiece.Color())
@@ -240,7 +154,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 	// extend knights
 	for _, pos := range move.From.GetKnightMoves() {
 		if board[pos].ToNormalizedPiece() == Knight {
-			v[pos] = v[pos].Add_Immutable(NewMove(pos, move.From))
+			v[pos] = v[pos].Add(move.From)
 		}
 	}
 }
@@ -268,7 +182,7 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 
 				if pieceOnLine.IsPawnAttack(move.To, blockingPiece.Color()) {
 					if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-						v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, move.To))
+						v[pieceOnLine] = v[pieceOnLine].Add(move.To)
 					} else {
 						v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
 					}
@@ -293,7 +207,7 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 				// only one square and see if the move is valid.
 				if blockingPiece.CanReach(pieceOnLine, move.To) {
 					if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-						v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, move.To))
+						v[pieceOnLine] = v[pieceOnLine].Add(move.To)
 					} else {
 						v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
 					}
@@ -309,7 +223,7 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 
 				// Add an attack to move.To, otherwise remove it.
 				if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-					v[pieceOnLine] = v[pieceOnLine].Add_Immutable(NewMove(pieceOnLine, move.To))
+					v[pieceOnLine] = v[pieceOnLine].Add(move.To)
 				} else {
 					v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
 				}
@@ -323,7 +237,7 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 	color := board[move.To].OppositeColor()
 	for _, pos := range move.To.GetKnightMoves() {
 		if board[pos] == Knight.ToPiece(color) {
-			v[pos] = v[pos].Add_Immutable(NewMove(pos, move.To))
+			v[pos] = v[pos].Add(move.To)
 		} else if board[pos] == Knight.ToPiece(color.Opposite()) {
 			v[pos] = v[pos].Remove(move.To)
 		}
@@ -337,8 +251,8 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	result := v.Copy()
 
 	// remove the piece from validmoves
-	result[move.From] = NewMoveList()
-	result[move.To] = NewMoveList()
+	result[move.From] = 0
+	result[move.To] = 0
 	result.extendPreviouslyBlockedPieces(move, board)
 	result.shrinkValidMovesForPiecesThatAreNowBlocked(move, board)
 
@@ -352,31 +266,27 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 }
 
 func (v ValidMovesList) addLineUntilBlockingPiece(fromPos Position, line []Position, board Board, color Color) {
-	adds := make([]*Move, len(line))
-	for i, toPos := range line {
+	for _, toPos := range line {
 		if board.IsEmpty(toPos) {
-			adds[i] = NewMove(fromPos, toPos)
+			v[fromPos] = v[fromPos].Add(toPos)
 		} else if board.IsOppositeColor(toPos, color) {
-			adds[i] = NewMove(fromPos, toPos)
+			v[fromPos] = v[fromPos].Add(toPos)
 			break
 		} else {
 			break
 		}
 	}
-	v[fromPos] = v[fromPos].AddAll_Immutable(adds)
 }
 
 func (v ValidMovesList) removeLineUntilBlockingPiece(fromPos Position, line []Position, board Board, color Color) {
-	removes := make([]*Move, len(line))
-	for i, toPos := range line {
+	for _, toPos := range line {
 		if board.IsEmpty(toPos) {
-			removes[i] = NewMove(fromPos, toPos)
+			v[fromPos] = v[fromPos].Remove(toPos)
 		} else if board.IsOppositeColor(toPos, color) {
-			removes[i] = NewMove(fromPos, toPos)
+			v[fromPos] = v[fromPos].Remove(toPos)
 			break
 		} else {
 			break
 		}
 	}
-	v[fromPos] = v[fromPos].RemoveAll_Immutable(removes)
 }
