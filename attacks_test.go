@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func expectQueenFromAt(t *testing.T, unit Attacks, from, at Position) {
+func old_expectQueenFromAt(t *testing.T, unit Attacks, from, at Position) {
 	if unit[at][White][Queen].Count() != 1 {
 		t.Errorf("Expecting white queen in piece vector")
 	}
@@ -26,7 +26,7 @@ func Test_Attacks(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s, got %d", pos, len(unit[pos]))
 		}
-		expectQueenFromAt(t, unit, E4, pos)
+		old_expectQueenFromAt(t, unit, E4, pos)
 	}
 }
 
@@ -44,7 +44,7 @@ func Test_Attacks_king_is_ignored(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) != 1 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		expectQueenFromAt(t, unit, E4, pos)
+		old_expectQueenFromAt(t, unit, E4, pos)
 	}
 }
 
@@ -69,7 +69,7 @@ func Test_Attacks_own_king_is_not_ignored(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		expectQueenFromAt(t, unit, E6, pos)
+		old_expectQueenFromAt(t, unit, E6, pos)
 	}
 }
 
@@ -91,7 +91,7 @@ func Test_Attacks_ApplyMove(t *testing.T) {
 		if unit[pos].CountPositionsForColor(White) == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
 		}
-		expectQueenFromAt(t, unit, E6, pos)
+		old_expectQueenFromAt(t, unit, E6, pos)
 	}
 	board.ApplyMove(D3, E3)
 	unit = unit.ApplyMove(NewMove(D3, E3), WhiteKing, NoPiece, board, NoPosition)
@@ -226,23 +226,6 @@ func Test_GetAttacks(t *testing.T) {
 	}
 	if attacks[0].From != E5 {
 		t.Errorf("Expecting attack from e5, got %v", attacks)
-	}
-}
-
-func Test_Attacks_get_checks(t *testing.T) {
-	board := NewBoard()
-	pieces := NewPiecePositions()
-	pieces.AddPosition(BlackKing, E1)
-	pieces.AddPosition(WhiteQueen, E2)
-	board[E1] = BlackKing
-	board[E2] = WhiteQueen
-	unit := NewAttacks()
-	for _, pos := range []Position{E1, E2} {
-		unit.AddPiece(board[pos], pos, board)
-	}
-	checks := unit.GetChecks(Black, pieces)
-	if len(checks) != 1 {
-		t.Errorf("Supposed to have a check, got %v", checks)
 	}
 }
 

@@ -12,7 +12,7 @@ type Game struct {
 
 	// The board again, but this time keeping track
 	// of which pieces are attacking what squares.
-	Attacks Attacks
+	SquareControl SquareControl
 
 	// The location of every piece on the board.
 	// The Pieces are normalized, because the color
@@ -101,7 +101,7 @@ func ParseFEN(fenstr string) (*Game, error) {
 			x++
 		}
 	}
-	fen.Attacks = NewAttacksFromBoard(fen.Board)
+	fen.SquareControl = NewSquareControlFromBoard(fen.Board)
 	fen.validMoves = NewValidMovesListFromBoard(fen.Board)
 	return &fen, nil
 }
@@ -154,9 +154,9 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 	// 1. move the king
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
 	for _, p := range kingPos.GetKingMoves() {
-		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(f.ToMove.Opposite(), p) {
+		if f.Board.IsEmpty(p) && !f.SquareControl.AttacksSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
-		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.Attacks.DefendsSquare(f.ToMove.Opposite(), p) {
+		} else if f.Board.IsOpposingPiece(p, f.ToMove) && !f.SquareControl.AttacksSquare(f.ToMove.Opposite(), p) {
 			result = append(result, NewMove(kingPos, p))
 		}
 	}
@@ -187,7 +187,7 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 		pos := check.To
 		for pos != check.From {
 			pos = vector.FromPosition(pos)
-			blocks := f.Attacks.GetAttacksOnSquare(f.ToMove, pos)
+			blocks := f.SquareControl.GetAttacksOnSquare(f.ToMove, pos)
 			for _, move := range blocks {
 				// Pawns can only capture if there's actually a piece there
 				if f.Board[move.From].ToNormalizedPiece() == Pawn {
@@ -217,7 +217,7 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 		}
 	} else {
 		// 3. remove the attacking piece
-		for _, move := range f.Attacks.GetAttacksOnSquare(f.ToMove, check.From) {
+		for _, move := range f.SquareControl.GetAttacksOnSquare(f.ToMove, check.From) {
 			if move.From != kingPos {
 				result = append(result, move)
 			}
@@ -229,7 +229,7 @@ func (f *Game) validMovesInCheck(checks []*Move) []*Move {
 
 func (f *Game) FilterPinnedPieces(result []*Move) []*Move {
 	kingPos := f.Pieces.GetKingPos(f.ToMove)
-	pinned := f.Attacks.GetPinnedPieces(f.Board, f.ToMove, kingPos)
+	pinned := f.SquareControl.GetPinnedPieces(f.Board, f.ToMove, kingPos)
 	filteredResult := []*Move{}
 	for _, move := range result {
 		attackers := pinned[move.From]
@@ -258,11 +258,6 @@ func (f *Game) ValidMoves() []*Move {
 	return result
 }
 
-func (f *Game) OldValidMoves() []*Move {
-	result := f.OldGetValidMovesForColor(f.ToMove)
-	return result
-}
-
 func (f *Game) GetValidMovesForColor(color Color) []*Move {
 
 	checks := f.validMoves.GetChecks(color, f.Pieces)
@@ -275,7 +270,7 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 
 	for _, move := range f.validMoves.ToMoves(color, f.Pieces, f.Board) {
 		// The king can only move to squares that are empty and/or unattacked
-		if f.Board[move.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), move.To) {
+		if f.Board[move.From].ToNormalizedPiece() == King && f.SquareControl.AttacksSquare(color.Opposite(), move.To) {
 			// Filtering invalid king move
 		} else {
 			result = append(result, move)
@@ -285,104 +280,19 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 	// Castling
 	kingPos := f.Pieces.GetKingPos(color)
 	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
-		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
+		if f.Board.CanCastle(f.SquareControl, White, C1, D1) && f.Board.IsEmpty(B1) {
 			result = append(result, NewMove(kingPos, C1))
 		}
 	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
-		if f.Board.CanCastle(f.Attacks, White, F1, G1) {
+		if f.Board.CanCastle(f.SquareControl, White, F1, G1) {
 			result = append(result, NewMove(kingPos, G1))
 		}
 	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
-		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
+		if f.Board.CanCastle(f.SquareControl, Black, C8, D8) && f.Board.IsEmpty(B8) {
 			result = append(result, NewMove(kingPos, C8))
 		}
 	} else if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
-		if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
-			result = append(result, NewMove(kingPos, G8))
-		}
-	}
-
-	// Make sure pieces aren't pinned
-	return f.FilterPinnedPieces(result)
-}
-
-func (f *Game) OldGetValidMovesForColor(color Color) []*Move {
-	result := []*Move{}
-
-	checks := f.Attacks.GetChecks(color, f.Pieces)
-	if len(checks) > 0 {
-		result := f.validMovesInCheck(checks)
-		f.valid = &result
-		return result
-	}
-	for _, attack := range f.Attacks.GetAttacks(color, f.Pieces) {
-		if f.Board[attack.From].ToNormalizedPiece() == King && f.Attacks.DefendsSquare(color.Opposite(), attack.To) {
-			// Filtering invalid king move
-
-		} else {
-			if f.Board[attack.From] == NoPiece {
-				fmt.Println(f.Parent.Board)
-				fmt.Println(f.Line)
-				fmt.Println(f.Board)
-				fmt.Println(f.Attacks)
-				fmt.Println(f.Attacks[attack.To])
-				panic("Invalid attack, no piece at " + attack.From.String() + " " + attack.String())
-			}
-			result = append(result, attack)
-		}
-	}
-
-	for _, pawnPos := range f.Pieces.Positions(color, Pawn) {
-		for _, line := range pawnPos.GetMoveVectors(f.Board[pawnPos]) {
-			for _, targetPos := range line {
-				if f.Board[targetPos] == NoPiece {
-					move := NewMove(pawnPos, targetPos)
-					result = move.ExpandPromotions(result, NormalizedPiece(Pawn))
-				} else {
-					break
-				}
-			}
-		}
-	}
-	for _, piece := range []NormalizedPiece{Knight, Bishop, Rook, Queen} {
-		for _, fromPos := range f.Pieces.Positions(color, piece) {
-			for _, line := range fromPos.GetMoveVectors(Piece(piece)) {
-				for _, toPos := range line {
-					if f.Board[toPos] == NoPiece {
-						result = append(result, NewMove(fromPos, toPos))
-					} else {
-						break
-					}
-				}
-			}
-
-		}
-	}
-	// The king can only move to squares that are empty and/or unattacked
-	kingPos := f.Pieces.GetKingPos(color)
-	for _, p := range kingPos.GetKingMoves() {
-		if f.Board.IsEmpty(p) && !f.Attacks.AttacksSquare(color.Opposite(), p) {
-			result = append(result, NewMove(kingPos, p))
-		} else if f.Board.IsOpposingPiece(p, color) && !f.Attacks.DefendsSquare(color.Opposite(), p) {
-			result = append(result, NewMove(kingPos, p))
-		}
-	}
-
-	// Castling
-	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
-		if f.Board.CanCastle(f.Attacks, White, C1, D1) && f.Board.IsEmpty(B1) {
-			result = append(result, NewMove(kingPos, C1))
-		}
-	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
-		if f.Board.CanCastle(f.Attacks, White, F1, G1) {
-			result = append(result, NewMove(kingPos, G1))
-		}
-	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
-		if f.Board.CanCastle(f.Attacks, Black, C8, D8) && f.Board.IsEmpty(B8) {
-			result = append(result, NewMove(kingPos, C8))
-		}
-	} else if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
-		if f.Board.CanCastle(f.Attacks, Black, F8, G8) {
+		if f.Board.CanCastle(f.SquareControl, Black, F8, G8) {
 			result = append(result, NewMove(kingPos, G8))
 		}
 	}
@@ -465,7 +375,7 @@ func (f *Game) ApplyMove(move *Move) *Game {
 		result.Pieces.RemovePosition(Pawn.ToPiece(f.ToMove.Opposite()), *enpassantCapture)
 	}
 
-	result.Attacks = f.Attacks.ApplyMove(move, movingPiece, f.Board[move.To], board, f.EnPassantVulnerable)
+	result.SquareControl = f.SquareControl.ApplyMove(move, movingPiece, f.Board[move.To], board, f.EnPassantVulnerable)
 	/*
 		fanic := false
 		for i := 0; i < 64; i++ {
@@ -514,46 +424,6 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	result.Parent = f
 
 	result.validMoves = f.validMoves.ApplyMove(move, movingPiece, board, f.EnPassantVulnerable, result.Pieces)
-
-	debugValidMoves := false
-	if debugValidMoves {
-		vv := result.ValidMoves()
-		gg := result.OldValidMoves()
-		corrupt := false
-		for _, move := range gg {
-			found := false
-			for _, suggested := range vv {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Missing move", move, "after", result.Line)
-			}
-		}
-		for _, move := range vv {
-			found := false
-			for _, suggested := range gg {
-				if suggested.From == move.From && suggested.To == move.To {
-					found = true
-				}
-			}
-			if !found {
-				corrupt = true
-				fmt.Println("Suggesting illegal move", move, "after", result.Line)
-			}
-		}
-		if corrupt {
-			fmt.Println(board)
-			fmt.Println(vv)
-			fmt.Println(gg)
-			fmt.Println(len(vv), len(gg))
-			panic("yo")
-		} else {
-			//fmt.Println("all good", move)
-		}
-	}
 
 	return result
 }

@@ -32,19 +32,6 @@ func NewAttacksFromBoard(board Board) Attacks {
 	return result
 }
 
-// Get all the checks @color is currently in
-func (a Attacks) GetChecks(color Color, pieces PiecePositions) []*Move {
-	incoming := a.GetAttacks(color.Opposite(), pieces)
-	kingPos := pieces.GetKingPos(color)
-	checks := []*Move{}
-	for _, attack := range incoming {
-		if attack.To == kingPos {
-			checks = append(checks, attack)
-		}
-	}
-	return checks
-}
-
 // Get all the attacks by @color. Ignores pins.
 func (a Attacks) GetAttacks(color Color, pieces PiecePositions) []*Move {
 	result := []*Move{}
@@ -107,11 +94,6 @@ func (a Attacks) AttacksSquare(color Color, square Position) bool {
 		}
 	}
 	return false
-}
-
-// Whether or not @color defends the @square
-func (a Attacks) DefendsSquare(color Color, square Position) bool {
-	return a.AttacksSquare(color, square)
 }
 
 func (a Attacks) GetPinnedPieces(board Board, color Color, kingPos Position) map[Position][]Position {

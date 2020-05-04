@@ -507,7 +507,6 @@ func Test_ApplyMove_game(t *testing.T) {
 		}
 		if !unit.IsMate() {
 			fmt.Println(unit.Board)
-			fmt.Println(unit.Attacks)
 			t.Errorf("It's supposed to be mate, but the engine is suggesting moves: %v in %s", unit.ValidMoves(), unit.FENString())
 		}
 	}

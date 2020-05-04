@@ -315,7 +315,6 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 	// check mate. So there should only be eleven nodes in the root EvalTree
 	if len(unit.EvalTree.Replies) != 11 {
 		fmt.Println(fen.Board)
-		fmt.Println(fen.Attacks)
 		for move, child := range unit.EvalTree.Replies {
 			fmt.Println(move, len(child.Replies))
 		}

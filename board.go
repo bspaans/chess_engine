@@ -39,7 +39,7 @@ func (b Board) FindPieceOnLine(line []Position) Position {
 	return NoPosition
 }
 
-func (b Board) CanCastle(a Attacks, color Color, from, to Position) bool {
+func (b Board) CanCastle(a SquareControl, color Color, from, to Position) bool {
 	for p := from; p <= to; p++ {
 		if !b.IsEmpty(p) {
 			return false
