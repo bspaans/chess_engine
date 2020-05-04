@@ -590,11 +590,11 @@ func (f *Game) FENString() string {
 }
 
 func (f *Game) String() string {
-	return fmt.Sprintf(`Tempo: %f
-Space: %f 
-Mobility: %f
-Material: %f
-Pawn structure: %f
+	return fmt.Sprintf(`Tempo: %d
+Space: %d 
+Mobility: %d
+Material: %d
+Pawn structure: %d
 position fen %s 
 %s`,
 		TempoEvaluator(f),

@@ -329,7 +329,7 @@ func Test_Engine_Mate_In_Three_Move_Disection(t *testing.T) {
 		t.Fatalf("Expecting tree with max depth 6, got %d", unit.EvalTree.MaxDepth())
 	}
 	if !unit.EvalTree.Replies["f8c5"].Score.IsMateIn(5) {
-		t.Errorf("Expecting mate in 5 for f8c5, got %f", unit.EvalTree.Replies["f8c5"].Score)
+		t.Errorf("Expecting mate in 5 for f8c5, got %d", unit.EvalTree.Replies["f8c5"].Score)
 	}
 	for _, move := range unit.EvalTree.Replies {
 
@@ -403,7 +403,7 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly(t *testing.T) {
 	for move, reply := range unit.EvalTree.Replies {
 		if move != bestmove {
 			if reply.Score > currentEval {
-				t.Errorf("Move %s is not bestmove %s but has a score %f higher than start position eval: %f", move, bestmove, reply.Score, currentEval)
+				t.Errorf("Move %s is not bestmove %s but has a score %d higher than start position eval: %d", move, bestmove, reply.Score, currentEval)
 			}
 		}
 	}
@@ -437,10 +437,10 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 		for move, child := range unit.EvalTree.Replies["h5g6"].Replies {
 			fmt.Println(move, len(child.Replies))
 		}
-		t.Errorf("Not expecting a positive score in reply, got %f", unit.EvalTree.Replies["h5g6"].Score)
+		t.Errorf("Not expecting a positive score in reply, got %d", unit.EvalTree.Replies["h5g6"].Score)
 	}
 	if unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score < 0 {
-		t.Errorf("Not expecting a negative score in reply h7g6, got %f", unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score)
+		t.Errorf("Not expecting a negative score in reply h7g6, got %d", unit.EvalTree.Replies["h5g6"].Replies["h7g6"].Score)
 	}
 }
 
@@ -472,10 +472,10 @@ func Test_Engine_Should_find_better_move_if_forcing_lines_dont_work_out(t *testi
 		for move, child := range unit.EvalTree.Replies[badMove].Replies {
 			fmt.Println(move, len(child.Replies), child.Score)
 		}
-		t.Errorf("Not expecting a worse score in reply than %f, got %f", currentEval, unit.EvalTree.Replies[badMove].Score)
+		t.Errorf("Not expecting a worse score in reply than %d, got %d", currentEval, unit.EvalTree.Replies[badMove].Score)
 	}
 	if unit.EvalTree.Replies[badMove].Replies[refutation].Score > currentEval {
-		t.Errorf("Not expecting a score > starting position (%f); in reply %s, got %f", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
+		t.Errorf("Not expecting a score > starting position (%d); in reply %s, got %d", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
 	}
 }
 
@@ -507,10 +507,10 @@ func Test_Engine_Should_find_better_move_if_forcing_lines_dont_work_out_black(t 
 		for move, child := range unit.EvalTree.Replies[badMove].Replies {
 			fmt.Println(move, len(child.Replies), child.Score)
 		}
-		t.Errorf("Not expecting a worse score in reply than %f, got %f", currentEval, unit.EvalTree.Replies[badMove].Score)
+		t.Errorf("Not expecting a worse score in reply than %d, got %d", currentEval, unit.EvalTree.Replies[badMove].Score)
 	}
 	if unit.EvalTree.Replies[badMove].Replies[refutation].Score > currentEval {
-		t.Errorf("Not expecting a score > starting position (%f); in reply %s, got %f", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
+		t.Errorf("Not expecting a score > starting position (%d); in reply %s, got %d", currentEval, refutation, unit.EvalTree.Replies[badMove].Replies[refutation].Score)
 	}
 }
 

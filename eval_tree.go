@@ -1,9 +1,5 @@
 package chess_engine
 
-import (
-	"math"
-)
-
 type EvalResult struct {
 	Score
 	Line []*Move
@@ -53,7 +49,7 @@ func (t *EvalTree) GetScore(line []*Move) (Score, bool) {
 }
 func (t *EvalTree) UpdateBestLine() {
 	var maxChild *EvalTree
-	maxScore := Score(math.Inf(-1))
+	maxScore := LowestScore
 	//fmt.Println("Finding max for", t.Move)
 	for _, child := range t.Replies {
 		//fmt.Println("Seen", child.Move, child.Score)

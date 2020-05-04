@@ -2,7 +2,7 @@ package chess_engine
 
 import "math"
 
-type Score float64
+type Score int64
 
 const (
 	Mate         Score = 58008
