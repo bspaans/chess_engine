@@ -49,6 +49,29 @@ func (m MoveList) AddAll_Immutable(moves []*Move) MoveList {
 	return result
 }
 
+func (m MoveList) RemoveAll_Immutable(moves []*Move) MoveList {
+	result := []*Move{}
+	for _, move := range m {
+		if move == nil {
+			return result
+		}
+		found := false
+		for _, remove := range moves {
+			if remove == nil {
+				break
+			}
+			if *remove == *move {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, move)
+		}
+	}
+	return result
+}
+
 func (m MoveList) Remove(destination Position) MoveList {
 	result := []*Move{}
 	for _, existing := range m {
@@ -291,16 +314,8 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 					v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
 				}
 				vector := NewMove(move.To, pieceOnLine).Vector().Normalize()
-				for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
-					if board.IsEmpty(pos) {
-						v[pieceOnLine] = v[pieceOnLine].Remove(pos)
-					} else if board.IsOpposingPiece(pos, blockingPiece.Color()) {
-						v[pieceOnLine] = v[pieceOnLine].Remove(pos)
-						break
-					} else {
-						break
-					}
-				}
+				line := vector.FollowVectorUntilEdgeOfBoard(move.To)
+				v.removeLineUntilBlockingPiece(pieceOnLine, line, board, blockingPiece.Color())
 			}
 		}
 	}
@@ -349,4 +364,19 @@ func (v ValidMovesList) addLineUntilBlockingPiece(fromPos Position, line []Posit
 		}
 	}
 	v[fromPos] = v[fromPos].AddAll_Immutable(adds)
+}
+
+func (v ValidMovesList) removeLineUntilBlockingPiece(fromPos Position, line []Position, board Board, color Color) {
+	removes := make([]*Move, len(line))
+	for i, toPos := range line {
+		if board.IsEmpty(toPos) {
+			removes[i] = NewMove(fromPos, toPos)
+		} else if board.IsOppositeColor(toPos, color) {
+			removes[i] = NewMove(fromPos, toPos)
+			break
+		} else {
+			break
+		}
+	}
+	v[fromPos] = v[fromPos].RemoveAll_Immutable(removes)
 }
