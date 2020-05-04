@@ -42,6 +42,12 @@ func (m *Move) toPromotions(result []*Move) []*Move {
 	}
 	return append(result, m)
 }
+func (m *Move) ToPromotions(piece Piece) []*Move {
+	if piece.ToNormalizedPiece() == Pawn {
+		return m.toPromotions([]*Move{})
+	}
+	return []*Move{m}
+}
 
 func (m *Move) ExpandPromotions(result []*Move, piece NormalizedPiece) []*Move {
 	if piece == Pawn {

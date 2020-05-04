@@ -108,6 +108,9 @@ func (p Piece) Color() Color {
 	}
 	return NoColor
 }
+func (p Piece) IsColor(c Color) bool {
+	return p.Color() == c
+}
 func (p Piece) OppositeColor() Color {
 	return p.Color().Opposite()
 }
