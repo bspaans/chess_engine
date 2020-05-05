@@ -283,6 +283,15 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 		}
 	}
 
+	if f.EnPassantVulnerable != NoPosition {
+		for _, pos := range f.EnPassantVulnerable.GetPawnAttacks(f.ToMove.Opposite()) {
+			if f.Board[pos] == Pawn.ToPiece(f.ToMove) {
+				result = append(result, NewMove(pos, f.EnPassantVulnerable))
+			}
+		}
+
+	}
+
 	// Castling
 	kingPos := f.Pieces.GetKingPos(color)
 	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
