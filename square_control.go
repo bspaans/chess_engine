@@ -53,7 +53,7 @@ func (s SquareControl) removePiece(piece Piece, fromPos Position) {
 }
 
 func (s SquareControl) HasPiecePosition(color Color, pos, fromPos Position) bool {
-	return s[int(color)*64+int(pos)].IsSet(fromPos)
+	return s.Get(color, pos).IsSet(fromPos)
 }
 
 func (s SquareControl) shouldContinue(board Board, pos Position, color Color) bool {
@@ -68,9 +68,13 @@ func (s SquareControl) shouldContinue(board Board, pos Position, color Color) bo
 	return false
 }
 
+func (s SquareControl) Get(color Color, pos Position) PositionBitmap {
+	return s[int(color)*64+int(pos)]
+}
+
 // Get all the attacks by @color. Ignores pins. Ignores promotions (TODO?)
 func (s SquareControl) GetAttacksOnSquare(color Color, pos Position) []*Move {
-	attacks := s[int(color)*64+int(pos)].ToPositions()
+	attacks := s.Get(color, pos).ToPositions()
 	result := make([]*Move, len(attacks))
 	for i, a := range attacks {
 		move := NewMove(a, pos)
@@ -81,10 +85,10 @@ func (s SquareControl) GetAttacksOnSquare(color Color, pos Position) []*Move {
 
 func (s SquareControl) getAttacksOnSquareForBothColours(pos Position) []Position {
 	result := []Position{}
-	for _, p := range s[int(White)*64+int(pos)].ToPositions() {
+	for _, p := range s.Get(White, pos).ToPositions() {
 		result = append(result, p)
 	}
-	for _, p := range s[int(Black)*64+int(pos)].ToPositions() {
+	for _, p := range s.Get(Black, pos).ToPositions() {
 		result = append(result, p)
 	}
 	return result
@@ -92,7 +96,7 @@ func (s SquareControl) getAttacksOnSquareForBothColours(pos Position) []Position
 
 // Whether or not @color attacks the @square
 func (s SquareControl) AttacksSquare(color Color, square Position) bool {
-	return !s[int(color)*64+int(square)].IsEmpty()
+	return !s.Get(color, square).IsEmpty()
 }
 
 func (s SquareControl) Copy() SquareControl {
@@ -114,9 +118,9 @@ func (s SquareControl) GetPinnedPieces(board Board, color Color, kingPos Positio
 				// We have found one of our pieces within a clear line of the king.
 				pieceVector := NewMove(pos, kingPos).Vector().Normalize()
 				// Look at the pieces that are attacking the square
-				for _, attackerPos := range s[int(color.Opposite())*64+int(pos)].ToPositions() {
+				for _, attackerPos := range s.Get(color.Opposite(), pos).ToPositions() {
 					piece := board[attackerPos]
-					normPiece := NormalizedPiece(piece)
+					normPiece := piece.ToNormalizedPiece()
 					// Pawns, kings and knights can't pin other pieces
 					if !normPiece.IsRayPiece() {
 						continue

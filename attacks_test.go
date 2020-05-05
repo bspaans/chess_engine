@@ -13,30 +13,6 @@ func old_expectQueenFromAt(t *testing.T, unit Attacks, from, at Position) {
 	}
 }
 
-func Test_Attacks_ApplyMove_captures(t *testing.T) {
-
-	board := NewBoard()
-	board[E6] = WhiteQueen
-	board[E5] = BlackKing
-	orig := NewAttacks()
-
-	orig.AddPiece(WhiteQueen, E6, board)
-	orig.AddPiece(BlackKing, E5, board)
-
-	board.ApplyMove(E5, E6)
-	unit := orig.ApplyMove(NewMove(E5, E6), BlackKing, WhiteQueen, board, NoPosition)
-
-	positions := E6.GetPieceMoves(WhiteQueen)
-	for _, pos := range positions {
-		if unit[pos][White][Queen].Count() != 0 {
-			t.Errorf("Expecting white position to be removed in %s, got %v", pos, unit[pos][White][Queen].ToPositions())
-		}
-		if orig[pos][White][Queen].Count() == 0 {
-			t.Errorf("Expecting white queen in piece vector for %s, got %v", pos, orig[pos][White][Queen].ToPositions())
-		}
-	}
-}
-
 func Test_Attacks_white_pawn(t *testing.T) {
 
 	board := NewBoard()
