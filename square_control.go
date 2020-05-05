@@ -192,7 +192,7 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 		}
 
 		// Not relevant for Pawns and Knights and King
-		if !NormalizedPiece(extendPiece).IsRayPiece() {
+		if !extendPiece.IsRayPiece() {
 			continue
 		}
 		// TODO: this doesn't check whether a rook is moving diagonally...
@@ -210,7 +210,7 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 			extendPiece := board[fromPos]
 			color := extendPiece.Color()
 			// Not relevant for Pawns and Knights and King
-			if !NormalizedPiece(extendPiece).IsRayPiece() {
+			if !extendPiece.IsRayPiece() {
 				continue
 			}
 			vector := NewMove(*enpassant, fromPos).Vector().Normalize()
@@ -247,7 +247,7 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 			blockPiece := board[fromPos]
 			color := blockPiece.Color()
 			// Not relevant for Pawns and Knights and King
-			if !NormalizedPiece(blockPiece).IsRayPiece() {
+			if !blockPiece.IsRayPiece() {
 				continue
 			}
 			// TODO: check vector is good

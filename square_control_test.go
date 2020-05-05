@@ -97,18 +97,18 @@ func Test_SquareControl_ApplyMove(t *testing.T) {
 		t.Errorf("Expecting old king attacks to be removed")
 	}
 	for _, pos := range positions {
-		if orig[int(White)*64+int(pos)].Count() != unit[int(White)*64+int(pos)].Count() {
-			t.Fatalf("expecting same amount of attacks again.")
-		}
 		if pos == E1 || pos == E2 {
 			if unit[int(White)*64+int(pos)].Count() > 1 {
 				t.Errorf("Expecting no attacks on %s, got %v", pos, unit[int(White)*64+int(pos)].ToPositions())
 			}
 			continue
+		}
+		if orig[int(White)*64+int(pos)].Count() != unit[int(White)*64+int(pos)].Count() {
+			t.Fatalf("expecting same amount of attacks again on %s", pos)
 		} else if unit[int(White)*64+int(pos)].Count() == 0 {
 			t.Errorf("Expecting an attack on %s", pos)
-		} else if unit[int(White)*64+int(pos)].Count() != 1 {
-			t.Errorf("Expecting white queen in piece vector")
+		} else if unit[int(White)*64+int(pos)].Count() == 0 {
+			t.Errorf("Expecting white queen in piece vector for %s", pos)
 		} else if unit[int(White)*64+int(pos)].ToPositions()[0] != E6 {
 			t.Errorf("Expecting e6 got %s", unit[int(White)*64+int(pos)].ToPositions()[0])
 		}
