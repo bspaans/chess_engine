@@ -257,6 +257,7 @@ func (t *Tournament) SetResult(game *Game, fen *chess_engine.Game, result GameRe
 		Black:  game.Black.Name,
 		Result: game.Result.String(),
 	}
+	chess_engine.MovesToGIF(pos, fen.Line, "test.gif", 100)
 	pgn := chess_engine.LineToPGNWithTags(pos, fen.Line, tags)
 	fmt.Println(pgn)
 	f, err := os.OpenFile("tournament.pgn", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
