@@ -3,11 +3,14 @@ package chess_engine
 import (
 	"image"
 	"image/color"
+	"image/color/palette"
 	"image/draw"
+	"image/gif"
 	"image/png"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -27,16 +30,16 @@ func readPiecesImage() image.Image {
 	return m
 }
 
-func createImage(width int, height int, background color.RGBA) *image.RGBA {
+func createImage(width int, height int, dark, light color.RGBA) *image.RGBA {
 	rect := image.Rect(0, 0, width, height)
 	img := image.NewRGBA(rect)
-	draw.Draw(img, img.Bounds(), &image.Uniform{background}, image.ZP, draw.Src)
+	draw.Draw(img, img.Bounds(), &image.Uniform{dark}, image.ZP, draw.Src)
 	return img
 }
 
 // Size should be a multiple of 8
 func createBoard(size int, dark, light color.RGBA) *image.RGBA {
-	img := createImage(size, size, dark)
+	img := createImage(size, size, dark, light)
 	squareWidth := size / 8
 	for x := 0; x < 8; x += 2 {
 		for y := 0; y < 8; y += 2 {
@@ -60,7 +63,7 @@ func drawPieces(size int, img *image.RGBA, piecesFont *truetype.Font, board Boar
 	squareWidth := size / 8
 	for i := 0; i < 64; i++ {
 		if board[i] != NoPiece {
-			x := 7 - (i % 8)
+			x := (i % 8)
 			y := 8 - (i / 8)
 
 			pieces := map[Piece]string{
@@ -97,6 +100,7 @@ func drawPieces(size int, img *image.RGBA, piecesFont *truetype.Font, board Boar
 }
 
 func loadTTF() *truetype.Font {
+	// TODO embed file
 	ttf, err := ioutil.ReadFile("chess.ttf")
 	if err != nil {
 		panic(err)
@@ -108,21 +112,76 @@ func loadTTF() *truetype.Font {
 	return font
 }
 
+var Chess_Font = loadTTF()
+
+func BoardToImage(board Board) *image.Paletted {
+	img := createBoard(256, color.RGBA{0x44, 0x44, 0xaa, 0xff}, color.RGBA{0xaa, 0xaa, 0xaa, 0xff})
+	drawPieces(256, img, Chess_Font, board)
+	palettedImage := image.NewPaletted(img.Bounds(), palette.Plan9)
+	draw.Draw(palettedImage, palettedImage.Rect, img, img.Bounds().Min, draw.Over)
+	return palettedImage
+}
+
+func BoardToPNG(board Board, file string) error {
+	img := BoardToImage(board)
+	out, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	return png.Encode(out, img)
+}
+
+func BoardToGIF(board Board, file string) error {
+	img := BoardToImage(board)
+	out, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	opts := &gif.Options{NumColors: 255}
+	return gif.Encode(out, img, opts)
+}
+
+func MovesToGIF(startingPosition *Game, moves []*Move, file string, delay int) error {
+	images := []*image.Paletted{}
+	delays := []int{}
+	game := startingPosition
+	for _, move := range moves {
+		images = append(images, BoardToImage(game.Board))
+		delays = append(delays, delay)
+		game = game.ApplyMove(move)
+	}
+	images = append(images, BoardToImage(game.Board))
+	delays = append(delays, delay)
+
+	out, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	opts := &gif.GIF{
+		Image:           images,
+		Delay:           delays,
+		LoopCount:       0,
+		BackgroundIndex: 0,
+	}
+	if err := gif.EncodeAll(out, opts); err != nil {
+		return err
+	}
+	out.Close()
+	return exec.Command("convert", file, "-coalesce", file).Run()
+}
+
 func init() {
-	ttf := loadTTF()
-	img := createBoard(256, color.RGBA{0x66, 0x66, 0x66, 0xff}, color.RGBA{0xaa, 0xaa, 0xaa, 0xff})
 
 	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	game, err := ParseFEN(fen)
 	if err != nil {
 		panic(err)
 	}
-	drawPieces(256, img, ttf, game.Board)
-
-	out, err := os.Create("test.png")
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+	BoardToPNG(game.Board, "test.png")
+	if err := BoardToGIF(game.Board, "test.gif"); err != nil {
+		panic(err)
 	}
-	png.Encode(out, img)
+	if err := MovesToGIF(game, []*Move{NewMove(E2, E4), NewMove(E7, E5)}, "test2.gif", 100); err != nil {
+		panic(err)
+	}
 }
