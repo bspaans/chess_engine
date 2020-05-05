@@ -138,3 +138,90 @@ func Test_SquareControl_ApplyMove_captures(t *testing.T) {
 		}
 	}
 }
+
+func Test_SquareControl_white_pawn(t *testing.T) {
+
+	board := NewBoard()
+	board[E4] = WhitePawn
+	unit := NewSquareControl()
+
+	unit.addPiece(WhitePawn, E4, board)
+
+	positions := E4.GetPawnAttacks(White)
+	for _, pos := range positions {
+		if unit.Get(White, pos).Count() != 1 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if unit.Get(White, pos).Count() != 1 {
+			t.Errorf("Expecting white pawn in piece vector")
+		}
+		if unit.Get(White, pos).ToPositions()[0] != E4 {
+			t.Errorf("Expecting e4 got %v", unit.Get(White, pos).ToPositions())
+		}
+	}
+}
+func Test_SquareControl_black_pawn(t *testing.T) {
+
+	board := NewBoard()
+	board[E3] = BlackPawn
+	unit := NewSquareControl()
+
+	unit.addPiece(BlackPawn, E3, board)
+
+	positions := E3.GetPawnAttacks(Black)
+	for _, pos := range positions {
+		if unit.Get(Black, pos).Count() != 1 {
+			t.Errorf("Expecting an attack on %s", pos)
+		}
+		if unit.Get(Black, pos).Count() != 1 {
+			t.Errorf("Expecting black pawn in piece vector")
+		}
+		if unit.Get(Black, pos).ToPositions()[0] != E3 {
+			t.Errorf("Expecting e3 got %v", unit.Get(Black, pos).ToPositions())
+		}
+	}
+}
+
+func Test_SquareControl_GetAttacksOnSquare(t *testing.T) {
+
+	board := NewBoard()
+	board[E5] = BlackPawn
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackPawn, E5)
+	unit := NewSquareControl()
+
+	unit.addPiece(BlackPawn, E5, board)
+	attacks := unit.GetAttacksOnSquare(Black, D4)
+
+	if unit.Get(Black, D4).Count() != 1 {
+		t.Errorf("Supposed to have an attack")
+	}
+	if len(attacks) != 1 {
+		t.Errorf("Expecting one attack, got %v", attacks)
+	}
+	if attacks[0].From != E5 {
+		t.Errorf("Expecting attack from e5, got %v", attacks)
+	}
+}
+
+func Test_SquareControl_GetPinnedPieces(t *testing.T) {
+	board := NewBoard()
+	pieces := NewPiecePositions()
+	pieces.AddPosition(BlackKing, E1)
+	pieces.AddPosition(BlackPawn, D2)
+	pieces.AddPosition(WhiteQueen, B4)
+
+	board[E1] = BlackKing
+	board[D2] = BlackPawn
+	board[B4] = WhiteQueen
+
+	unit := NewSquareControl()
+	for _, pos := range []Position{E1, D2, B4} {
+		unit.addPiece(board[pos], pos, board)
+	}
+
+	pinned := unit.GetPinnedPieces(board, Black, E1)
+	if len(pinned) != 1 {
+		t.Errorf("Supposed to have a pinned piece")
+	}
+}
