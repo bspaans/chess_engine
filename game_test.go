@@ -512,6 +512,23 @@ func Test_ApplyMove_game(t *testing.T) {
 	}
 }
 
+func Test_Perft(t *testing.T) {
+	if !isTestEnabled(t, "INTEGRATION", "PERFT") {
+		return
+	}
+	game, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	if err != nil {
+		panic(err)
+	}
+	perft := []int{20, 400, 8902, 197281, 4865609}
+	for depth, expectedNodes := range perft {
+		got := Perft(game, depth+1)
+		if got != expectedNodes {
+			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, got)
+		}
+	}
+}
+
 func Benchmark_ApplyMove(t *testing.B) {
 	unit, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 	if err != nil {
