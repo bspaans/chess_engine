@@ -12,11 +12,7 @@ type Move struct {
 }
 
 func NewMove(from, to Position) *Move {
-	return &Move{
-		From:    from,
-		To:      to,
-		Promote: NoPiece,
-	}
+	return MoveMap[int(from)*64+int(to)]
 }
 
 func (m Move) String() string {
@@ -34,8 +30,7 @@ func (m *Move) toPromotions(result []*Move) []*Move {
 			color = Black
 		}
 		for _, piece := range []Piece{WhiteQueen, WhiteKnight, WhiteRook, WhiteBishop} {
-			move := NewMove(m.From, m.To)
-			move.Promote = piece.SetColor(color)
+			move := &Move{m.From, m.To, piece.SetColor(color)}
 			result = append(result, move)
 		}
 		return result

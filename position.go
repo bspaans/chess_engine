@@ -408,7 +408,7 @@ func init() {
 		}
 		result += "}\n\n"
 
-		result += "var PieceMovesBitmap = []PositionBitmap{"
+		result += "var PieceMovesBitmap = []PositionBitmap{\n"
 		for _, piece := range Pieces {
 			result += "\t// " + piece.String() + "\n"
 			for i := 0; i < 64; i++ {
@@ -423,7 +423,7 @@ func init() {
 		}
 		result += "}\n\n"
 
-		result += "var PawnAttacksBitmap = []PositionBitmap{"
+		result += "var PawnAttacksBitmap = []PositionBitmap{\n"
 		for _, piece := range []Piece{BlackPawn, WhitePawn} {
 			result += "\t// " + piece.String() + "\n"
 			for i := 0; i < 64; i++ {
@@ -436,6 +436,13 @@ func init() {
 				result += "\t"
 				result += strconv.FormatUint(uint64(bitmap), 10)
 				result += ",\n"
+			}
+		}
+		result += "}\n\n"
+		result += "var MoveMap = []*Move{\n"
+		for x := 0; x < 64; x++ {
+			for y := 0; y < 64; y++ {
+				result += fmt.Sprintf("\t&Move{%d, %d, NoPiece},\n", x, y)
 			}
 		}
 		result += "}\n\n"

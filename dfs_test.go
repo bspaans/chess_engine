@@ -128,6 +128,9 @@ func Test_Engine_Can_Find_Mate_In_Two(t *testing.T) {
 		// Henry Buckle vs NN, London, 1840
 		[]string{"r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0", "3"},
 
+		[]string{"6k1/pp4p1/2p5/2bp4/8/P5Pb/1P3rrP/2BRRN1K b - - 0 1", "3"},
+		[]string{"3k1r1r/pb3p2/1p4p1/1B2B3/3qn3/6QP/P4RP1/2R3K1 w - - 1 0", "3"},
+
 		// Wilhelm Steinitz vs Herbert Trenchard, Vienna, 1898
 		// TODO: this mate doesn't start with a check so the engine doens't
 		// see queue Ne7 as a forcing move
@@ -278,9 +281,17 @@ func Test_Engine_Can_Find_Mate_In_Three(t *testing.T) {
 	cases := [][]string{
 		[]string{"k7/1PK5/8/8/8/8/8/q2qqq2 b - - 0 0", "5"},
 		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
-		[]string{"k1K5/1q6/2P3qq/q7/8/8/8/8 w - - 0 0", "5"},
 		// Madame de Remusat vs Napoleon I, Paris, 1802
 		[]string{"r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1", "5"},
+
+		// Mikhail Chigorin vs Yakubovich, corr., 1879
+		[]string{"5qrk/p3b1rp/4P2Q/5P2/1pp5/5PR1/P6P/B6K w - - 1 0", "5"},
+
+		// L Bachmann vs Fiechtl, Regensberg, 1887
+		[]string{"r1bq1k1r/pp2R1pp/2pp1p2/1n1N4/8/3P1Q2/PPP2PPP/R1B3K1 w - - 1 0", "5"},
+
+		// Henrique Mecking vs Antonio Rocha, Mar del Plata, 1969
+		[]string{"rk5r/2p3pp/p1p5/4N3/4P3/2q4P/P4PP1/R2Q2K1 w - - 1 0", "5"},
 	}
 	if err := runUntilMate(cases, 8, true); err != nil {
 		t.Fatal(err)
