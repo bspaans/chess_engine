@@ -127,7 +127,7 @@ func (f *Game) IsDraw() bool {
 	if f.HalfmoveClock >= 100 {
 		return true
 	}
-	checks := f.validMoves.GetChecks(f.ToMove, f.Pieces)
+	checks := f.GetChecks()
 	if len(checks) > 0 {
 		return false
 	}
@@ -137,9 +137,12 @@ func (f *Game) IsDraw() bool {
 	return len(f.ValidMoves()) == 0
 }
 
+func (f *Game) GetChecks() []*Move {
+	return f.validMoves.GetChecks(f.ToMove, f.Pieces)
+}
+
 func (f *Game) InCheck() bool {
-	checks := f.validMoves.GetChecks(f.ToMove, f.Pieces)
-	return len(checks) > 0
+	return len(f.GetChecks()) > 0
 }
 
 func (f *Game) IsFinished() bool {
@@ -147,7 +150,7 @@ func (f *Game) IsFinished() bool {
 }
 
 func (f *Game) IsMate() bool {
-	checks := f.validMoves.GetChecks(f.ToMove, f.Pieces)
+	checks := f.GetChecks()
 	if len(checks) > 0 {
 		moves := f.validMovesInCheck(checks)
 		return len(moves) == 0
@@ -298,15 +301,18 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 		if f.Board.CanCastle(f.SquareControl, White, C1, D1) && f.Board.IsEmpty(B1) {
 			result = append(result, NewMove(kingPos, C1))
 		}
-	} else if color == White && f.CastleStatuses.CanCastleKingside(White) {
+	}
+	if color == White && f.CastleStatuses.CanCastleKingside(White) {
 		if f.Board.CanCastle(f.SquareControl, White, F1, G1) {
 			result = append(result, NewMove(kingPos, G1))
 		}
-	} else if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
+	}
+	if color == Black && f.CastleStatuses.CanCastleQueenside(Black) {
 		if f.Board.CanCastle(f.SquareControl, Black, C8, D8) && f.Board.IsEmpty(B8) {
 			result = append(result, NewMove(kingPos, C8))
 		}
-	} else if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
+	}
+	if color == Black && f.CastleStatuses.CanCastleKingside(Black) {
 		if f.Board.CanCastle(f.SquareControl, Black, F8, G8) {
 			result = append(result, NewMove(kingPos, G8))
 		}
