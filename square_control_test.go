@@ -1,6 +1,10 @@
 package chess_engine
 
-import "testing"
+import (
+	"strconv"
+	"strings"
+	"testing"
+)
 
 func expectQueenFromAt(t *testing.T, unit SquareControl, from, at Position) {
 	if unit.Get(White, at).Count() == 0 {
@@ -113,6 +117,60 @@ func Test_SquareControl_ApplyMove(t *testing.T) {
 			t.Errorf("Expecting e6 got %s", unit.Get(White, pos).ToPositions()[0])
 		}
 	}
+}
+
+func Test_SquareControl_extends_previously_blocked_pieces(t *testing.T) {
+	cases := [][]string{
+
+		// Rook on same rank should be extended after pawn move
+		[]string{"4K3/8/8/8/1r2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:1", "g4:1", "h4:1"},
+
+		// Queen on same rank should be extended after pawn move
+		[]string{"4K3/8/8/8/1q2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:1", "g4:1", "h4:1"},
+
+		// Bishop on same rank shouldn't be extended after pawn move
+		[]string{"4K3/8/8/8/1b2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:0", "g4:0", "h4:0"},
+
+		// Knight on same rank shouldn't be extended after pawn move
+		[]string{"4K3/8/8/8/1n2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:0", "g4:0", "h4:0"},
+
+		// King on same rank shouldn't be extended after pawn move
+		[]string{"4K3/8/8/8/1k2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:0", "g4:0", "h4:0"},
+
+		// Pawn on same rank shouldn't be extended after pawn move
+		[]string{"4K3/8/8/8/1p2P3/8/8/4k3 w - - 0 1", "e4e5", "f4:0", "g4:0", "h4:0"},
+
+		// Rook on same file should be shortened
+		[]string{"1K6/4r3/8/8/4P3/8/8/4k3 w - - 0 1", "e4e5", "e5:1", "e4:0"},
+
+		// Queen on same file should be shortened
+		[]string{"1K6/4q3/8/8/4P3/8/8/4k3 w - - 0 1", "e4e5", "e5:1", "e4:0"},
+	}
+	for _, testCase := range cases {
+		fen, move, updatedSquares := testCase[0], testCase[1], testCase[2:]
+		game, err := ParseFEN(fen)
+		if err != nil {
+			t.Fatalf("Invalid FEN %s", fen)
+		}
+		unit := NewSquareControlFromBoard(game.Board)
+		applyMove := MustParseMove(move)
+		movingPiece := game.Board[applyMove.From]
+		capturedPiece := game.Board[applyMove.To]
+		game.Board.ApplyMove(applyMove.From, applyMove.To)
+		updatedUnit := unit.ApplyMove(applyMove, movingPiece, capturedPiece, game.Board, NoPosition)
+
+		for _, square := range updatedSquares {
+			sqParts := strings.Split(square, ":")
+			sq := MustParsePosition(sqParts[0])
+			expected, _ := strconv.Atoi(sqParts[1])
+			old := unit.GetAttacksOnSquare(Black, sq)
+			new := updatedUnit.GetAttacksOnSquare(Black, sq)
+			if len(new) != expected {
+				t.Errorf("Expecting %d attacks on %s; got %s, was %s", expected, square, new, old)
+			}
+		}
+	}
+
 }
 
 func Test_SquareControl_ApplyMove_captures(t *testing.T) {

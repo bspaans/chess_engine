@@ -114,6 +114,14 @@ func ParsePosition(pstr string) (Position, error) {
 	return p, nil
 }
 
+func MustParsePosition(pstr string) Position {
+	p, err := ParsePosition(pstr)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
 func parsePosition(pstr string) (Position, bool) {
 	if len(pstr) != 2 {
 		return 0, false

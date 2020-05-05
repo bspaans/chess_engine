@@ -114,6 +114,9 @@ func ParseMove(moveStr string) (*Move, error) {
 			return nil, fmt.Errorf("Failed to parse promotion move %s: %s", moveStr, err.Error())
 		}
 	}
+	if promote == NoPiece {
+		return NewMove(from, to), nil
+	}
 	return &Move{
 		From:    from,
 		To:      to,

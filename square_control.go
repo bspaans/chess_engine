@@ -199,7 +199,6 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 		if !extendPiece.IsRayPiece() {
 			continue
 		}
-		// TODO: this doesn't check whether a rook is moving diagonally...
 		vector := NewMove(move.From, fromPos).Vector().Normalize()
 		for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.From) {
 			attacks.addPosition(color, pos, fromPos)
@@ -218,7 +217,6 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 				continue
 			}
 			vector := NewMove(*enpassant, fromPos).Vector().Normalize()
-			// TODO: check vector is actually legit
 			for _, pos := range vector.FollowVectorUntilEdgeOfBoard(*enpassant) {
 				attacks.addPosition(color, pos, fromPos)
 				if !s.shouldContinue(board, pos, Color(color)) {
@@ -254,13 +252,9 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 			if !blockPiece.IsRayPiece() {
 				continue
 			}
-			// TODO: check vector is good
 			vector := NewMove(move.To, fromPos).Vector().Normalize()
-			//fmt.Println("Vector", move.To, fromPos, vector)
-			//fmt.Println(attacks[move.To])
 			for _, pos := range vector.FollowVectorUntilEdgeOfBoard(move.To) {
 				if attacks.HasPiecePosition(color, pos, fromPos) {
-					//fmt.Println("Remove from ", pos)
 					attacks.removePosition(color, pos, fromPos)
 					continue
 				}
