@@ -13,11 +13,11 @@ func NaiveMaterialEvaluator(f *Game) Score {
 	score := 0
 	materialScore := map[NormalizedPiece]int{
 		Pawn:   100,
-		Knight: 300,
+		Knight: 325,
 		Bishop: 325,
 		King:   400,
-		Rook:   500,
-		Queen:  900,
+		Rook:   550,
+		Queen:  1100,
 	}
 	for pieceIx, positions := range f.Pieces[White] {
 		piece := NormalizedPiece(pieceIx)
@@ -172,11 +172,11 @@ func TempoEvaluator(f *Game) Score {
 				} else if pos == C1 && f.Board[A1] != WhiteRook && f.Board[A2] != WhiteRook {
 					score += 250 // We're castled queenside
 				} else if minorPiecesInSamePosition[White] >= 2 && pos != E1 {
-					score -= 1500 // Early king move penalty
+					score -= 250 // Early king move penalty
 				}
 			} else {
 				if minorPiecesInSamePosition[White] >= 2 && pos != E1 {
-					score -= 1500 // Early king move penalty
+					score -= 250 // Early king move penalty
 				}
 			}
 		}
@@ -187,11 +187,11 @@ func TempoEvaluator(f *Game) Score {
 				} else if pos == C8 && f.Board[A8] != BlackRook && f.Board[B8] != BlackRook {
 					score -= 250 // We're castled queenside
 				} else if minorPiecesInSamePosition[Black] >= 2 && pos != E8 {
-					score += 1500 // Early king move penalty
+					score += 250 // Early king move penalty
 				}
 			} else {
 				if minorPiecesInSamePosition[Black] >= 2 && pos != E8 {
-					score += 1500 // Early king move penalty
+					score += 250 // Early king move penalty
 				}
 			}
 		}

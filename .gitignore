@@ -3,3 +3,4 @@ bs-engine
 cpu.out
 chess_engine.test
 tournament/tournament.pgn
+tournament/*.gif

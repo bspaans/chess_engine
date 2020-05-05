@@ -39,6 +39,8 @@ type Game struct {
 
 	// Evaluation cache
 	Score *Score
+
+	nextGames []*Game
 }
 
 func ParseFEN(fenstr string) (*Game, error) {
@@ -108,11 +110,15 @@ func ParseFEN(fenstr string) (*Game, error) {
 
 // Returns new Games for every valid move from the current Game
 func (f *Game) NextGames() []*Game {
+	if f.nextGames != nil {
+		return f.nextGames
+	}
 	moves := f.ValidMoves()
 	result := []*Game{}
 	for _, m := range moves {
 		result = append(result, f.ApplyMove(m))
 	}
+	f.nextGames = result
 	return result
 }
 

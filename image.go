@@ -148,7 +148,7 @@ func MovesToGIF(startingPosition *Game, moves []*Move, file string, delay int) e
 		game = game.ApplyMove(move)
 	}
 	images = append(images, BoardToImage(game.Board))
-	delays = append(delays, delay)
+	delays = append(delays, delay*2)
 
 	out, err := os.Create(file)
 	if err != nil {
