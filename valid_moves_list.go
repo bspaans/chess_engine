@@ -80,7 +80,7 @@ func (v ValidMovesList) Copy() ValidMovesList {
 	return result
 }
 
-func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
+func (v ValidMovesList) extendPreviouslyBlockedPieces(moveFrom Position, board Board) {
 
 	// When a move is made the pieces that were looking at the square the piece
 	// is moving from can now possible extend their range, so we need to make
@@ -90,7 +90,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 	// the sqaure, see if we find any pieces, and then work out if there are
 	// any new moves to make.
 	//
-	for _, line := range move.From.GetQueenMoves() {
+	for _, line := range moveFrom.GetQueenMoves() {
 		pieceOnLine := board.FindPieceOnLine(line)
 
 		if pieceOnLine != NoPosition {
@@ -102,7 +102,7 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 
 				// Option 1: the piece we found is a pawn, and pawns can do all sorts of
 				// crazy things
-				if extendingPiece.CanReach(pieceOnLine, move.From) {
+				if extendingPiece.CanReach(pieceOnLine, moveFrom) {
 					for _, line := range pieceOnLine.GetMoveVectors(extendingPiece) {
 						for _, pos := range line {
 							if board.IsEmpty(pos) {
@@ -113,10 +113,10 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 						}
 					}
 
-				} else if pieceOnLine.IsPawnAttack(move.From, extendingPiece.Color()) {
+				} else if pieceOnLine.IsPawnAttack(moveFrom, extendingPiece.Color()) {
 					// The pawn was attacking the square, but that's no longer
 					// a legal move now, because the sqaure is empty
-					v[pieceOnLine] = v[pieceOnLine].Remove(move.From)
+					v[pieceOnLine] = v[pieceOnLine].Remove(moveFrom)
 				}
 				// TODO: en passant?
 
@@ -128,8 +128,8 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 
 				// If the king can reach the move.From square, add it as a
 				// valid move.
-				if extendingPiece.CanReach(pieceOnLine, move.From) {
-					v[pieceOnLine] = v[pieceOnLine].Add(move.From)
+				if extendingPiece.CanReach(pieceOnLine, moveFrom) {
+					v[pieceOnLine] = v[pieceOnLine].Add(moveFrom)
 				}
 
 			default:
@@ -140,33 +140,33 @@ func (v ValidMovesList) extendPreviouslyBlockedPieces(move *Move, board Board) {
 				// We may have found a rook on a bishop line or vice versa, so
 				// we need to start with checking if this piece can actually
 				// reach the square.
-				if !extendingPiece.CanReach(pieceOnLine, move.From) {
+				if !extendingPiece.CanReach(pieceOnLine, moveFrom) {
 					continue
 				}
 
-				v[pieceOnLine] = v[pieceOnLine].Add(move.From)
-				vector := NewMove(move.From, pieceOnLine).Vector().Normalize()
-				line := vector.FollowVectorUntilEdgeOfBoard(move.From)
+				v[pieceOnLine] = v[pieceOnLine].Add(moveFrom)
+				vector := NewMove(moveFrom, pieceOnLine).Vector().Normalize()
+				line := vector.FollowVectorUntilEdgeOfBoard(moveFrom)
 				v.addLineUntilBlockingPiece(pieceOnLine, line, board, extendingPiece.Color())
 			}
 		}
 	}
 	// extend knights
-	for _, pos := range move.From.GetKnightMoves() {
+	for _, pos := range moveFrom.GetKnightMoves() {
 		if board[pos].ToNormalizedPiece() == Knight {
-			v[pos] = v[pos].Add(move.From)
+			v[pos] = v[pos].Add(moveFrom)
 		}
 	}
 }
 
-func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, board Board) {
+func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(moveTo Position, board Board) {
 
 	// When a piece moves to a square it might block other pieces so we need to
 	// update our valid moves table. The approach we take is similar to the one
 	// we use for extensions: look at all the lines coming from move.To, find a
 	// piece, remove the moves that are no longer possible.
 
-	for _, line := range move.To.GetQueenMoves() {
+	for _, line := range moveTo.GetQueenMoves() {
 		pieceOnLine := board.FindPieceOnLine(line)
 		if pieceOnLine != NoPosition {
 			blockingPiece := board[pieceOnLine]
@@ -180,18 +180,18 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 				// It could also be a pawn attack, in which case we need to check
 				// if that's a valid move.
 
-				if pieceOnLine.IsPawnAttack(move.To, blockingPiece.Color()) {
-					if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-						v[pieceOnLine] = v[pieceOnLine].Add(move.To)
+				if pieceOnLine.IsPawnAttack(moveTo, blockingPiece.Color()) {
+					if board.IsOpposingPiece(moveTo, blockingPiece.Color()) {
+						v[pieceOnLine] = v[pieceOnLine].Add(moveTo)
 					} else {
-						v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
+						v[pieceOnLine] = v[pieceOnLine].Remove(moveTo)
 					}
 
-				} else if blockingPiece.CanReach(pieceOnLine, move.To) {
-					v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
+				} else if blockingPiece.CanReach(pieceOnLine, moveTo) {
+					v[pieceOnLine] = v[pieceOnLine].Remove(moveTo)
 
 					// need to remove e.g. e4 if e3 is now blocked
-					if !move.To.IsPawnOpeningJump(blockingPiece.Color()) {
+					if !moveTo.IsPawnOpeningJump(blockingPiece.Color()) {
 						if pieceOnLine.CanPawnOpeningJump(blockingPiece.Color()) {
 							targetPos := pieceOnLine.GetPawnOpeningJump(blockingPiece.Color())
 							v[pieceOnLine] = v[pieceOnLine].Remove(targetPos)
@@ -205,11 +205,11 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 
 				// Option 2: the piece is a king or a knight. We need to look at
 				// only one square and see if the move is valid.
-				if blockingPiece.CanReach(pieceOnLine, move.To) {
-					if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-						v[pieceOnLine] = v[pieceOnLine].Add(move.To)
+				if blockingPiece.CanReach(pieceOnLine, moveTo) {
+					if board.IsOpposingPiece(moveTo, blockingPiece.Color()) {
+						v[pieceOnLine] = v[pieceOnLine].Add(moveTo)
 					} else {
-						v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
+						v[pieceOnLine] = v[pieceOnLine].Remove(moveTo)
 					}
 				}
 
@@ -217,29 +217,29 @@ func (v ValidMovesList) shrinkValidMovesForPiecesThatAreNowBlocked(move *Move, b
 				// We may have found a rook on a bishop line or vice versa, so
 				// we need to start with checking if this piece can actually
 				// reach the square.
-				if !blockingPiece.CanReach(pieceOnLine, move.To) {
+				if !blockingPiece.CanReach(pieceOnLine, moveTo) {
 					continue
 				}
 
 				// Add an attack to move.To, otherwise remove it.
-				if board.IsOpposingPiece(move.To, blockingPiece.Color()) {
-					v[pieceOnLine] = v[pieceOnLine].Add(move.To)
+				if board.IsOpposingPiece(moveTo, blockingPiece.Color()) {
+					v[pieceOnLine] = v[pieceOnLine].Add(moveTo)
 				} else {
-					v[pieceOnLine] = v[pieceOnLine].Remove(move.To)
+					v[pieceOnLine] = v[pieceOnLine].Remove(moveTo)
 				}
-				vector := NewMove(move.To, pieceOnLine).Vector().Normalize()
-				line := vector.FollowVectorUntilEdgeOfBoard(move.To)
+				vector := NewMove(moveTo, pieceOnLine).Vector().Normalize()
+				line := vector.FollowVectorUntilEdgeOfBoard(moveTo)
 				v.removeLineUntilBlockingPiece(pieceOnLine, line, board, blockingPiece.Color())
 			}
 		}
 	}
 	// extend knights
-	color := board[move.To].OppositeColor()
-	for _, pos := range move.To.GetKnightMoves() {
+	color := board[moveTo].OppositeColor()
+	for _, pos := range moveTo.GetKnightMoves() {
 		if board[pos] == Knight.ToPiece(color) {
-			v[pos] = v[pos].Add(move.To)
+			v[pos] = v[pos].Add(moveTo)
 		} else if board[pos] == Knight.ToPiece(color.Opposite()) {
-			v[pos] = v[pos].Remove(move.To)
+			v[pos] = v[pos].Remove(moveTo)
 		}
 	}
 
@@ -256,15 +256,17 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	castles := move.GetRookCastlesMove(movingPiece)
 	if castles != nil {
 		result[castles.From] = 0
+		result.extendPreviouslyBlockedPieces(castles.From, board)
+		result.shrinkValidMovesForPiecesThatAreNowBlocked(castles.To, board)
 	}
 	enpassant := move.GetEnPassantCapture(movingPiece, enPassantVulnerable)
 	if enpassant != nil {
 		result[*enpassant] = 0
+		result.extendPreviouslyBlockedPieces(*enpassant, board)
 	}
 
-	// TODO: handle en passant
-	result.extendPreviouslyBlockedPieces(move, board)
-	result.shrinkValidMovesForPiecesThatAreNowBlocked(move, board)
+	result.extendPreviouslyBlockedPieces(move.From, board)
+	result.shrinkValidMovesForPiecesThatAreNowBlocked(move.To, board)
 
 	// add the piece on its new position
 	if move.Promote == NoPiece {

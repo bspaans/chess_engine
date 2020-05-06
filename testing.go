@@ -8,10 +8,10 @@ func Perft(game *Game, maxdepth int) (int, int) {
 
 func perft(game *Game, maxdepth, depth int) (int, int) {
 
-	moves := game.NextGames()
-	if depth == 1 {
-		return len(moves), 0
+	if depth == 0 {
+		return 1, 0
 	}
+	moves := game.NextGames()
 	checks := 0
 	nodes := 0
 	for _, m := range moves {
