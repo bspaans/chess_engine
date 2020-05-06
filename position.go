@@ -215,6 +215,13 @@ func (p Position) GetAdjacentFiles() []File {
 	return result
 }
 
+func (p Position) GetEnPassantCapture() Position {
+	if p.GetRank() == '3' {
+		return p + 8
+	}
+	return p - 8
+}
+
 func (p Position) GetPieceMoves(piece Piece) []Position {
 	return PieceMoves[int(piece)*64+int(p)]
 }

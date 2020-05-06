@@ -542,7 +542,7 @@ func Test_Perft2(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT2") {
 		return
 	}
-	// TODO: missing 140 moves at final depth
+	// TODO: missing 16 moves at final depth
 	// TODO: checks are wrong past depth 3
 	perft := []int{48, 2039, 97862, 4085603}
 	checks := []int{0, 3, 993, 25523, 3309887}
@@ -553,9 +553,9 @@ func Test_Perft3(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT3") {
 		return
 	}
-	// TODO: fix panic!
+	// TODO: checks are wrong
 	perft := []int{14, 191, 2812, 43238}
-	checks := []int{0, 2, 10, 267}
+	checks := []int{2, 10, 267, 1680}
 	runPerftTests(t, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", perft, checks)
 }
 

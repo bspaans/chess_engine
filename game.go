@@ -288,17 +288,49 @@ func (f *Game) GetValidMovesForColor(color Color) []*Move {
 		}
 	}
 
+	kingPos := f.Pieces.GetKingPos(color)
+
 	if f.EnPassantVulnerable != NoPosition {
 		for _, pos := range f.EnPassantVulnerable.GetPawnAttacks(f.ToMove.Opposite()) {
 			if f.Board[pos] == Pawn.ToPiece(f.ToMove) {
-				result = append(result, NewMove(pos, f.EnPassantVulnerable))
+				// Skip if this puts us in check, which can happen when the king
+				// is on the same rank.
+				pinned := false
+				if kingPos.GetRank() == pos.GetRank() {
+					leftPawn, rightPawn := pos, f.EnPassantVulnerable.GetEnPassantCapture()
+					if leftPawn.GetFile() > rightPawn.GetFile() {
+						leftPawn, rightPawn = rightPawn, leftPawn
+					}
+					possiblyPinned := false
+					otherPawn := leftPawn
+					if kingPos.GetFile() > pos.GetFile() {
+						// King is on the right
+						possiblyPinned = f.Board.HasClearLineTo(rightPawn, kingPos)
+						otherPawn = leftPawn
+					} else {
+						// King is on the left
+						possiblyPinned = f.Board.HasClearLineTo(leftPawn, kingPos)
+						otherPawn = rightPawn
+					}
+					if possiblyPinned {
+						// Is there an attack on the other pawn from the same rank?
+						for _, att := range f.SquareControl.GetAttacksOnSquare(color.Opposite(), otherPawn) {
+							if att.From.GetRank() == pos.GetRank() {
+								pinned = true
+							}
+						}
+					}
+
+				}
+				if !pinned {
+					result = append(result, NewMove(pos, f.EnPassantVulnerable))
+				}
 			}
 		}
 
 	}
 
 	// Castling
-	kingPos := f.Pieces.GetKingPos(color)
 	if color == White && f.CastleStatuses.CanCastleQueenside(White) {
 		if f.Board.CanCastle(f.SquareControl, White, C1, D1) && f.Board.IsEmpty(B1) {
 			result = append(result, NewMove(kingPos, C1))
