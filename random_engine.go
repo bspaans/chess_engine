@@ -12,6 +12,9 @@ type RandomEngine struct {
 func NewRandomEngine() *RandomEngine {
 	return &RandomEngine{}
 }
+func (b *RandomEngine) GetPosition() *Game {
+	return b.StartingPosition
+}
 func (b *RandomEngine) SetPosition(fen *Game) {
 	b.StartingPosition = fen
 }

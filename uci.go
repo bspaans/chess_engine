@@ -16,6 +16,7 @@ const (
 
 type Engine interface {
 	SetPosition(*Game)
+	GetPosition() *Game
 	AddEvaluator(Evaluator)
 	Start(engineOutput chan string, maxNodes int, maxDepth int)
 	SetOption(EngineOption, int)
@@ -99,6 +100,12 @@ func (uci *UCI) Start(reader *bufio.Reader) {
 					uci.Engine.Start(engineOutput, -1, depth)
 				}
 				break
+			case "perft":
+				depth, err := strconv.Atoi(cmdParts[1])
+				if err != nil {
+					panic(err)
+				}
+				Perft(uci.Engine.GetPosition(), depth)
 			case "stop":
 				uci.Engine.Stop()
 				break

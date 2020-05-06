@@ -604,6 +604,10 @@ func Test_Perft5(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	// TODO
+	// At depth 2:
+	// Getting 30 moves for d7c8Q and d7c8R, but should be 31.
+	// Is it not counting the queen attacking the rook/queen, because it thinks it's pinned?
 	perft := []int{44, 1486, 62379, 2103487}
 	for depth, expectedNodes := range perft {
 		gotNodes, _ := Perft(game, depth+1)

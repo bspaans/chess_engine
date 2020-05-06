@@ -28,6 +28,10 @@ func NewDFSEngine(depth int) *DFSEngine {
 	}
 }
 
+func (b *DFSEngine) GetPosition() *Game {
+	return b.StartingPosition
+}
+
 func (b *DFSEngine) SetPosition(fen *Game) {
 	b.StartingPosition = fen
 }
