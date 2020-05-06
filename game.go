@@ -245,6 +245,9 @@ func (f *Game) FilterPinnedPieces(result []*Move) []*Move {
 		if len(attackers) == 0 {
 			filteredResult = append(filteredResult, move)
 		} else {
+			if f.Board[move.From].ToNormalizedPiece() == Knight {
+				continue
+			}
 			// If there is an attacker, the only legal moves are along the attack vector.
 			// NB. there can only be at most one attacker.
 			attackVector := NewMove(move.From, attackers[0]).Vector().Normalize()

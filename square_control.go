@@ -209,7 +209,7 @@ func (s SquareControl) ApplyMove(move *Move, piece, capturedPiece Piece, board B
 	}
 
 	if enpassant != nil {
-		for _, fromPos := range attacks.getAttacksOnSquareForBothColours(move.From) {
+		for _, fromPos := range attacks.getAttacksOnSquareForBothColours(*enpassant) {
 			extendPiece := board[fromPos]
 			color := extendPiece.Color()
 			// Not relevant for Pawns and Knights and King
