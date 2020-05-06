@@ -521,7 +521,7 @@ func runPerftTests(t *testing.T, fenStr string, nodes, checks []int) {
 	for depth, expectedNodes := range nodes {
 		gotNodes, gotChecks := Perft(game, depth+1)
 		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d for %s, got %d", expectedNodes, depth+1, fenStr, gotNodes)
+			t.Errorf("Expecting %d moves at depth %d for %s, got %d (diff %d)", expectedNodes, depth+1, fenStr, gotNodes, gotNodes-expectedNodes)
 		}
 		if checks != nil && gotChecks != checks[depth] {
 			t.Errorf("Expecting %d checks at depth %d for %s, got %d", checks[depth], depth+1, fenStr, gotChecks)
@@ -569,6 +569,7 @@ func Test_Perft5(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT5") {
 		return
 	}
+	// at depth 3: e1g1 is wrong
 	perft := []int{44, 1486, 62379, 2103487}
 	runPerftTests(t, "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", perft, nil)
 }

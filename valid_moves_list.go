@@ -251,9 +251,18 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	result := v.Copy()
 
 	// remove the piece from validmoves
-	// TODO handle en passant
 	result[move.From] = 0
 	result[move.To] = 0
+	castles := move.GetRookCastlesMove(movingPiece)
+	if castles != nil {
+		result[castles.From] = 0
+	}
+	enpassant := move.GetEnPassantCapture(movingPiece, enPassantVulnerable)
+	if enpassant != nil {
+		result[*enpassant] = 0
+	}
+
+	// TODO: handle en passant
 	result.extendPreviouslyBlockedPieces(move, board)
 	result.shrinkValidMovesForPiecesThatAreNowBlocked(move, board)
 
@@ -263,7 +272,9 @@ func (v ValidMovesList) ApplyMove(move *Move, movingPiece Piece, board Board, en
 	} else {
 		result.AddPiece(move.Promote, move.To, board)
 	}
-	// TODO handle castling
+	if castles != nil {
+		result.AddPiece(Rook.ToPiece(movingPiece.Color()), castles.To, board)
+	}
 	return result
 }
 
