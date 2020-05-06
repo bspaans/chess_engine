@@ -512,126 +512,73 @@ func Test_ApplyMove_game(t *testing.T) {
 	}
 }
 
+func runPerftTests(t *testing.T, fenStr string, nodes, checks []int) {
+
+	game, err := ParseFEN(fenStr)
+	if err != nil {
+		panic(err)
+	}
+	for depth, expectedNodes := range nodes {
+		gotNodes, gotChecks := Perft(game, depth+1)
+		if gotNodes != expectedNodes {
+			t.Errorf("Expecting %d moves at depth %d for %s, got %d", expectedNodes, depth+1, fenStr, gotNodes)
+		}
+		if checks != nil && gotChecks != checks[depth] {
+			t.Errorf("Expecting %d checks at depth %d for %s, got %d", checks[depth], depth+1, fenStr, gotChecks)
+		}
+	}
+}
+
 func Test_Perft(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT1") {
 		return
 	}
-	game, err := ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-	if err != nil {
-		panic(err)
-	}
 	perft := []int{20, 400, 8902, 197281, 4865609}
 	checks := []int{0, 0, 0, 12, 469}
-	for depth, expectedNodes := range perft {
-		gotNodes, gotChecks := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-		if gotChecks != checks[depth] {
-			t.Errorf("Expecting %d checks at depth %d, got %d", checks[depth], depth+1, gotChecks)
-		}
-	}
+	runPerftTests(t, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", perft, checks)
 }
 
 func Test_Perft2(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT2") {
 		return
 	}
-	game, err := ParseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
-	if err != nil {
-		panic(err)
-	}
 	perft := []int{48, 2039, 97862, 4085603}
 	checks := []int{0, 0, 3, 993, 25523}
-	for depth, expectedNodes := range perft {
-		gotNodes, gotChecks := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-		if gotChecks != checks[depth] {
-			t.Errorf("Expecting %d checks at depth %d, got %d", checks[depth], depth+1, gotChecks)
-		}
-	}
+	runPerftTests(t, "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", perft, checks)
 }
 
 func Test_Perft3(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT3") {
 		return
 	}
-	game, err := ParseFEN("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1")
-	if err != nil {
-		panic(err)
-	}
 	perft := []int{14, 191, 2812, 43238}
 	checks := []int{0, 2, 10, 267}
-	for depth, expectedNodes := range perft {
-		gotNodes, gotChecks := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-		if gotChecks != checks[depth] {
-			t.Errorf("Expecting %d checks at depth %d, got %d", checks[depth], depth+1, gotChecks)
-		}
-	}
+	runPerftTests(t, "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", perft, checks)
 }
 
 func Test_Perft4(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT4") {
 		return
 	}
-	game, err := ParseFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
-	if err != nil {
-		panic(err)
-	}
 	perft := []int{6, 264, 9467, 422333}
 	checks := []int{0, 0, 10, 38}
-	for depth, expectedNodes := range perft {
-		gotNodes, gotChecks := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-		if gotChecks != checks[depth] {
-			t.Errorf("Expecting %d checks at depth %d, got %d", checks[depth], depth+1, gotChecks)
-		}
-	}
+	runPerftTests(t, "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", perft, checks)
 }
 
 func Test_Perft5(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT5") {
 		return
 	}
-	game, err := ParseFEN("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
-	if err != nil {
-		panic(err)
-	}
-	// TODO
-	// At depth 2:
-	// Getting 30 moves for d7c8Q and d7c8R, but should be 31.
-	// Is it not counting the queen attacking the rook/queen, because it thinks it's pinned?
 	perft := []int{44, 1486, 62379, 2103487}
-	for depth, expectedNodes := range perft {
-		gotNodes, _ := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-	}
+	runPerftTests(t, "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", perft, nil)
 }
 
 func Test_Perft6(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT6") {
 		return
 	}
-	game, err := ParseFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
-	if err != nil {
-		panic(err)
-	}
 	perft := []int{46, 2079, 89890, 3894594}
-	for depth, expectedNodes := range perft {
-		gotNodes, _ := Perft(game, depth+1)
-		if gotNodes != expectedNodes {
-			t.Errorf("Expecting %d moves at depth %d, got %d", expectedNodes, depth+1, gotNodes)
-		}
-	}
+	runPerftTests(t, "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", perft, nil)
 }
 
 func Benchmark_ApplyMove(t *testing.B) {
