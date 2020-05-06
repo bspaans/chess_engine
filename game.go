@@ -245,11 +245,13 @@ func (f *Game) FilterPinnedPieces(result []*Move) []*Move {
 		if len(attackers) == 0 {
 			filteredResult = append(filteredResult, move)
 		} else if len(attackers) == 1 {
-			// Attack the one piece that is pinning this piece
-			if move.To == attackers[0] {
+			// TODO: you can only be pinned by one attacker at a time right?
+
+			// If there is only one attacker, the only legal moves are along the attack vector.
+			attackVector := NewMove(move.From, attackers[0]).Vector().Normalize()
+			vector := move.Vector().Normalize()
+			if attackVector.Eq(vector) || attackVector.Eq(vector.Invert()) {
 				filteredResult = append(filteredResult, move)
-			} else {
-				//fmt.Println("Piece is pinned; filtering", move)
 			}
 
 		} else {
