@@ -1,6 +1,9 @@
 package chess_engine
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type Score int64
 
@@ -23,4 +26,16 @@ func (s Score) IsMateIn(n int) bool {
 func (s Score) IsMateInNOrBetter(n int) bool {
 	lowerBound := Mate - Score(n)
 	return s >= lowerBound
+}
+
+func (s Score) Format(c Color) string {
+	sign := ""
+	score := float64(s) / 100
+	if c == White {
+		score *= -1
+	}
+	if score > 0.0 {
+		sign = "+"
+	}
+	return fmt.Sprintf("%s%.2f", sign, score)
 }

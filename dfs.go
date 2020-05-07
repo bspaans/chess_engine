@@ -237,7 +237,7 @@ func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
 	newLine, nodes := b.Evaluators.GetLineToQuietPosition(game, b.SelDepth-len(game.Line))
 	b.NodesPerSecond += nodes
 	for _, move := range newLine {
-		b.Seen[game.FENString()] = true
+		b.Seen[move.FENString()] = true
 		queue.PushFront(move)
 	}
 }
@@ -246,7 +246,7 @@ func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
 	b.NodesPerSecond += nodes
 	for _, move := range newLine {
 		if !b.EvalTree.IsMateInNOrBetter(len(move.Line)) {
-			b.Seen[game.FENString()] = true
+			b.Seen[move.FENString()] = true
 			queue.PushFront(move)
 		}
 	}

@@ -454,6 +454,53 @@ func Test_Engine_Shouldnt_Sac_Material_Needlessly_2(t *testing.T) {
 	}
 }
 
+func Test_Engine_Shouldnt_Sac_Material_Needlessly_3(t *testing.T) {
+	// In this position the bishop on a6 is under attack and should retreat.
+	pos := "r2qkb1r/pppbpp1p/B2p3n/6p1/3PP3/N4N2/PPP2PPP/R1BQK2R w KQkq - 0 6"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(4)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(TempoEvaluator)
+	unit.AddEvaluator(PawnStructureEvaluator)
+	unit.AddEvaluator(MobilityEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	move := MustParseMove(bestmove)
+	if move.From != A6 {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting a bishop retreat, got %s", move)
+	}
+}
+
+func Test_Engine_should_take_free_material(t *testing.T) {
+	// There's a free knight on g4
+	pos := "rnbqkb1r/pppppppp/8/8/3PP1n1/8/PPP2PPP/RNBQKBNR w KQkq - 1 3"
+	fen, err := ParseFEN(pos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := NewDFSEngine(4)
+	unit.AddEvaluator(SpaceEvaluator)
+	unit.AddEvaluator(NaiveMaterialEvaluator)
+	unit.AddEvaluator(TempoEvaluator)
+	unit.AddEvaluator(PawnStructureEvaluator)
+	unit.AddEvaluator(MobilityEvaluator)
+	unit.SetPosition(fen)
+	bestmove := getBestMove(unit, 3*time.Second)
+	move := MustParseMove(bestmove)
+	if bestmove != "d1g4" {
+		unit.Evaluators.Debug(fen)
+		t.Errorf("Expecting d1g4, got %s", move)
+	}
+	pos = "r1bqkb1r/pppppppp/n7/8/3PP1Q1/8/PPP2PPP/RNB1KBNR w KQkq - 0 1"
+	g, _ := ParseFEN(pos)
+	unit.Evaluators.Debug(g)
+}
+
 func Test_Engine_Should_find_better_move_if_forcing_lines_dont_work_out(t *testing.T) {
 	// Here the queen can take with check, but she can be captured straight
 	// away, so this line should be avoided.

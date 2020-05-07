@@ -120,16 +120,16 @@ func PawnStructureEvaluator(f *Game) Score {
 
 func MobilityEvaluator(f *Game) Score {
 	score := len(f.GetValidMovesForColor(White)) - len(f.GetValidMovesForColor(Black))
-	return Score(10 * score)
+	return Score(5 * score)
 }
 
 func SpaceEvaluator(f *Game) Score {
 	score := 0
 	for p := 0; p < 32; p++ {
-		score = score - (10 * f.SquareControl[int(Black)*64+p].Count())
+		score = score - (5 * f.SquareControl[int(Black)*64+p].Count())
 	}
 	for p := 32; p < 64; p++ {
-		score = score + (10 * f.SquareControl[int(White)*64+p].Count())
+		score = score + (5 * f.SquareControl[int(White)*64+p].Count())
 	}
 	return Score(score)
 }
@@ -137,30 +137,27 @@ func SpaceEvaluator(f *Game) Score {
 func TempoEvaluator(f *Game) Score {
 	score := 0
 	// TODO: check if we're out of the opening
-	minorPiecesInSamePosition := map[Color]int{}
 	for _, piece := range []NormalizedPiece{Knight, Bishop} {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
-			if pos.GetRank() == '1' {
-				minorPiecesInSamePosition[White] += 1
-				score -= 33 // "A pawn is worth about 3 tempi"
+			if pos.GetRank() != '1' {
+				score += 33 // "A pawn is worth about 3 tempi"
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
-			if pos.GetRank() == '8' {
-				minorPiecesInSamePosition[Black] += 1
-				score += 33
+			if pos.GetRank() != '8' {
+				score -= 33
 			}
 		}
 	}
 	for _, piece := range []NormalizedPiece{Queen} {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
-			if minorPiecesInSamePosition[White] >= 2 && pos != D1 {
-				score -= 500 // Early queen move penalty
+			if pos != D1 {
+				score -= 50 // Early queen move penalty
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
-			if minorPiecesInSamePosition[Black] >= 2 && pos != D8 {
-				score += 500 // Early queen move penalty
+			if pos != D8 {
+				score += 50 // Early queen move penalty
 			}
 		}
 	}
@@ -168,30 +165,30 @@ func TempoEvaluator(f *Game) Score {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if f.CastleStatuses.White == None {
 				if pos == G1 && f.Board[H1] != WhiteRook {
-					score += 250 // We're castled kingside
+					score += 75 // We're castled kingside
 				} else if pos == C1 && f.Board[A1] != WhiteRook && f.Board[A2] != WhiteRook {
-					score += 250 // We're castled queenside
-				} else if minorPiecesInSamePosition[White] >= 2 && pos != E1 {
-					score -= 250 // Early king move penalty
+					score += 75 // We're castled queenside
+				} else if pos != E1 {
+					score -= 25 // Early king move penalty
 				}
 			} else {
-				if minorPiecesInSamePosition[White] >= 2 && pos != E1 {
-					score -= 250 // Early king move penalty
+				if pos != E1 {
+					score -= 25 // Early king move penalty
 				}
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if f.CastleStatuses.Black == None {
 				if pos == G8 && f.Board[H8] != BlackRook {
-					score -= 250 // We're castled kingside
+					score -= 75 // We're castled kingside
 				} else if pos == C8 && f.Board[A8] != BlackRook && f.Board[B8] != BlackRook {
-					score -= 250 // We're castled queenside
-				} else if minorPiecesInSamePosition[Black] >= 2 && pos != E8 {
-					score += 250 // Early king move penalty
+					score -= 75 // We're castled queenside
+				} else if pos != E8 {
+					score += 25 // Early king move penalty
 				}
 			} else {
-				if minorPiecesInSamePosition[Black] >= 2 && pos != E8 {
-					score += 250 // Early king move penalty
+				if pos != E8 {
+					score += 25 // Early king move penalty
 				}
 			}
 		}
@@ -277,10 +274,10 @@ func (e Evaluators) BestLine(position *Game, depth int) ([]*Game, int) {
 func (e Evaluators) Debug(position *Game) {
 	boardScore, _ := e.Eval(position)
 	fmt.Println(position.Board)
-	fmt.Println("Board evaluation:", boardScore)
+	fmt.Println("Board evaluation:", boardScore.Format(position.ToMove))
 	for _, f := range position.NextGames() {
 		score, _ := e.Eval(f)
-		fmt.Println(f.Line[0], score*-1)
+		fmt.Println(f.Line[0], (score * -1).Format(position.ToMove))
 	}
 }
 

@@ -219,12 +219,12 @@ func Test_TempoEvaluator(t *testing.T) {
 		t.Fatal("Expecting tempo for White, got", TempoEvaluator(position))
 	}
 
-	fen = "rnbqkbnr/pppppppp/8/8/8/3P5/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
+	fen = "r1bqkbnr/ppnppppp/8/8/8/3P5/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
 	position, err = ParseFEN(fen)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if TempoEvaluator(position) >= 0.0 {
+	if TempoEvaluator(position) != -83 {
 		t.Fatal("Expecting tempo for Black, got", TempoEvaluator(position))
 	}
 }
