@@ -9,7 +9,11 @@ func Perft(game *Game, maxdepth int) (int, int) {
 func perft(game *Game, maxdepth, depth int) (int, int) {
 
 	if depth == 0 {
-		return 1, 0
+		c := 0
+		if game.InCheck() {
+			c = 1
+		}
+		return 1, c
 	}
 	moves := game.NextGames()
 	checks := 0
@@ -18,9 +22,6 @@ func perft(game *Game, maxdepth, depth int) (int, int) {
 		n, c := perft(m, maxdepth, depth-1)
 		nodes += n
 		checks += c
-		if m.InCheck() {
-			checks++
-		}
 		if depth == maxdepth {
 			fmt.Printf("%s: %d\n", m.Line[0], n)
 		}
