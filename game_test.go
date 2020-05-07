@@ -542,7 +542,6 @@ func Test_Perft2(t *testing.T) {
 	if !isTestEnabled(t, "INTEGRATION", "PERFT", "PERFT2") {
 		return
 	}
-	// TODO: missing 16 moves at final depth
 	// TODO: checks are wrong past depth 3
 	perft := []int{48, 2039, 97862, 4085603}
 	checks := []int{0, 3, 993, 25523, 3309887}

@@ -47,11 +47,11 @@ func (cs CastleStatus) CanCastleKingside() bool {
 
 func (cs CastleStatus) Remove(remove CastleStatus) CastleStatus {
 	if remove == Kingside {
-		if cs == Both {
+		if cs == Both || cs == Queenside {
 			return Queenside
 		}
 	} else if remove == Queenside {
-		if cs == Both {
+		if cs == Both || cs == Kingside {
 			return Kingside
 		}
 	}
