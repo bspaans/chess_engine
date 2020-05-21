@@ -19,7 +19,8 @@ type DFSEngine struct {
 	TotalNodes     int
 	NodesPerSecond int
 	CurrentDepth   int
-	Seen           map[string]bool
+	Seen           SeenMap
+	Queue          *Queue
 }
 
 func NewDFSEngine(depth int) *DFSEngine {
@@ -49,10 +50,11 @@ func (b *DFSEngine) Start(output chan string, maxNodes, maxDepth int) {
 }
 
 func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, maxDepth int) {
-	b.Seen = map[string]bool{}
+	b.Seen = NewSeenMap()
 	b.EvalTree = NewEvalTree(nil)
 	b.NodesPerSecond = 0
 	b.TotalNodes = 0
+	b.Queue = NewQueue()
 
 	timer := time.NewTimer(time.Second)
 	//depth := b.SelDepth + 1
@@ -63,8 +65,11 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	if new {
 		b.NodesPerSecond++
 	}
-	b.queueForcingLines(b.StartingPosition, b.EvalTree, queue)
-	//b.queueBestLine(b.StartingPosition, queue)
+	//b.Queue.QueueNextLine(b.StartingPosition, b.Seen, b.SelDepth, b.Evaluators)
+	if !b.queueForcingLines(b.StartingPosition, b.EvalTree, queue) {
+		// special case for mated positions:
+		b.Queue.List.PushFront(b.StartingPosition)
+	}
 
 	for {
 		select {
@@ -92,6 +97,7 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 				if *game.Score == Mate {
 					*game.Score = *game.Score - Score(float64(len(game.Line)))
 				}
+				fmt.Println("inserting")
 				b.EvalTree.Insert(game.Line, *game.Score)
 
 				if len(game.Line) == 0 || len(game.Line) == b.SelDepth {
@@ -172,16 +178,6 @@ func (b *DFSEngine) start(ctx context.Context, output chan string, maxNodes, max
 	}
 }
 
-// Queues all the forcing lines and if they've already been looked at it chooses the next best move
-func (b *DFSEngine) queueForcingOrAlternativeLines(pos *Game, tree *EvalTree, queue *list.List) bool {
-	// Queue forcing lines, then queue alternative best moves
-	if b.queueForcingLines(pos, tree, queue) {
-		return true
-	}
-	return b.queueAlternativeLine(pos, tree, queue)
-
-}
-
 func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.List) bool {
 	if pos == nil {
 		panic("uh")
@@ -189,14 +185,13 @@ func (b *DFSEngine) queueForcingLines(pos *Game, tree *EvalTree, queue *list.Lis
 	foundForcingLines := false
 	nextGames := pos.NextGames()
 	if len(nextGames) == 1 {
-		if !b.Seen[nextGames[0].FENString()] {
+		if !b.Seen.Seen(nextGames[0]) {
 			b.queueLineToQuietPosition(nextGames[0], queue)
 			return true
 		}
 	}
 	for _, nextGame := range nextGames {
-		fenStr := nextGame.FENString()
-		if !b.Seen[fenStr] && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
+		if !b.Seen.Seen(nextGame) && (nextGame.InCheck() || len(nextGame.ValidMoves()) <= 1) {
 			//fmt.Println("queue forcing line", nextGame.Line, len(nextGame.ValidMoves()), nextGame.InCheck())
 			b.queueLineToQuietPosition(nextGame, queue)
 			foundForcingLines = true
@@ -226,11 +221,10 @@ func (b *DFSEngine) queueLine(startPos *Game, game *Game, queue *list.List) {
 	if b.EvalTree.IsMateInNOrBetter(len(game.Line)) {
 		return
 	}
-	fenStr := startPos.FENString()
-	if !b.Seen[fenStr] {
+	if !b.Seen.Seen(startPos) {
 		queue.PushFront(startPos)
 	}
-	b.Seen[fenStr] = true
+	b.Seen.Set(startPos)
 	b.queueBestLine(game, queue)
 }
 func (b *DFSEngine) queueLineToQuietPosition(game *Game, queue *list.List) {
@@ -250,11 +244,6 @@ func (b *DFSEngine) queueBestLine(game *Game, queue *list.List) {
 			queue.PushFront(move)
 		}
 	}
-	/*
-		for e := queue.Front(); e != nil; e = e.Next() {
-			fmt.Println(e.Value.(*Game).Line)
-		}
-	*/
 }
 
 func (b *DFSEngine) outputInfo(output chan string, sendBestMove bool) {
@@ -270,30 +259,6 @@ func (b *DFSEngine) outputInfo(output chan string, sendBestMove bool) {
 	if sendBestMove {
 		output <- fmt.Sprintf("bestmove %s", bestLine.Move.String())
 	}
-}
-
-func (b *DFSEngine) ShouldCheckPosition(position *Game, bestScore Score) bool {
-	eval, new := b.Evaluators.Eval(position)
-	if new {
-		b.NodesPerSecond++
-	}
-	if eval-bestScore > 2.0 {
-		return true
-	}
-	valid := position.ValidMoves()
-
-	/*
-			TODO: enable this when we can shortcut the searchtree for Mate in Ns; otherwise this makes the tests blow up
-		attacks := position.Attacks.GetAttacks(position.ToMove, position.Pieces)
-		validAttacks := position.FilterPinnedPieces(attacks)
-				// Look at all the moves leading to checks
-				for _, m := range valid {
-					if position.ApplyMove(m).InCheck() {
-						return true
-					}
-				}
-	*/
-	return position.InCheck() || len(valid) <= 1 //|| len(validAttacks) > 0
 }
 
 func (b *DFSEngine) AddEvaluator(e Evaluator) {

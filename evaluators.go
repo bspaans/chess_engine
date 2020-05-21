@@ -315,7 +315,7 @@ func (e Evaluators) GetLineToQuietPosition(position *Game, depth int) ([]*Game, 
 	if game.Score != nil && game.IsFinished() {
 		return line, nodes
 	}
-	for d := 0; d < depth; d++ {
+	for d := 0; d < depth-1; d++ {
 		g, _, nodesSeen := e.BestMove(game)
 		nodes += nodesSeen
 		if g == nil {
@@ -326,11 +326,13 @@ func (e Evaluators) GetLineToQuietPosition(position *Game, depth int) ([]*Game, 
 		if game.IsFinished() {
 			return line, nodes
 		}
-		isQuiet, nodesSeen := e.IsQuietPosition(game)
-		nodes += nodesSeen
-		if isQuiet {
-			return line, nodes
-		}
+		/*
+			isQuiet, nodesSeen := e.IsQuietPosition(game)
+			nodes += nodesSeen
+			if isQuiet {
+				return line, nodes
+			}
+		*/
 	}
 	return line, nodes
 }
