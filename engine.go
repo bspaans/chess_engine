@@ -153,8 +153,8 @@ func (b *BSEngine) start(ctx context.Context, output chan string, maxNodes, maxD
 						return
 					}
 				} else {
-					fmt.Println("We are better", *b.StartingPosition.Score, b.EvalTree.BestLine.Score)
-					fmt.Println(Line(b.EvalTree.BestLine.GetBestLine().Line).String())
+					//fmt.Println("We are better", *b.StartingPosition.Score, b.EvalTree.BestLine.Score)
+					//fmt.Println(Line(b.EvalTree.BestLine.GetBestLine().Line).String())
 					// Otherwise output the best move
 					b.outputInfo(output, true)
 					return

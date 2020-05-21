@@ -107,7 +107,7 @@ func MoveToAlgebraicMove(position *Game, move *Move) string {
 		}
 	} else if normPiece == King && move.GetRookCastlesMove(movingPiece) != nil {
 		rook := move.GetRookCastlesMove(movingPiece)
-		if rook.To.GetFile() == '6' {
+		if rook.To.GetFile() == 'f' {
 			result += "O-O"
 		} else {
 			result += "O-O-O"

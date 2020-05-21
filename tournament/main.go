@@ -130,13 +130,13 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
 
 var Engines = []*Engine{
 	NewEngine("bs-engine-everything", "bs-engine", []string{"--space", "--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
+	NewEngine("stockfish", "stockfish", nil),
 	NewEngine("bs-engine-tempo", "bs-engine", []string{"--tempo"}),
 	NewEngine("bs-engine-tempo-space", "bs-engine", []string{"--tempo", "--space"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),
 	NewEngine("bs-engine-random-move", "bs-engine", []string{"--random"}),
 	NewEngine("bs-engine-space", "bs-engine", []string{"--space"}),
 	NewEngine("bs-engine-naive-material", "bs-engine", []string{"--naive-material"}),
-	NewEngine("stockfish", "stockfish", nil),
 }
 
 type GameResult uint8
