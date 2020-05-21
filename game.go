@@ -454,6 +454,10 @@ func (f *Game) ApplyMove(move *Move) *Game {
 	return result
 }
 
+func (f *Game) Phase() int {
+	return f.Pieces.Phase()
+}
+
 func (f *Game) FENString() string {
 	forStr := ""
 	for y := 7; y >= 0; y-- {
@@ -486,18 +490,19 @@ func (f *Game) FENString() string {
 }
 
 func (f *Game) String() string {
-	return fmt.Sprintf(`Tempo: %d
-Space: %d 
-Mobility: %d
-Material: %d
-Pawn structure: %d
+	phase := f.Phase()
+	return fmt.Sprintf(`Tempo: %s
+Space: %s 
+Mobility: %s
+Material: %s
+Pawn structure: %s
 position fen %s 
 %s`,
-		TempoEvaluator(f),
-		SpaceEvaluator(f),
-		MobilityEvaluator(f),
-		NaiveMaterialEvaluator(f),
-		PawnStructureEvaluator(f),
+		TempoEvaluator(f, phase).Format(Black),
+		SpaceEvaluator(f, phase).Format(Black),
+		MobilityEvaluator(f, phase).Format(Black),
+		NaiveMaterialEvaluator(f, phase).Format(Black),
+		PawnStructureEvaluator(f, phase).Format(Black),
 		f.FENString(),
 		f.Board.String(),
 	)

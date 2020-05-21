@@ -5,11 +5,11 @@ import (
 	"math/rand"
 )
 
-type Evaluator func(fen *Game) Score
+type Evaluator func(fen *Game, phase int) Score
 
 type Evaluators []Evaluator
 
-func NaiveMaterialEvaluator(f *Game) Score {
+func NaiveMaterialEvaluator(f *Game, phase int) Score {
 	score := 0
 	materialScore := map[NormalizedPiece]int{
 		Pawn:   100,
@@ -30,8 +30,8 @@ func NaiveMaterialEvaluator(f *Game) Score {
 	return Score(score)
 }
 
-func PawnStructureEvaluator(f *Game) Score {
-	score := 0
+func PawnStructureEvaluator(f *Game, phase int) Score {
+	score := f.Pieces[White][Pawn].Count()*100 - f.Pieces[Black][Pawn].Count()*100
 	for _, pawnPos := range f.Pieces[White][Pawn].ToPositions() {
 		for p := pawnPos; p < 64; p = p + 8 {
 			if f.Board.IsEmpty(p) {
@@ -118,12 +118,12 @@ func PawnStructureEvaluator(f *Game) Score {
 
 }
 
-func MobilityEvaluator(f *Game) Score {
+func MobilityEvaluator(f *Game, phase int) Score {
 	score := len(f.GetValidMovesForColor(White)) - len(f.GetValidMovesForColor(Black))
 	return Score(5 * score)
 }
 
-func SpaceEvaluator(f *Game) Score {
+func SpaceEvaluator(f *Game, phase int) Score {
 	score := 0
 	for p := 0; p < 32; p++ {
 		score = score - (5 * f.SquareControl[int(Black)*64+p].Count())
@@ -134,30 +134,34 @@ func SpaceEvaluator(f *Game) Score {
 	return Score(score)
 }
 
-func TempoEvaluator(f *Game) Score {
+func TempoEvaluator(f *Game, phase int) Score {
 	score := 0
+	MinorPieceMoveBonus := 30 // "A pawn is worth about 3 tempi"
+	EarlyQueenMovePenalty := 100
+	CastleBonus := 75
+	EarlyKingMovePenalty := 150
 	// TODO: check if we're out of the opening
 	for _, piece := range []NormalizedPiece{Knight, Bishop} {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if pos.GetRank() != '1' {
-				score += 33 // "A pawn is worth about 3 tempi"
+				score += MinorPieceMoveBonus
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if pos.GetRank() != '8' {
-				score -= 33
+				score -= MinorPieceMoveBonus
 			}
 		}
 	}
 	for _, piece := range []NormalizedPiece{Queen} {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if pos != D1 {
-				score -= 50 // Early queen move penalty
+				score -= EarlyQueenMovePenalty
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if pos != D8 {
-				score += 50 // Early queen move penalty
+				score += EarlyQueenMovePenalty
 			}
 		}
 	}
@@ -165,35 +169,35 @@ func TempoEvaluator(f *Game) Score {
 		for _, pos := range f.Pieces[White][piece].ToPositions() {
 			if f.CastleStatuses.White == None {
 				if pos == G1 && f.Board[H1] != WhiteRook {
-					score += 75 // We're castled kingside
+					score += CastleBonus // We're castled kingside
 				} else if pos == C1 && f.Board[A1] != WhiteRook && f.Board[A2] != WhiteRook {
-					score += 75 // We're castled queenside
+					score += CastleBonus // We're castled queenside
 				} else if pos != E1 {
-					score -= 25 // Early king move penalty
+					score -= EarlyKingMovePenalty
 				}
 			} else {
 				if pos != E1 {
-					score -= 25 // Early king move penalty
+					score -= EarlyKingMovePenalty
 				}
 			}
 		}
 		for _, pos := range f.Pieces[Black][piece].ToPositions() {
 			if f.CastleStatuses.Black == None {
 				if pos == G8 && f.Board[H8] != BlackRook {
-					score -= 75 // We're castled kingside
+					score -= CastleBonus // We're castled kingside
 				} else if pos == C8 && f.Board[A8] != BlackRook && f.Board[B8] != BlackRook {
-					score -= 75 // We're castled queenside
+					score -= CastleBonus // We're castled queenside
 				} else if pos != E8 {
-					score += 25 // Early king move penalty
+					score += EarlyKingMovePenalty
 				}
 			} else {
 				if pos != E8 {
-					score += 25 // Early king move penalty
+					score += EarlyKingMovePenalty
 				}
 			}
 		}
 	}
-	return Score(score)
+	return Score(score * phase / 256)
 }
 
 func RandomEvaluator(f *Game) Score {
@@ -208,15 +212,16 @@ func (e Evaluators) Eval(position *Game) (Score, bool) {
 	if position.IsDraw() {
 		score = Draw
 	} else if position.IsMate() {
-		score = Mate // TODO add ply distance to root
+		score = Mate
 		if position.ToMove == White {
 			score = OpponentMate // because we're going to *-1 below
 		} else {
 			score = Mate
 		}
 	} else {
+		phase := position.Phase()
 		for _, eval := range e {
-			score += eval(position)
+			score += eval(position, phase)
 		}
 	}
 	if position.ToMove == White {

@@ -203,29 +203,32 @@ func Test_Eval_AlternativeMove_space_evaluator_black(t *testing.T) {
 func Test_TempoEvaluator(t *testing.T) {
 	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	position, err := ParseFEN(fen)
+	phase := position.Phase()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if TempoEvaluator(position) != 0.0 {
+	if TempoEvaluator(position, phase) != 0.0 {
 		t.Fatal("Expecting equal tempo")
 	}
 
 	fen = "rnbqkbnr/pppppppp/8/8/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 0 1"
 	position, err = ParseFEN(fen)
+	phase = position.Phase()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if TempoEvaluator(position) <= 0.0 {
-		t.Fatal("Expecting tempo for White, got", TempoEvaluator(position))
+	if TempoEvaluator(position, phase) <= 0.0 {
+		t.Fatal("Expecting tempo for White, got", TempoEvaluator(position, phase))
 	}
 
 	fen = "r1bqkbnr/ppnppppp/8/8/8/3P5/PPPQPPPP/RNB1KBNR w KQkq - 0 1"
 	position, err = ParseFEN(fen)
+	phase = position.Phase()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if TempoEvaluator(position) != -83 {
-		t.Fatal("Expecting tempo for Black, got", TempoEvaluator(position))
+	if TempoEvaluator(position, phase) > 0 {
+		t.Fatal("Expecting tempo for Black, got", TempoEvaluator(position, phase))
 	}
 }
 

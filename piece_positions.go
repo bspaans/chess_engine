@@ -49,6 +49,22 @@ func (p PiecePositions) HasPosition(color Color) bool {
 	return false
 }
 
+func (p PiecePositions) Phase() int {
+	phase := 0
+	phaseScore := map[NormalizedPiece]int{
+		Pawn:   2,
+		Knight: 6,
+		Bishop: 12,
+		Rook:   16,
+		Queen:  44,
+	}
+	for _, piece := range NormalizedPieces {
+		phase += phaseScore[piece] * p[White][piece].Count()
+		phase += phaseScore[piece] * p[Black][piece].Count()
+	}
+	return phase // Max is 256 (16*2=32, 6*4=24, 12*4=48, 16*4=64, 44*2=88, 32+24+48+64+88=256)
+}
+
 func (p PiecePositions) Count() int {
 	return p.CountPositionsForColor(White) + p.CountPositionsForColor(Black)
 }

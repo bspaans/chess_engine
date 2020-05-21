@@ -129,8 +129,10 @@ func (e *Engine) ReadUntilBestMove(fen *chess_engine.Game) *chess_engine.Move {
 }
 
 var Engines = []*Engine{
-	NewEngine("bs-engine-everything", "bs-engine", []string{"--space", "--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
+	NewEngine("bs-engine-everything-mobility", "bs-engine", []string{"--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
 	NewEngine("stockfish", "stockfish", nil),
+	NewEngine("bs-engine-everything-space", "bs-engine", []string{"--space", "--naive-material", "--pawn-structure", "--tempo"}),
+	NewEngine("bs-engine-everything", "bs-engine", []string{"--space", "--naive-material", "--mobility", "--pawn-structure", "--tempo"}),
 	NewEngine("bs-engine-tempo", "bs-engine", []string{"--tempo"}),
 	NewEngine("bs-engine-tempo-space", "bs-engine", []string{"--tempo", "--space"}),
 	NewEngine("bs-engine-space-and-material", "bs-engine", []string{"--space", "--naive-material"}),

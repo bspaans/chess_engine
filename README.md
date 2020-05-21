@@ -16,12 +16,11 @@ Do Chess then be my guest.
   draw by repetition and draw by insufficient material. Otherwise the full
   rules of chess are implemented, and you are able to find all valid moves in a
   position.
-* The search function is a bit of a hot mess. It turns out that search and move
-  selection is probably way more important than being able to assess positions
-  from just looking at the pieces (ie. Eval). This area is the one I'm least
-  confident about, but the current strategy is to use a depth first search on
-  the best line, consider all forcing variations, and consider other moves only
-  when we detect a blunder. Seems to be a bit buggy at the moment though.
+* It turns out that search and move selection is probably way more important
+  than being able to assess positions from just looking at the pieces (ie.
+  Eval). This area is in some state of development, but the current strategy is
+  to use a depth first search on the best line, consider all forcing
+  variations, and consider other moves only when we detect a blunder.
 * A few simple position evaluators are implemented that can look at material
   count, space, mobility, tempo and pawn structures.
 * Tournament mode is working and we can see very naive approaches beating
